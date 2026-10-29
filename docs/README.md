@@ -68,34 +68,40 @@ Supabase bertindak sebagai basis data online, autentikasi pengguna, dan penyimpa
      - 🔲 **Enable automatic RLS** (Boleh dicentang atau dibiarkan kosong, karena seluruh skrip migrasi SQL Mari Partner Fuel sudah menyertakan perintah `ENABLE ROW LEVEL SECURITY` secara eksplisit pada setiap tabel).
    - **Advanced Configuration -> Postgres Type**:
      - Tetap pilih **`Postgres (DEFAULT)`** *(Jangan pilih OrioleDB BETA agar stabil dan kompatibel penuh)*.
-4. Klik tombol hijau **Create new project** di kanan bawah dan tunggu 1–2 menit hingga pembuatan database selesai (status menjadi hijau/aktif).
+4. Klik tombol hijau **Create new project** di kanan bawah dan tunggu 1–2 menit hingga status database selesai dibuat dan tampil tulisan hijau **`Healthy`** seperti pada dashboard utama.
 
 ---
 
 ### 2.2 Jalankan Migrasi Database SQL (Skema Tabel & Keamanan)
-Di dalam repositori ini, telah disediakan **8 file SQL migrasi** di folder `supabase/migrations/`. Anda cukup menyalin dan menjalankannya di Supabase:
+Setelah database berstatus **Healthy**, langkah berikutnya adalah membuat tabel, aturan keamanan RLS, dan storage bucket dengan menjalankan 8 berkas SQL migrasi:
 
-1. Di Dashboard Supabase, klik menu **SQL Editor** (ikon tanda kurung siku `_>` di sebelah kiri).
-2. Klik **New query**.
-3. Buka dan jalankan isi berkas SQL berikut secara berurutan (bisa buka file-nya di VS Code / Notepad, lalu salin isinya ke SQL Editor Supabase, lalu tekan tombol **Run**):
-   - **Query 1**: Salin isi `supabase/migrations/20261029000001_initial_schema.sql` -> Tekan **Run**.
-   - **Query 2**: Salin isi `supabase/migrations/20261029000002_rls_and_storage.sql` -> Tekan **Run**.
-   - **Query 3**: Salin isi `supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql` -> Tekan **Run**.
-   - **Query 4**: Salin isi `supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql` -> Tekan **Run**.
-   - **Query 5**: Salin isi `supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql` -> Tekan **Run**.
-   - **Query 6**: Salin isi `supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql` -> Tekan **Run**.
-   - **Query 7**: Salin isi `supabase/migrations/20261029000007_payment_integration_and_activation.sql` -> Tekan **Run**.
-   - **Query 8**: Salin isi `supabase/migrations/20261029000008_security_hardening_and_integrity.sql` -> Tekan **Run**.
+1. Di bilah menu hitam sebelah kiri (sidebar), klik ikon ke-3 dari atas: **SQL Editor** (ikon tanda prompt terminal `>_`).
+2. Klik tombol **New query** (atau ikon tanda tambah `+`).
+3. Buka dan jalankan isi berkas SQL dari folder `supabase/migrations/` di proyek Anda secara berurutan:
+   - **Query 1**: Buka file `supabase/migrations/20261029000001_initial_schema.sql`, salin seluruh isinya, tempel ke SQL Editor Supabase -> Tekan tombol hijau **Run** (atau `Ctrl + Enter`).
+   - **Query 2**: Buka file `supabase/migrations/20261029000002_rls_and_storage.sql`, salin isinya, tempel ke SQL Editor -> Tekan **Run**. *(Ini otomatis membuat bucket penyimpanan privat `receipts` & aturan keamanannya)*.
+   - **Query 3**: Buka file `supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql` -> Tempel & Tekan **Run**.
+   - **Query 4**: Buka file `supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql` -> Tempel & Tekan **Run**.
+   - **Query 5**: Buka file `supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql` -> Tempel & Tekan **Run**.
+   - **Query 6**: Buka file `supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql` -> Tempel & Tekan **Run**.
+   - **Query 7**: Buka file `supabase/migrations/20261029000007_payment_integration_and_activation.sql` -> Tempel & Tekan **Run**.
+   - **Query 8**: Buka file `supabase/migrations/20261029000008_security_hardening_and_integrity.sql` -> Tempel & Tekan **Run**.
 
-*(Seluruh tabel `vehicles`, `fuel_transactions`, sistem paket Free/Pro, serta keamanan Row Level Security RLS kini telah aktif 100%!)*
+> [!NOTE]
+> Pastikan setiap query menampilkan pesan sukses `Success. No rows returned` sebelum berpindah ke query berikutnya. Seluruh skema database PostgreSQL dan private storage bucket `receipts` kini telah aktif 100%!
 
 ---
 
 ### 2.3 Ambil Kunci URL & Anon Key Supabase
-1. Di Dashboard Supabase, buka menu **Project Settings** (ikon gerigi di kiri bawah) -> **API**.
-2. Salin 2 nilai berikut:
-   - **Project URL** (contoh: `https://xyzprojectid.supabase.co`)
-   - **anon / public key** (kunci panjang berawalan `eyJhbGciOi...`)
+Anda memerlukan 2 nilai dari Supabase untuk dimasukkan ke konfigurasi Android:
+
+1. **Project URL**:
+   - Dapat disalin langsung dari halaman **Home** dashboard (di bawah tulisan nama project Anda `mari-partner-fuel`, terdapat URL `https://<id-projek>.supabase.co` dengan tombol **Copy**).
+2. **Anon Public Key**:
+   - Di bilah menu kiri paling bawah, klik ikon **Project Settings (Gerigi ⚙️)**.
+   - Di menu Settings, klik **API** (atau **Data API**).
+   - Di bagian **Project API keys**, cari kunci bertuliskan **`anon` / `public`**.
+   - Klik tombol **Copy** (kunci panjang JWT berawalan `eyJhbGciOi...`).
 
 ---
 
