@@ -17,10 +17,17 @@ sealed class NavRoute(val route: String) {
     data object Vehicles : NavRoute("vehicles")
     data object Profile : NavRoute("profile")
 
+    // Vehicle Flows
+    data object VehicleForm : NavRoute("vehicle_form?id={id}") {
+        fun createRoute(id: String? = null) = if (id != null) "vehicle_form?id=$id" else "vehicle_form"
+    }
+
     // OCR & Transaction Flows
     data object ReceiptScan : NavRoute("receipt_scan")
     data object ScanReview : NavRoute("scan_review")
-    data object TransactionForm : NavRoute("transaction_form")
+    data object TransactionForm : NavRoute("transaction_form?id={id}") {
+        fun createRoute(id: String? = null) = if (id != null) "transaction_form?id=$id" else "transaction_form"
+    }
     data object TransactionDetail : NavRoute("transaction_detail/{id}") {
         fun createRoute(id: String) = "transaction_detail/$id"
     }

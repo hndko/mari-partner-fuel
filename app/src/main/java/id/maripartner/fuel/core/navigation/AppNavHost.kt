@@ -12,6 +12,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import id.maripartner.fuel.data.repository.AuthRepositoryImpl
 import id.maripartner.fuel.feature.analytics.AnalyticsScreen
 import id.maripartner.fuel.feature.auth.AuthUiEvent
@@ -22,7 +24,10 @@ import id.maripartner.fuel.feature.auth.RegisterScreen
 import id.maripartner.fuel.feature.dashboard.DashboardScreen
 import id.maripartner.fuel.feature.profile.ProfileScreen
 import id.maripartner.fuel.feature.splash.SplashScreen
+import id.maripartner.fuel.feature.transactions.TransactionDetailScreen
+import id.maripartner.fuel.feature.transactions.TransactionFormScreen
 import id.maripartner.fuel.feature.transactions.TransactionsScreen
+import id.maripartner.fuel.feature.vehicles.VehicleFormScreen
 import id.maripartner.fuel.feature.vehicles.VehiclesScreen
 
 @Composable
@@ -122,7 +127,7 @@ fun AppNavHost(
                         navController.navigate(NavRoute.ReceiptScan.route)
                     },
                     onNavigateToManualInput = {
-                        navController.navigate(NavRoute.TransactionForm.route)
+                        navController.navigate(NavRoute.TransactionForm.createRoute())
                     },
                     onNavigateToProPlans = {
                         navController.navigate(NavRoute.ProPlans.route)
@@ -133,7 +138,10 @@ fun AppNavHost(
             composable(NavRoute.Transactions.route) {
                 TransactionsScreen(
                     onNavigateToCreate = {
-                        navController.navigate(NavRoute.TransactionForm.route)
+                        navController.navigate(NavRoute.TransactionForm.createRoute())
+                    },
+                    onNavigateToDetail = { id ->
+                        navController.navigate(NavRoute.TransactionDetail.createRoute(id))
                     }
                 )
             }
@@ -145,7 +153,10 @@ fun AppNavHost(
             composable(NavRoute.Vehicles.route) {
                 VehiclesScreen(
                     onNavigateToAddVehicle = {
-                        // Handled in vehicles phase
+                        navController.navigate(NavRoute.VehicleForm.createRoute())
+                    },
+                    onNavigateToEditVehicle = { id ->
+                        navController.navigate(NavRoute.VehicleForm.createRoute(id))
                     }
                 )
             }
@@ -164,17 +175,67 @@ fun AppNavHost(
                 )
             }
 
-            // Sub-alur placeholder
+            // 4. Sub-alur Manajemen Kendaraan
+            composable(
+                route = NavRoute.VehicleForm.route,
+                arguments = listOf(
+                    navArgument("id") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val vehicleId = backStackEntry.arguments?.getString("id")
+                VehicleFormScreen(
+                    vehicleId = vehicleId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // 5. Sub-alur Transaksi BBM Manual & Detail
+            composable(
+                route = NavRoute.TransactionForm.route,
+                arguments = listOf(
+                    navArgument("id") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val transactionId = backStackEntry.arguments?.getString("id")
+                TransactionFormScreen(
+                    transactionId = transactionId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = NavRoute.TransactionDetail.route,
+                arguments = listOf(
+                    navArgument("id") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("id").orEmpty()
+                TransactionDetailScreen(
+                    transactionId = id,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToEdit = { txId ->
+                        navController.navigate(NavRoute.TransactionForm.createRoute(txId))
+                    }
+                )
+            }
+
+            // Sub-alur placeholder masa depan
             composable(NavRoute.ReceiptScan.route) {
                 DashboardScreen(
                     onNavigateToScan = {},
                     onNavigateToManualInput = {},
                     onNavigateToProPlans = {}
                 )
-            }
-
-            composable(NavRoute.TransactionForm.route) {
-                TransactionsScreen(onNavigateToCreate = {})
             }
 
             composable(NavRoute.ProPlans.route) {

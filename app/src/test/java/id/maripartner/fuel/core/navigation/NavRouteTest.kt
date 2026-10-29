@@ -21,6 +21,10 @@ class NavRouteTest {
     fun navRoute_formatsDynamicArguments() {
         assertEquals("transaction_detail/tx-123", NavRoute.TransactionDetail.createRoute("tx-123"))
         assertEquals("checkout/pro_monthly", NavRoute.Checkout.createRoute("pro_monthly"))
+        assertEquals("vehicle_form", NavRoute.VehicleForm.createRoute())
+        assertEquals("vehicle_form?id=veh-999", NavRoute.VehicleForm.createRoute("veh-999"))
+        assertEquals("transaction_form", NavRoute.TransactionForm.createRoute())
+        assertEquals("transaction_form?id=tx-888", NavRoute.TransactionForm.createRoute("tx-888"))
     }
 
     @Test

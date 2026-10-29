@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
   <img src="https://img.shields.io/badge/Payment-QRISpy-FF8F00?style=for-the-badge" alt="Payment QRISpy" />
-  <img src="https://img.shields.io/badge/Version-v1.1.0-blue?style=for-the-badge" alt="Version 1.1.0" />
+  <img src="https://img.shields.io/badge/Version-v1.2.0-blue?style=for-the-badge" alt="Version 1.2.0" />
 </p>
 
 ---
@@ -159,18 +159,37 @@ Variabel publik `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dapat dimasukkan ke `loca
 ```powershell
 .\gradlew.bat testDebugUnitTest
 ```
-Hasil uji: 38 tests lulus (Autentikasi, validasi input, pemulihan sesi, storage path manager, migrasi SQL 13 tabel, RLS, Currency formatting, parsing Rupiah, UiState, AppConfig, Navigation Route contracts).
+Hasil uji: **71 tests lulus** (15 test suites):
+- Validasi data kendaraan (`ValidateVehicleInputUseCaseTest` - 7 tests)
+- Validasi transaksi manual (`ValidateTransactionInputUseCaseTest` - 6 tests)
+- Estimasi volume & toleransi selisih harga (`EstimateFuelCalculationUseCaseTest` - 6 tests)
+- Pemetaan Postgrest DTO & domain model (`VehicleDtoMappingTest` - 3 tests, `FuelTransactionDtoMappingTest` - 2 tests)
+- Alur Use Case kendaraan & transaksi (`VehicleUseCaseTest` - 4 tests, `TransactionUseCaseTest` - 4 tests)
+- Verifikasi skema DDL & trigger SQL (`MigrationSqlTest` - 6 tests)
+- Pengujian autentikasi & validasi input (`AuthUseCaseTest` - 9 tests, `AuthValidationTest` - 6 tests)
+- Manajemen private bucket storage (`ReceiptStorageManagerTest` - 6 tests)
+- Formatting & utilitas (`CurrencyFormatterTest` - 5 tests, `NavRouteTest` - 3 tests, `UiStateTest` - 2 tests, `AppConfigTest` - 2 tests).
 
 ### Membangun APK Debug
 ```powershell
 .\gradlew.bat assembleDebug
 ```
-Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (22.05 MB).
+Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (~22.8 MB).
 
-### Membangun APK Release (Milestone)
-```powershell
-.\gradlew.bat assembleRelease
-```
+### Menjalankan Fitur Tahap 3 (Kendaraan & Transaksi Manual)
+1. **Navigasi Tab Kendaraan (`/vehicles`)**:
+   - Ketuk FAB `+` untuk membuka form tambah kendaraan.
+   - Isi Nama (wajib), Jenis (Motor/Mobil/Lainnya), Merek, Model, Tahun, Plat Nomor, dan Odometer awal.
+   - Kendaraan yang tidak lagi digunakan dapat diarsipkan agar tidak muncul sebagai pilihan default pada transaksi baru.
+2. **Pencatatan Transaksi BBM Manual (`/transaction_form`)**:
+   - Pilih kendaraan aktif dari dropdown.
+   - Masukkan Total Pembayaran (format otomatis Rupiah, misal `Rp 50.000`).
+   - Masukkan Volume Liter dan Harga per Liter (sistem akan otomatis memverifikasi kecocokan nominal dan memberi peringatan ramah jika terdapat selisih > 5%).
+   - Lampirkan foto struk fisik secara opsional menggunakan Android PhotoPicker bawaan (disimpan aman di private storage bucket `receipts`).
+3. **Riwayat & Detail Transaksi (`/transactions`)**:
+   - Cari SPBU secara real-time dengan debounce 300ms.
+   - Filter cepat berdasarkan kendaraan aktif dan ubah urutan (Terbaru/Terlama).
+   - Ketuk transaksi untuk melihat detail lengkap, waktu pencatatan, dan signed URL foto struk.
 
 ---
 

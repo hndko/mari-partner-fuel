@@ -25,6 +25,7 @@
    # Atau eksekusi file SQL di SQL Editor Dashboard:
    # 1. supabase/migrations/20261029000001_initial_schema.sql
    # 2. supabase/migrations/20261029000002_rls_and_storage.sql
+   # 3. supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql
    ```
 
 ### 2.2 Konfigurasi Email Authentication
@@ -84,6 +85,8 @@ Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diper
 | :--- | :---: | :--- |
 | **Unit Test Validasi Input Autentikasi** | ✅ **LULUS (100%)** | Validasi email regex, panjang sandi, dan kecocokan konfirmasi sandi. |
 | **Unit Test Storage Path & File Validation** | ✅ **LULUS (100%)** | Pembatasan 5 MB, filter MIME type (JPEG/PNG/WebP), path collision UUID. |
+| **Unit Test Validasi Kendaraan & Transaksi** | ✅ **LULUS (100%)** | Validasi nama kendaraan, tahun (1900..2100), total > 0, volume > 0, toleransi selisih harga. |
+| **Proteksi BOLA/IDOR Kendaraan & Transaksi** | ✅ **LULUS (100%)** | Foreign key komposit `(vehicle_id, user_id)` menjamin transaksi tidak dapat dihubungkan ke kendaraan akun lain. |
 | **Verifikasi Integritas Skema & RLS SQL** | ✅ **LULUS (100%)** | 13 tabel RLS aktif, composite FK, dan bucket privat teruji via `MigrationSqlTest`. |
 | **Build Android Bebas Secret** | ✅ **LULUS (100%)** | Injeksi aman BuildConfig; `.env` & `local.properties` diabaikan oleh Git. |
 | **Kredensial Supabase & Google Cloud Riil** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan penyediaan URL proyek, Anon Key, dan Google OAuth Client ID nyata pada environment pengguna. |

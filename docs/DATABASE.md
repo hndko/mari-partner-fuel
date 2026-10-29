@@ -24,6 +24,7 @@
 Seluruh skema tersimpan rapi dalam migrasi SQL:
 - [`supabase/migrations/20261029000001_initial_schema.sql`](../supabase/migrations/20261029000001_initial_schema.sql)
 - [`supabase/migrations/20261029000002_rls_and_storage.sql`](../supabase/migrations/20261029000002_rls_and_storage.sql)
+- [`supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql`](../supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql)
 
 | No | Nama Tabel | Deskripsi & Tujuan | Kebijakan RLS Klien Android |
 |:--:|:---|:---|:---|
@@ -64,6 +65,14 @@ create index idx_ai_usage_logs_user_month on public.ai_usage_logs(user_id, billi
 ### 3.3 Otomasi Trigger
 - **`handle_updated_at()`**: Fungsi trigger konsisten yang memperbarui kolom `updated_at = now()` sebelum operasi update pada seluruh tabel utama.
 - **`handle_new_user()`**: Trigger `after insert on auth.users` yang secara otomatis membuat baris awal pada `profiles` dan `notification_preferences`.
+- **`handle_vehicle_odometer_update()`**: Trigger `after insert or update of odometer_km on fuel_transactions` yang otomatis memperbarui `last_odometer_km` pada kendaraan terkait dengan nilai odometer tertinggi (`greatest(last_odometer_km, new.odometer_km)`).
+
+### 3.4 Penyempurnaan Skema Tahap 3 (`20261029000003_vehicles_and_transactions_tahap3.sql`)
+- **Tabel `vehicles`**: Menambahkan kolom `production_year integer check (production_year is null or (production_year >= 1900 and production_year <= 2100))` dan `notes text`.
+- **Tabel `fuel_transactions`**:
+  - Kolom `volume_liters` dijadikan opsional (`drop not null`), memungkinkan input pengisian BBM cepat berbasis nominal rupiah saja.
+  - Pengetatan validasi nominal: `check (total_amount_idr > 0)`.
+  - Indeks komposit performa tinggi: `idx_fuel_transactions_station (user_id, station_name)` dan `idx_fuel_transactions_fuel_type (user_id, fuel_type)`.
 
 ---
 

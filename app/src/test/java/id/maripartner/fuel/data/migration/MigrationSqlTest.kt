@@ -20,9 +20,24 @@ class MigrationSqlTest {
         assertTrue("Direktori supabase/migrations harus ada", migrationDir.exists())
         val schemaFile = File(migrationDir, "20261029000001_initial_schema.sql")
         val rlsFile = File(migrationDir, "20261029000002_rls_and_storage.sql")
+        val tahap3File = File(migrationDir, "20261029000003_vehicles_and_transactions_tahap3.sql")
 
         assertTrue("File initial_schema.sql harus ada", schemaFile.exists())
         assertTrue("File rls_and_storage.sql harus ada", rlsFile.exists())
+        assertTrue("File vehicles_and_transactions_tahap3.sql harus ada", tahap3File.exists())
+    }
+
+    @Test
+    fun migrationTahap3_addsColumnsAndOdometerTrigger() {
+        val file = File(migrationDir, "20261029000003_vehicles_and_transactions_tahap3.sql")
+        val content = file.readText()
+
+        assertTrue("Harus menambahkan production_year", content.contains("production_year integer"))
+        assertTrue("Harus menambahkan notes pada vehicles", content.contains("notes text"))
+        assertTrue("Harus melonggarkan volume_liters drop not null", content.contains("alter column volume_liters drop not null"))
+        assertTrue("Harus memastikan total_amount_idr > 0", content.contains("total_amount_idr > 0"))
+        assertTrue("Harus ada indeks pencarian SPBU", content.contains("idx_fuel_transactions_station"))
+        assertTrue("Harus ada trigger odometer kendaraan", content.contains("trg_fuel_transactions_odometer"))
     }
 
     @Test
