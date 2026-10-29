@@ -26,6 +26,7 @@
    # 1. supabase/migrations/20261029000001_initial_schema.sql
    # 2. supabase/migrations/20261029000002_rls_and_storage.sql
    # 3. supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql
+   # 4. supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql
    ```
 
 ### 2.2 Konfigurasi Email Authentication
@@ -74,6 +75,8 @@ Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diper
 | **Aktivasi Pro Palsu** | Memanipulasi kolom `status` pada tabel `subscriptions` | Aturan RLS memblokir seluruh operasi INSERT/UPDATE dari klien Android; mutasi hanya dapat dieksekusi server via `service_role`. |
 | **Manipulasi Harga Paket** | Mengirim nominal harga murah dari client | Harga diambil langsung dari server (`subscription_plans`); klien hanya mengirim ID paket. |
 | **Penyalahgunaan Kuota AI** | Memanggil langsung endpoint provider AI | API key AI hanya disimpan di Secret Manager Edge Functions; dipanggil hanya setelah validasi JWT dan sisa kuota. |
+| **Bypass Kepemilikan Struk pada AI** | Mengirim `storage_path` struk akun lain ke Edge Function | Edge Function `extract-fuel-receipt` memverifikasi token JWT dan menolak dengan status 403 jika `storage_path` tidak diawali `${user.id}/`. |
+| **Kebocoran Privasi ke AI Pihak Ketiga** | Mengirim plat nomor atau data pribadi ke LLM | Data minimization: hanya gambar/teks struk yang dikirim; plat nomor, profil, dan nama pemilik ditiadakan dari payload AI. |
 | **Kebocoran Struk Transaksi** | Mengakses link foto struk secara publik | Bucket `receipts` berstatus privat (`public = false`); akses membutuhkan signed URL sementara dari token user aktif. |
 | **Replay Webhook Pembayaran** | Mengirim notifikasi bayar berulang kali | Tabel `payment_webhook_events` dengan *unique constraint* `(provider, event_id)` menjamin idempotensi atomik. |
 
@@ -87,6 +90,9 @@ Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diper
 | **Unit Test Storage Path & File Validation** | ✅ **LULUS (100%)** | Pembatasan 5 MB, filter MIME type (JPEG/PNG/WebP), path collision UUID. |
 | **Unit Test Validasi Kendaraan & Transaksi** | ✅ **LULUS (100%)** | Validasi nama kendaraan, tahun (1900..2100), total > 0, volume > 0, toleransi selisih harga. |
 | **Proteksi BOLA/IDOR Kendaraan & Transaksi** | ✅ **LULUS (100%)** | Foreign key komposit `(vehicle_id, user_id)` menjamin transaksi tidak dapat dihubungkan ke kendaraan akun lain. |
-| **Verifikasi Integritas Skema & RLS SQL** | ✅ **LULUS (100%)** | 13 tabel RLS aktif, composite FK, dan bucket privat teruji via `MigrationSqlTest`. |
-| **Build Android Bebas Secret** | ✅ **LULUS (100%)** | Injeksi aman BuildConfig; `.env` & `local.properties` diabaikan oleh Git. |
+| **Unit Test Ekstraksi Regex & Deteksi Discrepancy OCR** | ✅ **LULUS (100%)** | Parsing struk SPBU Indonesia, toleransi pembulatan, proteksi garbled text (`ReceiptTextParserTest`). |
+| **Unit Test Serialisasi & Fallback AI DTO** | ✅ **LULUS (100%)** | Deserialisasi camel/snake case, fallback graceful tanpa secret Gemini (`AiExtractionDtoTest`). |
+| **Verifikasi Integritas Skema & RLS SQL (13 Tabel + Policy Tahap 4)** | ✅ **LULUS (100%)** | 13 tabel RLS aktif, composite FK, bucket privat, dan update scan job teruji via `MigrationSqlTest`. |
+| **Build Android Bebas Secret** | ✅ **LULUS (100%)** | Injeksi aman BuildConfig; zero AI secret di APK; `.env` & `local.properties` diabaikan oleh Git. |
 | **Kredensial Supabase & Google Cloud Riil** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan penyediaan URL proyek, Anon Key, dan Google OAuth Client ID nyata pada environment pengguna. |
+| **Kredensial Gemini API Key Riil di Supabase Edge Function** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan pemasangan secret `GEMINI_API_KEY` via `supabase secrets set` untuk eksekusi cloud AI riil. |

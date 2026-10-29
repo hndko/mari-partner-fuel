@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
   <img src="https://img.shields.io/badge/Payment-QRISpy-FF8F00?style=for-the-badge" alt="Payment QRISpy" />
-  <img src="https://img.shields.io/badge/Version-v1.2.0-blue?style=for-the-badge" alt="Version 1.2.0" />
+  <img src="https://img.shields.io/badge/Version-v1.3.0-blue?style=for-the-badge" alt="Version 1.3.0" />
 </p>
 
 ---
@@ -159,13 +159,15 @@ Variabel publik `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dapat dimasukkan ke `loca
 ```powershell
 .\gradlew.bat testDebugUnitTest
 ```
-Hasil uji: **71 tests lulus** (15 test suites):
+Hasil uji: **80 tests lulus** (17 test suites):
+- Pembacaan & parsing teks struk SPBU (`ReceiptTextParserTest` - 5 tests)
+- DTO ekstraksi AI & fallback serialisasi (`AiExtractionDtoTest` - 3 tests)
 - Validasi data kendaraan (`ValidateVehicleInputUseCaseTest` - 7 tests)
 - Validasi transaksi manual (`ValidateTransactionInputUseCaseTest` - 6 tests)
 - Estimasi volume & toleransi selisih harga (`EstimateFuelCalculationUseCaseTest` - 6 tests)
 - Pemetaan Postgrest DTO & domain model (`VehicleDtoMappingTest` - 3 tests, `FuelTransactionDtoMappingTest` - 2 tests)
 - Alur Use Case kendaraan & transaksi (`VehicleUseCaseTest` - 4 tests, `TransactionUseCaseTest` - 4 tests)
-- Verifikasi skema DDL & trigger SQL (`MigrationSqlTest` - 6 tests)
+- Verifikasi skema DDL & trigger SQL (`MigrationSqlTest` - 8 tests)
 - Pengujian autentikasi & validasi input (`AuthUseCaseTest` - 9 tests, `AuthValidationTest` - 6 tests)
 - Manajemen private bucket storage (`ReceiptStorageManagerTest` - 6 tests)
 - Formatting & utilitas (`CurrencyFormatterTest` - 5 tests, `NavRouteTest` - 3 tests, `UiStateTest` - 2 tests, `AppConfigTest` - 2 tests).
@@ -174,7 +176,22 @@ Hasil uji: **71 tests lulus** (15 test suites):
 ```powershell
 .\gradlew.bat assembleDebug
 ```
-Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (~22.8 MB).
+Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (~23.1 MB).
+
+### Menjalankan Fitur Tahap 4 (Hybrid OCR & AI Receipt Extraction)
+1. **Pemindaian Struk On-Device (`/receipt_scan`)**:
+   - Ambil foto struk menggunakan kamera atau pilih dari galeri foto melalui PhotoPicker bawaan.
+   - Text recognition berjalan instan di perangkat (*local on-device*) menggunakan **Google ML Kit Text Recognition** tanpa kuota internet.
+   - Sistem mengekstrak nama SPBU (Pertamina, Shell, BP, AKR), tanggal/waktu, nomor struk, volume liter, harga per liter, dan total nominal Rupiah.
+2. **Peninjauan Transparan (*Human-in-the-Loop*) (`/scan_review`)**:
+   - Pengguna meninjau hasil ekstraksi sebelum transaksi disimpan.
+   - Peringatan ramah otomatis muncul jika ditemukan selisih matematis antara volume x harga per liter dengan total pembayaran.
+   - Semua kolom kandidat (kendaraan, nominal, volume, harga, SPBU, tanggal) dapat disunting manual.
+3. **Optimasi AI Cloud (*Fallback Cerdas*)**:
+   - Jika struk buram atau berkerut, pengguna dapat mengetuk tombol "Optimalkan dengan AI Cloud" yang memicu dialog persetujuan privasi.
+   - Permintaan diteruskan ke Supabase Edge Function `extract-fuel-receipt` yang memanggil Google Gemini 1.5 Flash tanpa mengekspos API key di dalam APK.
+4. **Penyimpanan Transaksi**:
+   - Transaksi **hanya** disimpan ke database setelah pengguna secara sadar mengetuk tombol **Konfirmasi & Simpan Transaksi**.
 
 ### Menjalankan Fitur Tahap 3 (Kendaraan & Transaksi Manual)
 1. **Navigasi Tab Kendaraan (`/vehicles`)**:

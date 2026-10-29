@@ -25,6 +25,7 @@ Seluruh skema tersimpan rapi dalam migrasi SQL:
 - [`supabase/migrations/20261029000001_initial_schema.sql`](../supabase/migrations/20261029000001_initial_schema.sql)
 - [`supabase/migrations/20261029000002_rls_and_storage.sql`](../supabase/migrations/20261029000002_rls_and_storage.sql)
 - [`supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql`](../supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql)
+- [`supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql`](../supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql)
 
 | No | Nama Tabel | Deskripsi & Tujuan | Kebijakan RLS Klien Android |
 |:--:|:---|:---|:---|
@@ -32,7 +33,7 @@ Seluruh skema tersimpan rapi dalam migrasi SQL:
 | **2** | `vehicles` | Data kendaraan (motor, mobil, armada) | CRUD penuh hanya untuk `auth.uid() = user_id` |
 | **3** | `receipt_files` | Metadata berkas foto struk di private bucket | SELECT, INSERT, DELETE hanya untuk `auth.uid() = user_id` |
 | **4** | `fuel_transactions` | Catatan pengisian BBM & odometer | CRUD penuh hanya untuk `auth.uid() = user_id` (Composite FK) |
-| **5** | `receipt_scan_jobs` | Audit hasil OCR lokal & fallback AI | SELECT, INSERT hanya untuk `auth.uid() = user_id` |
+| **5** | `receipt_scan_jobs` | Audit hasil OCR lokal & fallback AI | SELECT, INSERT, UPDATE hanya untuk `auth.uid() = user_id` |
 | **6** | `maintenance_reminders`| Pengingat servis & ganti oli mesin | CRUD penuh hanya untuk `auth.uid() = user_id` |
 | **7** | `notification_preferences`| Preferensi push notification pengguna | SELECT, UPDATE hanya untuk `auth.uid() = id` |
 | **8** | `subscription_plans` | Master harga paket Pro & kuota AI | SELECT publik (`is_active = true`); INSERT/UPDATE/DELETE diblokir |
@@ -73,6 +74,11 @@ create index idx_ai_usage_logs_user_month on public.ai_usage_logs(user_id, billi
   - Kolom `volume_liters` dijadikan opsional (`drop not null`), memungkinkan input pengisian BBM cepat berbasis nominal rupiah saja.
   - Pengetatan validasi nominal: `check (total_amount_idr > 0)`.
   - Indeks komposit performa tinggi: `idx_fuel_transactions_station (user_id, station_name)` dan `idx_fuel_transactions_fuel_type (user_id, fuel_type)`.
+
+### 3.5 Kebijakan Pembaruan Scan Job Tahap 4 (`20261029000004_receipt_scan_jobs_policy.sql`)
+- **Tabel `receipt_scan_jobs`**:
+  - Menambahkan kebijakan RLS `receipt_scan_jobs_update_own` untuk mengizinkan operasi `UPDATE` bagi pengguna pemilik data (`auth.uid() = user_id`).
+  - Menjamin transisi status scan yang mulus (`pending` -> `processing` -> `completed` / `failed`) serta pembaruan `extracted_data` dan `confidence_score` selama siklus pemindaian OCR lokal maupun AI tanpa pelanggaran hak akses.
 
 ---
 

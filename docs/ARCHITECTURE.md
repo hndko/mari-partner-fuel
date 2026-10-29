@@ -175,3 +175,47 @@ Untuk menjamin keandalan 100% pada Android 8.0 (API 26) hingga Android 15 (API 3
    - Penamaan berkas terisolasi per user ID: `receipts/{userId}/{UUID}.{ext}` untuk mencegah konflik nama berkas.
    - Akses foto hanya melalui *Signed URL* berumur 20 menit yang dibuat secara dinamis.
 
+---
+
+## 9. Arsitektur Hybrid OCR & AI Extraction (Tahap 4)
+
+Pendekatan **Local-First Hybrid OCR** menjamin privasi, kecepatan pengenalan teks, dan ketersediaan offline tanpa bergantung pada layanan cloud:
+
+```
+[Kamera / Galeri]
+       │
+       ▼ (Bitmap <= 1920px)
+[ReceiptOcrProcessor] ──► Google ML Kit (On-Device Local OCR)
+       │
+       ▼ (Raw Text Lines)
+[ReceiptTextParser] ────► Ekstraksi Regex SPBU, Total Rupiah, Liter, Harga/L
+       │
+       ▼ (ReceiptCandidateData)
+[ScanReviewScreen] ◄──── (Human-in-the-Loop Review & Discrepancy Banner)
+       │
+       ├─ (Opsional: User Minta Optimasi AI Cloud)
+       │       │
+       │       ▼ (Consent Dialog Diterima)
+       │  [AiReceiptExtractor] ──(JWT Token)──► [Edge Function: extract-fuel-receipt]
+       │                                                    │
+       │                                                    ▼ (Gemini 1.5 Flash API)
+       │  [Merge Candidate Data] ◄──────────────────────────┘
+       │
+       ▼ (User Menekan "Konfirmasi & Simpan")
+[Save Fuel Transaction] ──► [PostgreSQL & Private Storage]
+```
+
+1. **Local-First On-Device Engine (`ReceiptOcrProcessor.kt` & `ReceiptTextParser.kt`):**
+   - Gambar distandarisasi dan dikompresi agar dimensi maksimal 1920 piksel guna mencegah `OutOfMemoryError`.
+   - Menggunakan Google ML Kit Text Recognition lokal tanpa transmisi internet.
+   - Parser regex mengenali format struk SPBU Indonesia (Pertamina, Shell, BP-AKR), menangani pemisah ribuan titik pada Rupiah dan desimal koma pada liter, serta mendiferensiasikan nominal pembayaran dari uang tunai/kembalian (*cash/change*).
+   - Menghitung diskrepansi matematis otomatis: `abs(total - (volume * harga)) > toleransi`.
+2. **Cloud AI Fallback via Supabase Edge Function (`extract-fuel-receipt`):**
+   - Fallback cerdas berbasis cloud AI hanya dijalankan jika diminta secara sadar oleh pengguna (*explicit user action*) melalui dialog persetujuan privasi.
+   - Tidak ada API key AI yang disimpan di aplikasi Android. Permintaan memanggil Edge Function dengan menyertakan token JWT pengguna.
+   - Edge Function memverifikasi kepemilikan file di private storage (`storage_path.startsWith("${user.id}/")`), memanggil Google Gemini 1.5 Flash dengan JSON schema terstruktur, dan mencatat metrik ke tabel `receipt_scan_jobs`.
+3. **Prinsip Human-in-the-Loop Tanpa Auto-Save:**
+   - Hasil ekstraksi OCR lokal maupun AI hanya disajikan sebagai kandidat (`ReceiptCandidateData`).
+   - Seluruh kolom dapat disunting oleh pengguna di layar `ScanReviewScreen`.
+   - Transaksi baru disimpan ke database jika dan hanya jika pengguna menekan tombol **Konfirmasi & Simpan Transaksi**.
+

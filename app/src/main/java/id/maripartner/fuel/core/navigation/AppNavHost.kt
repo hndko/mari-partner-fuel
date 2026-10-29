@@ -23,6 +23,9 @@ import id.maripartner.fuel.feature.auth.LoginScreen
 import id.maripartner.fuel.feature.auth.RegisterScreen
 import id.maripartner.fuel.feature.dashboard.DashboardScreen
 import id.maripartner.fuel.feature.profile.ProfileScreen
+import id.maripartner.fuel.feature.receipt_scan.ReceiptScanScreen
+import id.maripartner.fuel.feature.receipt_scan.ReceiptScanViewModel
+import id.maripartner.fuel.feature.receipt_scan.ScanReviewScreen
 import id.maripartner.fuel.feature.splash.SplashScreen
 import id.maripartner.fuel.feature.transactions.TransactionDetailScreen
 import id.maripartner.fuel.feature.transactions.TransactionFormScreen
@@ -35,7 +38,8 @@ fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = NavRoute.Splash.route,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    receiptScanViewModel: ReceiptScanViewModel = viewModel()
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -229,15 +233,28 @@ fun AppNavHost(
                 )
             }
 
-            // Sub-alur placeholder masa depan
+            // 6. Sub-alur Pindai Struk OCR & Review (Human-in-the-Loop)
             composable(NavRoute.ReceiptScan.route) {
-                DashboardScreen(
-                    onNavigateToScan = {},
-                    onNavigateToManualInput = {},
-                    onNavigateToProPlans = {}
+                ReceiptScanScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToReview = { navController.navigate(NavRoute.ScanReview.route) },
+                    viewModel = receiptScanViewModel
                 )
             }
 
+            composable(NavRoute.ScanReview.route) {
+                ScanReviewScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onSaveSuccess = {
+                        navController.navigate(NavRoute.Transactions.route) {
+                            popUpTo(NavRoute.Dashboard.route)
+                        }
+                    },
+                    viewModel = receiptScanViewModel
+                )
+            }
+
+            // Sub-alur placeholder masa depan
             composable(NavRoute.ProPlans.route) {
                 ProfileScreen(onNavigateToProPlans = {}, onLogout = {})
             }

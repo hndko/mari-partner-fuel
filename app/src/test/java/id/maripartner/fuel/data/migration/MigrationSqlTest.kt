@@ -21,10 +21,21 @@ class MigrationSqlTest {
         val schemaFile = File(migrationDir, "20261029000001_initial_schema.sql")
         val rlsFile = File(migrationDir, "20261029000002_rls_and_storage.sql")
         val tahap3File = File(migrationDir, "20261029000003_vehicles_and_transactions_tahap3.sql")
+        val tahap4File = File(migrationDir, "20261029000004_receipt_scan_jobs_policy.sql")
 
         assertTrue("File initial_schema.sql harus ada", schemaFile.exists())
         assertTrue("File rls_and_storage.sql harus ada", rlsFile.exists())
         assertTrue("File vehicles_and_transactions_tahap3.sql harus ada", tahap3File.exists())
+        assertTrue("File receipt_scan_jobs_policy.sql harus ada", tahap4File.exists())
+    }
+
+    @Test
+    fun migrationTahap4_addsReceiptScanJobsUpdatePolicy() {
+        val file = File(migrationDir, "20261029000004_receipt_scan_jobs_policy.sql")
+        val content = file.readText()
+
+        assertTrue("Harus menambahkan update policy untuk receipt_scan_jobs", content.contains("receipt_scan_jobs_update_own"))
+        assertTrue("Policy harus memeriksa auth.uid() = user_id", content.contains("auth.uid() = user_id"))
     }
 
     @Test
