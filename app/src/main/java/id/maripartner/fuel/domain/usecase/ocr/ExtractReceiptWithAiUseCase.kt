@@ -8,6 +8,7 @@ import id.maripartner.fuel.domain.usecase.transaction.EstimateFuelCalculationUse
 
 /**
  * Use case untuk memanggil ekstraksi Cloud AI melalui Supabase Edge Function 'extract-fuel-receipt'.
+ * Menegakkan kuota AI, idempotency key, dan verifikasi selisih matematis.
  */
 class ExtractReceiptWithAiUseCase(
     private val extractor: AiReceiptExtractor = AiReceiptExtractorImpl(),
@@ -17,9 +18,10 @@ class ExtractReceiptWithAiUseCase(
     suspend operator fun invoke(
         storagePath: String? = null,
         rawOcrText: String? = null,
-        existingLocalData: ReceiptCandidateData? = null
+        existingLocalData: ReceiptCandidateData? = null,
+        idempotencyKey: String? = null
     ): AppResult<ReceiptCandidateData> {
-        val result = extractor.extractReceipt(storagePath, rawOcrText)
+        val result = extractor.extractReceipt(storagePath, rawOcrText, idempotencyKey)
         if (result is AppResult.Error) {
             return AppResult.Error(result.exception)
         }

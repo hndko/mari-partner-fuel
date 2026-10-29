@@ -31,6 +31,7 @@ import id.maripartner.fuel.feature.reminders.RemindersScreen
 import id.maripartner.fuel.feature.reminders.RemindersViewModel
 import id.maripartner.fuel.feature.splash.SplashScreen
 import id.maripartner.fuel.feature.transactions.TransactionDetailScreen
+import id.maripartner.fuel.feature.subscription.ProPlansScreen
 import id.maripartner.fuel.feature.transactions.TransactionFormScreen
 import id.maripartner.fuel.feature.transactions.TransactionsScreen
 import id.maripartner.fuel.feature.vehicles.VehicleFormScreen
@@ -291,9 +292,11 @@ fun AppNavHost(
                 )
             }
 
-            // Sub-alur placeholder masa depan
+            // Halaman Paket & Langganan (Tahap 6)
             composable(NavRoute.ProPlans.route) {
-                ProfileScreen(onNavigateToProPlans = {}, onLogout = {})
+                ProPlansScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
     }

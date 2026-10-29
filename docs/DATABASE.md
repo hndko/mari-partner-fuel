@@ -27,6 +27,7 @@ Seluruh skema tersimpan rapi dalam migrasi SQL:
 - [`supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql`](../supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql)
 - [`supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql`](../supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql)
 - [`supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql`](../supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql)
+- [`supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql`](../supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql)
 
 | No | Nama Tabel | Deskripsi & Tujuan | Kebijakan RLS Klien Android |
 |:--:|:---|:---|:---|
@@ -88,6 +89,25 @@ create index idx_ai_usage_logs_user_month on public.ai_usage_logs(user_id, billi
   - Menambahkan kolom `last_notified_at timestamptz` untuk riwayat waktu pengiriman notifikasi alarm lokal.
   - Menambahkan check constraint `chk_maintenance_reminders_trigger` guna menjamin minimal salah satu pemicu jatuh tempo (`target_odometer_km` atau `target_date`) wajib terisi.
   - Menambahkan indeks komposit performa tinggi: `idx_maintenance_reminders_due (user_id, is_completed, target_date)` dan `idx_maintenance_reminders_vehicle (vehicle_id, is_completed)`.
+
+### 3.7 Entitlement, Paket Langganan & Kuota AI Tahap 6 (`20261029000006_subscription_entitlements_and_quota.sql`)
+- **Tabel `subscription_plans`**:
+  - Penyesuaian constraint `billing_period` (`'free'`, `'monthly'`, `'yearly'`, `'lifetime'`).
+  - Penambahan kolom `features jsonb not null default '[]'::jsonb` dan `description text`.
+  - Seeding katalog paket resmi backend: `free` (Rp 0, max 2 kendaraan, 5 kuota AI), `pro_monthly` (Rp 29.000, unlim kendaraan, 100 kuota AI), dan `pro_yearly` (Rp 290.000, diskon 17%, unlim kendaraan, 100 kuota AI).
+- **Tabel `subscriptions`**:
+  - Penyesuaian constraint `status` mencakup: `'pending'`, `'active'`, `'grace_period'`, `'cancelled'`, `'expired'`, `'on_hold'`, `'paused'`, `'revoked'`, `'past_due'`.
+  - Penambahan kolom `auto_renew boolean`, `cancel_at_period_end boolean`, dan `last_verified_at timestamptz`.
+- **Tabel `ai_usage_logs`**:
+  - Penambahan kolom `idempotency_key text` dengan indeks unik parsial `idx_ai_usage_logs_user_idempotency (user_id, idempotency_key)`.
+  - Penambahan kolom `status text` (`'reserved'`, `'confirmed'`, `'released'`, `'failed'`) dan `provider text`.
+  - Indeks komposit performa tinggi `idx_ai_usage_logs_user_month_status (user_id, billing_month, status)`.
+- **Fungsi PostgreSQL (RPC Security Definer)**:
+  - `get_user_effective_entitlement(p_user_id uuid)`: Menentukan paket dan hak akses aktif pengguna berdasarkan waktu server.
+  - `reserve_ai_quota(p_user_id uuid, p_idempotency_key text, p_action text)`: Reservasi kuota AI secara atomik guna mencegah race condition.
+  - `finalize_ai_quota(p_user_id uuid, p_idempotency_key text, p_success boolean)`: Konfirmasi kuota sukses atau pembebasan/refund kuota saat provider gagal.
+  - `check_vehicle_limit()` & trigger `trg_enforce_vehicle_limit`: Mencegah penambahan kendaraan aktif baru yang melebihi batas paket Free secara langsung di database.
+  - `test_set_user_subscription(...)`: Helper pengujian lingkungan development yang hak aksesnya dicabut dari publik/klien biasa dan hanya diizinkan bagi `service_role`.
 
 ---
 

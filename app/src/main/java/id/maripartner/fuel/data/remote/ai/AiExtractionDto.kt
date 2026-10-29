@@ -7,7 +7,8 @@ import kotlinx.serialization.Serializable
 data class AiExtractionRequestDto(
     @SerialName("storage_path") val storagePath: String? = null,
     @SerialName("raw_ocr_text") val rawOcrText: String? = null,
-    val provider: String = "gemini"
+    val provider: String = "gemini",
+    @SerialName("idempotency_key") val idempotencyKey: String? = null
 )
 
 @Serializable
@@ -23,11 +24,20 @@ data class AiExtractedFieldsDto(
 )
 
 @Serializable
+data class AiQuotaInfo(
+    val limit: Int = 0,
+    val used: Int = 0,
+    val remaining: Int = 0
+)
+
+@Serializable
 data class AiExtractionResponseDto(
     val success: Boolean,
+    val code: String? = null,
     val provider: String? = null,
     val fields: AiExtractedFieldsDto? = null,
     val warnings: List<String> = emptyList(),
     @SerialName("needs_review") val needsReview: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+    val quota: AiQuotaInfo? = null
 )

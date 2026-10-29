@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
   <img src="https://img.shields.io/badge/Payment-QRISpy-FF8F00?style=for-the-badge" alt="Payment QRISpy" />
-  <img src="https://img.shields.io/badge/Version-v1.4.0-blue?style=for-the-badge" alt="Version 1.4.0" />
+  <img src="https://img.shields.io/badge/Version-v1.5.0-blue?style=for-the-badge" alt="Version 1.5.0" />
 </p>
 
 ---
@@ -55,7 +55,12 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Rata-rata tertimbang biaya per liter (`total pengeluaran / total liter`).
   - Analitik efisiensi bahan bakar (km/liter) berbasis odometer berurutan.
 - 📜 **Riwayat & Pencarian**: Filter rentang waktu, filter kendaraan, dan pencarian SPBU secara real-time dengan debounce.
-- 💎 **Langganan Pro via QRISpy**: Upgrade ke tier Pro secara aman menggunakan QRIS dinamis dari QRISpy dengan verifikasi server terenkripsi dan webhook idempotent.
+- 💎 **Paket Free & Pro Otoritatif (Server-Side Entitlement)**:
+  - Katalog paket backend resmi: **Mari Free** (Rp 0, 2 kendaraan, 5 AI scans/bln), **Mari Pro Bulanan** (Rp 29.000, kendaraan tanpa batas, 100 AI scans/bln), dan **Mari Pro Tahunan** (Rp 290.000, hemat 17%).
+  - Layanan backend `get-my-entitlements` sebagai Single Source of Truth (klien Android tidak dapat memalsukan status `is_pro`).
+  - Kuota ekstraksi AI cloud ditegakkan secara atomik melalui PostgreSQL RPC (`reserve_ai_quota` & `finalize_ai_quota`) dengan proteksi idempotensi dan refund otomatis saat provider gagal.
+  - Batas maksimal kendaraan aktif ditegakkan secara permanen di database via trigger PostgreSQL `trg_enforce_vehicle_limit`.
+  - Halaman visual perbandingan paket (`ProPlansScreen`) dengan meter kuota AI dan kepatuhan Google Play Payments Policy.
 - 🔒 **Zero-Secret & Isolasi RLS**: Proteksi akses lintas akun (anti-BOLA/IDOR) dan tanda tangan URL struk berumur pendek.
 
 ---

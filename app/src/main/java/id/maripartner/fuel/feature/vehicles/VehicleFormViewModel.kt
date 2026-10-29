@@ -7,18 +7,21 @@ import id.maripartner.fuel.data.repository.VehicleRepositoryImpl
 import id.maripartner.fuel.domain.model.Vehicle
 import id.maripartner.fuel.domain.model.VehicleType
 import id.maripartner.fuel.domain.repository.VehicleRepository
+import id.maripartner.fuel.domain.usecase.subscription.CheckFeatureAccessUseCase
 import id.maripartner.fuel.domain.usecase.vehicle.SaveVehicleUseCase
 import id.maripartner.fuel.domain.usecase.vehicle.ValidateVehicleInputUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class VehicleFormViewModel(
     private val repository: VehicleRepository = VehicleRepositoryImpl(),
     private val saveVehicleUseCase: SaveVehicleUseCase = SaveVehicleUseCase(repository),
-    private val validator: ValidateVehicleInputUseCase = ValidateVehicleInputUseCase()
+    private val validator: ValidateVehicleInputUseCase = ValidateVehicleInputUseCase(),
+    private val checkFeatureAccessUseCase: CheckFeatureAccessUseCase = CheckFeatureAccessUseCase()
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(VehicleFormState())
@@ -135,6 +138,24 @@ class VehicleFormViewModel(
         _formState.update { it.copy(isSubmitting = true, errorMessage = null) }
 
         viewModelScope.launch {
+            if (!s.isEditMode) {
+                when (val vehiclesResult = repository.getVehicles(includeArchived = false).first()) {
+                    is AppResult.Success -> {
+                        val activeCount = vehiclesResult.data.size
+                        if (!checkFeatureAccessUseCase.canAddVehicle(activeCount)) {
+                            _formState.update {
+                                it.copy(
+                                    isSubmitting = false,
+                                    errorMessage = "Batas paket Free adalah 2 kendaraan aktif. Silakan upgrade ke Mari Pro untuk menambah kendaraan tanpa batas."
+                                )
+                            }
+                            return@launch
+                        }
+                    }
+                    else -> {}
+                }
+            }
+
             when (val result = saveVehicleUseCase(vehicle)) {
                 is AppResult.Success -> {
                     _formState.update { it.copy(isSubmitting = false, isSuccess = true) }

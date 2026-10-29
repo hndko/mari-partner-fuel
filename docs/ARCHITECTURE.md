@@ -244,3 +244,45 @@ Pendekatan **Local-First Hybrid OCR** menjamin privasi, kecepatan pengenalan tek
 - Pemicu ganda: Tanggal kalender (`target_date`), batas kilometer odometer (`target_odometer_km`), atau kombinasi keduanya.
 - Notifikasi lokal dijadwalkan secara aman menggunakan `AlarmManager.setAndAllowWhileIdle()` pada pukul 08:00 pagi melalui `ReminderNotificationReceiver` pada channel `fuel_service_reminders`. Alarm dibatalkan secara atomik saat pengingat diselesaikan atau dihapus.
 
+---
+
+## 11. Arsitektur Entitlement & Penegakan Kuota AI Otoritatif (Tahap 6)
+
+### 11.1 Prinsip Zero-Client-Trust
+1. **Status Pro & Hak Akses:** Klien Android **TIDAK PERNAH** dipercaya untuk menentukan status `is_pro` atau sisa kuota. Backend PostgreSQL & Supabase Edge Functions adalah satu-satunya sumber kebenaran (*Single Source of Truth*).
+2. **Katalog Paket Backend Otoritatif:**
+   - **Mari Free:** Rp 0, 2 kendaraan aktif maksimal, 5 pemindaian AI per bulan, OCR lokal on-device tanpa batas, ekspor CSV standar.
+   - **Mari Pro Bulanan:** Rp 29.000 / bulan, kendaraan tanpa batas, 100 pemindaian AI per bulan, prioritas AI tinggi, analitik lanjutan.
+   - **Mari Pro Tahunan:** Rp 290.000 / tahun (hemat 17%), seluruh fitur Pro lengkap.
+3. **Penyedia Layanan Hak Akses (`get-my-entitlements`):**
+   - Edge Function memvalidasi JWT pengguna.
+   - Menjalankan fungsi PostgreSQL `get_user_effective_entitlement(user.id)` yang memverifikasi status langganan (`active` atau `grace_period`) terhadap waktu server (`now() <= expires_at`).
+   - Menghitung pemakaian kuota bulan berjalan dari tabel `ai_usage_logs` (`status in ('reserved', 'confirmed')`).
+   - Mengembalikan payload terstruktur: paket aktif, daftar fitur yang diizinkan, sisa kuota AI, dan timestamp reset otomatis awal bulan depan.
+
+### 11.2 Alur Reservasi Kuota AI Atomik & Idempotensi
+```
+[Android Client]                 [Edge Function: extract-fuel-receipt]              [PostgreSQL Database]
+       │                                          │                                          │
+       ├── 1. POST (path / text, idempotency_key)►│                                          │
+       │                                          ├── 2. RPC reserve_ai_quota ──────────────►│
+       │                                          │      (Cek limit & pemakaian bulan ini)   ├─ Lock & Insert 'reserved'
+       │                                          │◄───── 3. Result { allowed, limit, used }─┤
+       │                                          │                                          │
+       │                               (Jika Kuota Habis: allowed = false)                    │
+       │◄── 4. 403 AI_QUOTA_EXCEEDED ─────────────┤                                          │
+       │    (Prompt Upgrade Pro, Fallback Lokal)  │                                          │
+       │                                          │                                          │
+       │                               (Jika Kuota Tersedia: allowed = true)                 │
+       │                                          ├── 5. Panggil Gemini 1.5 Flash API        │
+       │                                          │                                          │
+       │                                          ├─ (Sukses: finalize_ai_quota(true)) ─────►│ Update 'confirmed'
+       │                                          │  (Gagal: finalize_ai_quota(false)) ─────►│ Update 'released' (Refund)
+       │◄── 6. Return Structured Fields ──────────┤                                          │
+```
+
+### 11.3 Penegakan Batas Kendaraan di Tingkat Database
+- Trigger PostgreSQL `trg_enforce_vehicle_limit` secara otomatis memeriksa jumlah kendaraan aktif pengguna terhadap batas `max_vehicles` dari paket yang sedang aktif saat operasi `INSERT` atau `UPDATE` status arsip.
+- Klien Android (`VehicleFormViewModel`) menyediakan validasi dini ramah pengguna melalui `CheckFeatureAccessUseCase.canAddVehicle()` sebelum pengiriman formulir.
+
+

@@ -28,6 +28,7 @@
    # 3. supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql
    # 4. supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql
    # 5. supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql
+   # 6. supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql
    ```
 
 ### 2.2 Konfigurasi Email Authentication
@@ -82,6 +83,10 @@ Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diper
 | **Spreadsheet Formula Injection (CSV)** | Menyisipkan perintah formula `=`, `+`, `-`, `@` pada kolom catatan atau SPBU | Netralisasi otomatis dengan awalan tanda petik tunggal (`'`) pada `ExportTransactionsCsvUseCase`, angka numerik sah dipertahankan. |
 | **Manipulasi Pengingat Lintas Akun** | Menghubungkan pengingat servis ke `vehicle_id` milik akun lain | Composite Foreign Key `fk_maintenance_reminders_vehicle_user (vehicle_id, user_id)` menjamin referensi ditolak jika kendaraan bukan milik `user_id`. |
 | **Replay Webhook Pembayaran** | Mengirim notifikasi bayar berulang kali | Tabel `payment_webhook_events` dengan *unique constraint* `(provider, event_id)` menjamin idempotensi atomik. |
+| **Bypass Kuota AI Bersamaan (*Race Condition*)** | Menembak request AI paralel melebihi batas kuota bulanan | PostgreSQL RPC `reserve_ai_quota` atomik mengunci dan mencatat status `reserved`; tolak HTTP 403 `AI_QUOTA_EXCEEDED` sebelum AI eksternal dipanggil. |
+| **Pemalsuan Hak Akses Pro (*Client Claim*)** | Klien memanipulasi payload `is_pro: true` atau status subscription | Edge Function `get-my-entitlements` dan RPC `get_user_effective_entitlement` memvalidasi masa aktif dari database via server time (`now() <= expires_at`). |
+| **Pelanggaran Batas Kendaraan Free Tier** | Menambahkan lebih dari 2 kendaraan aktif tanpa Pro | PostgreSQL Trigger `trg_enforce_vehicle_limit` menolak `INSERT`/`UPDATE` kendaraan aktif melebihi batas paket di database. |
+| **Simulasi Checkout Palsu** | Pengguna mengklaim status Pro melalui tombol mock | Klien menerapkan Zero-Mock Purchase; menampilkan dialog transparan bahwa alur pembayaran riil terintegrasi pada Tahap 7. |
 
 ---
 
@@ -98,7 +103,10 @@ Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diper
 | **Unit Test Formula Injection Mitigation & CSV RFC 4180** | ✅ **LULUS (100%)** | Netralisasi formula injeksi spreadsheet, UTF-8 BOM, zero credentials di CSV (`ExportTransactionsCsvTest`). |
 | **Unit Test Validasi Pengingat & Evaluasi Jatuh Tempo** | ✅ **LULUS (100%)** | Pemicu tanggal/odometer, deteksi status overdue/due soon, proteksi null trigger (`MaintenanceReminderValidationTest`). |
 | **Unit Test Agregasi Finansial & Efisiensi Odometer** | ✅ **LULUS (100%)** | Perhitungan dashboard tanpa N+1, rata-rata tertimbang, penanganan incomplete volume & anomali odometer. |
-| **Verifikasi Integritas Skema & RLS SQL (13 Tabel + Policy Tahap 4 & 5)** | ✅ **LULUS (100%)** | 13 tabel RLS aktif, composite FK, bucket privat, dan composite constraint pengingat teruji via `MigrationSqlTest`. |
+| **Unit Test Entitlement, Batas Kendaraan, & Kuota AI (Tahap 6)** | ✅ **LULUS (100%)** | Perhitungan batas 2 kendaraan Free, status kedaluwarsa/grace period, kuota habis (`UserEntitlementTest`, `CheckFeatureAccessUseCaseTest`). |
+| **Unit Test Deserialisasi Entitlement & Plan DTO (Tahap 6)** | ✅ **LULUS (100%)** | Deserialisasi JSON respons `UserEntitlementDto` dan fitur `SubscriptionPlanDto` (`EntitlementDtoTest`). |
+| **Verifikasi Integritas Skema & RLS SQL (13 Tabel + Policy Tahap 4, 5, 6)** | ✅ **LULUS (100%)** | 13 tabel RLS aktif, composite FK, trigger kendaraan, dan RPC reservasi/finalisasi kuota teruji via `MigrationSqlTest`. |
 | **Build Android Bebas Secret** | ✅ **LULUS (100%)** | Injeksi aman BuildConfig; zero AI/payment secret di APK; `.env` & `local.properties` diabaikan oleh Git. |
+| **Evaluasi Kepatuhan Google Play Payments Policy** | ✅ **LULUS (100%)** | Riset kepatuhan regulasi Play Store selesai dan didokumentasikan di `docs/PAYMENT_FLOWS.md`. |
 | **Kredensial Supabase & Google Cloud Riil** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan penyediaan URL proyek, Anon Key, dan Google OAuth Client ID nyata pada environment pengguna. |
 | **Kredensial Gemini API Key Riil di Supabase Edge Function** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan pemasangan secret `GEMINI_API_KEY` via `supabase secrets set` untuk eksekusi cloud AI riil. |

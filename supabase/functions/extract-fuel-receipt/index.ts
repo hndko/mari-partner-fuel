@@ -1,7 +1,7 @@
 // =============================================================================
 // MARI PARTNER FUEL — SUPABASE EDGE FUNCTION: extract-fuel-receipt
 // Memproses ekstraksi data struk BBM menggunakan Cloud AI (Gemini 1.5 Flash)
-// dengan verifikasi JWT pengguna dan prinsip Zero-Secret di sisi client Android.
+// Dilengkapi Verifikasi Otoritatif Entitlement, Reservasi Kuota Atomik & Idempotensi.
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
@@ -16,6 +16,7 @@ interface ExtractionRequest {
   storage_path?: string;
   raw_ocr_text?: string;
   provider?: string;
+  idempotency_key?: string;
 }
 
 interface ExtractedReceiptFields {
@@ -31,11 +32,17 @@ interface ExtractedReceiptFields {
 
 interface ExtractionResponse {
   success: boolean;
+  code?: string;
   provider: string;
   fields: ExtractedReceiptFields | null;
   warnings: string[];
   needs_review: boolean;
   error?: string;
+  quota?: {
+    limit: number;
+    used: number;
+    remaining: number;
+  };
 }
 
 Deno.serve(async (req) => {
@@ -49,7 +56,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ success: false, error: "Missing Authorization header" }),
+        JSON.stringify({ success: false, code: "UNAUTHORIZED", error: "Missing Authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -58,7 +65,7 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    // Klien untuk memverifikasi JWT pengguna aktif
+    // 1. Verifikasi sesi pengguna
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -66,7 +73,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ success: false, error: "Sesi tidak valid atau telah kedaluwarsa" }),
+        JSON.stringify({ success: false, code: "UNAUTHORIZED", error: "Sesi tidak valid atau telah kedaluwarsa" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -77,19 +84,59 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
+          code: "INVALID_REQUEST",
           error: "Harus menyertakan storage_path atau raw_ocr_text",
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Validasi isolasi file: pengguna hanya boleh meminta ekstraksi pada file miliknya sendiri
+    // 2. Validasi isolasi file: pengguna hanya boleh meminta ekstraksi pada file miliknya sendiri
     if (payload.storage_path && !payload.storage_path.startsWith(`${user.id}/`)) {
       return new Response(
         JSON.stringify({
           success: false,
+          code: "FORBIDDEN_FILE_ACCESS",
           error: "Akses ditolak: File struk bukan milik pengguna ini",
         }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
+    const idempotencyKey = payload.idempotency_key?.trim() || `req_${Date.now()}_${crypto.randomUUID()}`;
+
+    // 3. Reservasi Kuota AI secara Atomik melalui RPC PostgreSQL
+    const { data: reservation, error: reservationError } = await adminClient.rpc(
+      "reserve_ai_quota",
+      {
+        p_user_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_action: "receipt_scan_fallback",
+      }
+    );
+
+    if (reservationError) {
+      console.error("Gagal melakukan reservasi kuota:", reservationError);
+    }
+
+    if (reservation && reservation.allowed === false) {
+      // Kuota habis! Tolak request dan jangan panggil provider AI untuk menghindari biaya & beban server
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: "AI_QUOTA_EXCEEDED",
+          provider: "gemini_cloud",
+          fields: null,
+          warnings: ["Kuota AI bulanan Anda telah habis."],
+          needs_review: true,
+          error: "Kuota pemindaian AI bulanan Anda telah habis. Silakan gunakan input manual atau tingkatkan ke Mari Pro.",
+          quota: {
+            limit: reservation.limit,
+            used: reservation.used,
+            remaining: reservation.remaining,
+          },
+        } satisfies ExtractionResponse),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -98,9 +145,17 @@ Deno.serve(async (req) => {
 
     // Jika secret Gemini belum dikonfigurasi di server
     if (!geminiApiKey) {
+      // Bebaskan reservasi kuota jika provider belum siap
+      await adminClient.rpc("finalize_ai_quota", {
+        p_user_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_success: false,
+      });
+
       return new Response(
         JSON.stringify({
           success: false,
+          code: "PROVIDER_NOT_CONFIGURED",
           provider: "gemini_cloud",
           fields: null,
           warnings: ["Secret GEMINI_API_KEY belum dikonfigurasi di Supabase Edge Function Secrets."],
@@ -111,7 +166,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Panggil Gemini 1.5 Flash via REST API resmi
+    // 4. Panggil Gemini 1.5 Flash via REST API resmi
     const prompt = `Anda adalah asisten AI ahli ekstraksi struk SPBU Indonesia (Pertamina, Shell, BP, Vivo, dll).
 Tugas Anda adalah membaca teks struk atau detail struk berikut dan mengekstrak data transaksi bahan bakar ke dalam format JSON murni.
 
@@ -157,10 +212,17 @@ Keluarkan HANYA JSON valid dengan struktur:
     });
 
     if (!geminiResponse.ok) {
-      const errText = await geminiResponse.text();
+      // Bebaskan kuota karena provider eksternal gagal
+      await adminClient.rpc("finalize_ai_quota", {
+        p_user_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_success: false,
+      });
+
       return new Response(
         JSON.stringify({
           success: false,
+          code: "PROVIDER_ERROR",
           provider: "gemini_cloud",
           fields: null,
           warnings: ["Provider AI mengembalikan status error."],
@@ -205,10 +267,16 @@ Keluarkan HANYA JSON valid dengan struktur:
 
     const durationMs = Date.now() - startTime;
 
-    // Catat audit pekerjaan scan ke tabel receipt_scan_jobs (menggunakan admin client agar andal)
+    // 5. Finalisasi kuota sukses
+    await adminClient.rpc("finalize_ai_quota", {
+      p_user_id: user.id,
+      p_idempotency_key: idempotencyKey,
+      p_success: true,
+    });
+
+    // Catat audit pekerjaan scan ke tabel receipt_scan_jobs
     if (supabaseServiceKey) {
       try {
-        const adminClient = createClient(supabaseUrl, supabaseServiceKey);
         await adminClient.from("receipt_scan_jobs").insert({
           user_id: user.id,
           provider: "gemini_cloud",
@@ -224,10 +292,16 @@ Keluarkan HANYA JSON valid dengan struktur:
 
     const response: ExtractionResponse = {
       success: true,
+      code: "OK",
       provider: "gemini_cloud",
       fields,
       warnings,
       needs_review: true,
+      quota: reservation ? {
+        limit: reservation.limit,
+        used: reservation.used,
+        remaining: Math.max(0, reservation.remaining),
+      } : undefined,
     };
 
     return new Response(JSON.stringify(response), {
@@ -238,6 +312,7 @@ Keluarkan HANYA JSON valid dengan struktur:
     return new Response(
       JSON.stringify({
         success: false,
+        code: "INTERNAL_ERROR",
         provider: "unknown",
         fields: null,
         warnings: [],

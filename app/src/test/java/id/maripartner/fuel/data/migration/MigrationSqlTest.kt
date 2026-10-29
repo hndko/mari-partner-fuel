@@ -23,12 +23,14 @@ class MigrationSqlTest {
         val tahap3File = File(migrationDir, "20261029000003_vehicles_and_transactions_tahap3.sql")
         val tahap4File = File(migrationDir, "20261029000004_receipt_scan_jobs_policy.sql")
         val tahap5File = File(migrationDir, "20261029000005_maintenance_reminders_enhancement.sql")
+        val tahap6File = File(migrationDir, "20261029000006_subscription_entitlements_and_quota.sql")
 
         assertTrue("File initial_schema.sql harus ada", schemaFile.exists())
         assertTrue("File rls_and_storage.sql harus ada", rlsFile.exists())
         assertTrue("File vehicles_and_transactions_tahap3.sql harus ada", tahap3File.exists())
         assertTrue("File receipt_scan_jobs_policy.sql harus ada", tahap4File.exists())
         assertTrue("File maintenance_reminders_enhancement.sql harus ada", tahap5File.exists())
+        assertTrue("File subscription_entitlements_and_quota.sql harus ada", tahap6File.exists())
     }
 
     @Test
@@ -138,5 +140,22 @@ class MigrationSqlTest {
         assertTrue("Harus ada storage policy upload", content.contains("receipts_storage_upload_own"))
         assertTrue("Harus ada storage policy select", content.contains("receipts_storage_select_own"))
         assertTrue("Harus ada storage policy delete", content.contains("receipts_storage_delete_own"))
+    }
+
+    @Test
+    fun migrationTahap6_enforcesEntitlementsAndQuota() {
+        val file = File(migrationDir, "20261029000006_subscription_entitlements_and_quota.sql")
+        val content = file.readText()
+
+        assertTrue("Harus menambahkan fitur pada subscription_plans", content.contains("features jsonb not null"))
+        assertTrue("Harus men-seed paket free", content.contains("'free'"))
+        assertTrue("Harus men-seed paket pro_monthly", content.contains("'pro_monthly'"))
+        assertTrue("Harus men-seed paket pro_yearly", content.contains("'pro_yearly'"))
+        assertTrue("Harus ada fungsi get_user_effective_entitlement", content.contains("get_user_effective_entitlement"))
+        assertTrue("Harus ada fungsi atomik reserve_ai_quota", content.contains("reserve_ai_quota"))
+        assertTrue("Harus ada fungsi atomik finalize_ai_quota", content.contains("finalize_ai_quota"))
+        assertTrue("Harus ada trigger check_vehicle_limit", content.contains("trg_enforce_vehicle_limit"))
+        assertTrue("Fungsi test_set_user_subscription harus dicabut dari publik", content.contains("revoke execute on function public.test_set_user_subscription"))
+        assertTrue("Fungsi test_set_user_subscription hanya boleh diakses service_role", content.contains("grant execute on function public.test_set_user_subscription(uuid, text, integer, text) to service_role;"))
     }
 }

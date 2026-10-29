@@ -98,5 +98,48 @@ Sebelum memproses aktivasi:
 
 Ketika periode langganan Pro berakhir:
 - Status langganan berubah menjadi `expired`.
+- Riwayat transaksi BBM dan data kendaraan pengguna **TIDAK DIHAPUS** atau dikunci.
+- Pengguna bertransisi kembali ke batas Free Tier (maksimal 2 kendaraan aktif untuk penambahan baru dan 5 kuota AI per bulan).
+
+---
+
+## 6. Evaluasi Kepatuhan Google Play Payments Policy & Strategi Billing Tahap 7
+
+> **Tanggal Pemeriksaan:** 29 Oktober 2026  
+> **Auditor:** Senior Android Engineer & Security Compliance  
+> **Referensi Resmi:**
+> - [Google Play Payments Policy](https://support.google.com/googleplay/android-developer/answer/9858738)
+> - [Google Play Billing — Integrasi Backend](https://developer.android.com/google/play/billing/backend)
+> - [Google Play Billing — Perlindungan Pembelian](https://developer.android.com/google/play/billing/security)
+
+### 6.1 Analisis Kewajiban Google Play Billing
+1. **Definisi Produk:** Mari Partner Fuel menjual produk digital murni berupa langganan fitur cloud (*cloud AI receipt extraction*, kuota ekstraksi, dan analitik performa lanjutan).
+2. **Kewajiban Distribusi Play Store:** Berdasarkan Bagian *Monetization and Ads — Payments Policy*, pengembang yang mendistribusikan aplikasi melalui Google Play Store yang menawarkan fitur digital atau langganan dalam aplikasi **wajib** menggunakan sistem penagihan Google Play (Google Play Billing System).
+3. **Konsekuensi Gateway Alternatif (QRISpy / Midtrans / Xendit):**
+   - Menampilkan formulir pembayaran atau QRIS pihak ketiga secara langsung di dalam aplikasi Play Store melanggar kebijakan Google Play dan berisiko ditolak (*rejection*) atau ditangguhkan (*suspension*).
+   - Jalur QRISpy / Midtrans / Xendit diperbolehkan secara hukum hanya untuk:
+     - **Distribusi di Luar Play Store (Direct APK / Web Portal / Sideloading Enterprise)**.
+     - **User Choice Billing (UCB) / Alternative Billing Programs** jika telah mendaftar dan disetujui oleh Google untuk wilayah Indonesia.
+4. **Keputusan Arsitektur Tahap 7:**
+   - **Play Store Build Variant:** Menggunakan Google Play Billing Library di klien Android + verifikasi server di Supabase Edge Function via Google Play Developer API (`purchases.subscriptionsv2`).
+   - **Direct / Web Variant:** Menggunakan adapter QRISpy untuk pembelian langsung di portal web Mari Partner.
+   - **Zero-Mock Purchase di Tahap 6:** Pada Tahap 6, tombol langganan menampilkan dialog informatif "*Segera Hadir di Tahap 7*" tanpa simulasi transaksi palsu, menjamin integritas data dan ketaatan regulasi.
+
+### 6.2 Desain Verifikasi Backend Google Play Billing (Tahap 7)
+```
+[Android Client]                  [Supabase Edge Function]          [Google Play API]
+       │                                     │                              │
+       ├─ 1. Beli via Play Billing ─────────►│                              │
+       │  (Dapatkan purchaseToken)           │                              │
+       ├─ 2. Kirim purchaseToken & plan_id ─►│                              │
+       │                                     ├─ 3. Verifikasi token ───────►│
+       │                                     │◄─── 4. Status valid & masa ──┤
+       │                                     ├─ 5. Simpan token (anti-replay)
+       │                                     ├─ 6. Aktifkan record Pro      │
+       │◄─ 7. Response Entitlement Aktif ────┤                              │
+```
+- Server menyimpan `purchase_token` dengan indeks unik `(provider, provider_payment_id)` untuk mencegah serangan *purchase token replay*.
+- Real-Time Developer Notifications (RTDN) melalui Google Cloud Pub/Sub akan memicu Supabase Edge Function webhook untuk perpanjangan otomatis (*renewal*), pembatalan (*cancellation*), atau kedaluwarsa (*expiry*).
+
 - **Data riwayat pengeluaran, kendaraan, dan transaksi pengguna TETAP AMAN dan dapat dibaca penuh.**
 - Aplikasi beralih ke batas fitur tier Free (maksimal 2 kendaraan aktif untuk penambahan baru, kuota AI bulanan tier Free). Tidak ada penguncian data secara sepihak.
