@@ -20,6 +20,10 @@ Gunakan indeks di bawah ini untuk menuju panduan yang sesuai dengan kebutuhan An
 | [**Kebijakan Keamanan & Privasi**](SECURITY.md) | Security Auditor / DevOps | Model ancaman (threat model), isolasi kredensial, private storage signed URL, dan proteksi BOLA/IDOR. |
 | [**Alur Pembayaran QRISpy**](PAYMENT_FLOWS.md) | FinTech / Integrator | Siklus pesanan QRISpy, alur QRIS dinamis, verifikasi webhook tanda tangan, dan idempotensi database. |
 | [**Sistem Pembayaran & Aktivasi (Dual-Track)**](PAYMENTS.md) | FinTech / Billing Dev | Arsitektur Dual-Track Google Play Billing & QRISpy, verifikasi server, anti-replay token, dan siklus webhook. |
+| [**Laporan Audit Keamanan (Tahap 8)**](SECURITY_AUDIT.md) | Security Auditor / QA | Hasil audit komprehensif, mitigasi temuan Critical/High, RLS RPC hardening, dan hasil quality gate. |
+| [**Panduan Pengujian & Kasus Uji**](TESTING.md) | QA / Tester | Rekap 132 unit test, 28 test suites, dan skenario pengujian E2E (Free, Pro, Pembayaran, Multi-Akun). |
+| [**Batasan Teknis & Known Issues**](KNOWN_ISSUES.md) | Seluruh Tim | Catatan kredensial produksi eksternal, batasan alarm reboot Android, dan mitigasi Doze mode. |
+| [**Panduan Deployment Produksi**](DEPLOYMENT.md) | DevOps / Release Lead | Urutan migrasi database Supabase 001-008, deploy Edge Functions, dan panduan signing rilis. |
 
 ---
 

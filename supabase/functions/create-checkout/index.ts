@@ -176,9 +176,9 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (_err: any) {
     return new Response(
-      JSON.stringify({ success: false, error: "Terjadi kesalahan internal server: " + err.message }),
+      JSON.stringify({ success: false, error: "Terjadi kesalahan internal server saat membuat order pembayaran" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

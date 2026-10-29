@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
   <img src="https://img.shields.io/badge/Payment-Play_Billing_%26_QRISpy-FF8F00?style=for-the-badge" alt="Payment Dual-Track" />
-  <img src="https://img.shields.io/badge/Version-v1.6.0-blue?style=for-the-badge" alt="Version 1.6.0" />
+  <img src="https://img.shields.io/badge/Version-v1.7.0-blue?style=for-the-badge" alt="Version 1.7.0" />
 </p>
 
 ---
@@ -66,6 +66,13 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Jalur 2 (Direct/Web Distribution): Dynamic QRISpy dengan countdown 15 menit, verifikasi signature webhook, dan polling status fallback.
   - Aktivasi Langganan Atomik: RPC `activate_subscription_for_payment` memperpanjang `expires_at` secara akumulatif jika paket masih aktif.
   - Idempotensi Mutlak: RPC `record_payment_webhook_event` mencegah perpanjangan ganda akibat webhook berulang.
+- 🛡️ **Audit Keamanan Menyeluruh & Integritas Data (Tahap 8)**:
+  - Migrasi 008: Pencabutan hak eksekusi default PostgreSQL (`REVOKE EXECUTE ... FROM public, authenticated`) pada seluruh fungsi pembayaran dan kuota; eksekusi dibatasi eksklusif untuk peran `service_role`.
+  - Guard internal fungsi basis data `auth.role() = 'service_role'` untuk proteksi BOLA/IDOR dan bypass hak istimewa.
+  - Mitigasi Replay Purchase Token: penolakan pembelian lama yang sudah berstatus `paid` (`HTTP 409 PURCHASE_TOKEN_ALREADY_REDEEMED`).
+  - Verifikasi Tanda Tangan Webhook: validasi signature header HMAC-SHA256 untuk webhook gateway pihak ketiga.
+  - Anti-Prompt Injection AI: isolasi ketat tag `<untrusted_receipt_text>` dan pembatasan maksimal 8.000 karakter pada teks struk mentah.
+  - Sanitasi Error 500: pencegahan kebocoran nama tabel atau skema SQL pada respons API backend.
 - 🔒 **Zero-Secret & Isolasi RLS**: Proteksi akses lintas akun (anti-BOLA/IDOR) dan tanda tangan URL struk berumur pendek.
 
 ---
@@ -278,6 +285,10 @@ Dokumentasi terperinci telah disusun sesuai standar enterprise di direktori [doc
 - 🛡️ [**Kebijakan Keamanan & Privasi**](docs/SECURITY.md) — Threat model dan perlindungan secret.
 - 💳 [**Alur Pembayaran QRISpy**](docs/PAYMENT_FLOWS.md) — Siklus pembayaran QRIS dan webhook idempotensi.
 - 💳 [**Sistem Pembayaran & Aktivasi (Dual-Track)**](docs/PAYMENTS.md) — Panduan teknis Google Play Billing, QRISpy, anti-replay token, dan webhook.
+- 🛡️ [**Laporan Audit Keamanan (Tahap 8)**](docs/SECURITY_AUDIT.md) — Laporan audit komprehensif, mitigasi temuan Critical/High, RLS RPC hardening, dan hasil quality gate.
+- 🧪 [**Panduan Pengujian & Kasus Uji**](docs/TESTING.md) — Rekap 132 unit test, 28 test suites, dan skenario pengujian E2E (Free, Pro, Pembayaran, Multi-Akun).
+- ⚠️ [**Batasan Teknis & Known Issues**](docs/KNOWN_ISSUES.md) — Catatan kredensial produksi eksternal, batasan alarm reboot Android, dan mitigasi Doze mode.
+- 🚀 [**Panduan Deployment Produksi**](docs/DEPLOYMENT.md) — Urutan migrasi database Supabase 001-008, deploy Edge Functions, dan panduan signing rilis.
 - 🤖 [**AGENTS.md**](AGENTS.md) — Sumber acuan hukum dan 10 pilar aturan rekayasa agen.
 
 ---

@@ -29,6 +29,7 @@ Seluruh skema tersimpan rapi dalam migrasi SQL:
 - [`supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql`](../supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql)
 - [`supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql`](../supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql)
 - [`supabase/migrations/20261029000007_payment_integration_and_activation.sql`](../supabase/migrations/20261029000007_payment_integration_and_activation.sql)
+- [`supabase/migrations/20261029000008_security_hardening_and_integrity.sql`](../supabase/migrations/20261029000008_security_hardening_and_integrity.sql)
 
 | No | Nama Tabel | Deskripsi & Tujuan | Kebijakan RLS Klien Android |
 |:--:|:---|:---|:---|
@@ -120,6 +121,14 @@ create index idx_ai_usage_logs_user_month on public.ai_usage_logs(user_id, billi
   - `activate_subscription_for_payment(p_payment_id uuid)`: Aktivasi atomik langganan Pro saat pembayaran diverifikasi. Jika paket masih aktif, sisa masa aktif diperpanjang secara kumulatif (`expires_at + duration`).
   - `handle_subscription_lifecycle_event(p_user_id uuid, p_action text, p_reason text)`: Mengelola siklus langganan (`cancel`, `grace_period`, `revoke`, `refund`, `expire`).
   - `record_payment_webhook_event(p_provider text, p_event_id text, p_event_type text, p_payload jsonb)`: Penguncian idempotensi webhook event gateway untuk mencegah aktivasi ganda.
+
+### 3.5 Security Hardening & Audit Integritas Data (Migrasi 008)
+- **Pencabutan Izin Default PostgreSQL (REVOKE EXECUTE)**:
+  - Seluruh fungsi otoritatif (`activate_subscription_for_payment`, `handle_subscription_lifecycle_event`, `record_payment_webhook_event`, `reserve_ai_quota`, `finalize_ai_quota`, `test_set_user_subscription`) dicabut izin eksekusinya dari peran `public`, `anon`, dan `authenticated`.
+  - Hak `EXECUTE` dibatasi ketat HANYA untuk peran `service_role`.
+- **Pengaman Internal Fungsi (Defense-in-Depth Guard)**:
+  - Fungsi `activate_subscription_for_payment` dan `handle_subscription_lifecycle_event` memvalidasi `if auth.role() != 'service_role' and auth.uid() is not null then raise exception ...`.
+  - Pencegahan re-aktivasi transaksi yang sudah berstatus `paid` secara atomik di basis data.
 
 ---
 

@@ -112,6 +112,8 @@ Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diper
 | **Unit Test Serialisasi DTO Checkout & Status (Tahap 7)** | ✅ **LULUS (100%)** | Deserialisasi order QRISpy, verifikasi purchase token, dan respons transaksi (`PaymentDtoTest`). |
 | **Unit Test Use Case Pembayaran & Aktivasi (Tahap 7)** | ✅ **LULUS (100%)** | Pembuatan order, validasi purchase token Google Play, polling status pembayaran (`PaymentUseCaseTest`). |
 | **Verifikasi Integritas Skema SQL & Migrasi 007 (Tahap 7)** | ✅ **LULUS (100%)** | Validasi constraint provider, RPC `activate_subscription_for_payment`, dan idempotensi webhook via `MigrationSqlTest`. |
+| **Unit Test Keamanan & Hardening Data (Tahap 8)** | ✅ **LULUS (100%)** | Uji isolasi akun A vs B, mitigasi formula injection, anti-replay token, dan zero-secret (`SecurityHardeningAndIntegrityTest`). |
+| **Verifikasi Migrasi 008 & Pengetatan Izin RPC (Tahap 8)** | ✅ **LULUS (100%)** | Pencabutan izin `EXECUTE` fungsi pembayaran/kuota dari public/authenticated ke `service_role` murni (`MigrationSqlTest`). |
 | **Build Android Bebas Secret** | ✅ **LULUS (100%)** | Injeksi aman BuildConfig; zero AI/payment secret di APK; `.env` & `local.properties` diabaikan oleh Git. |
 | **Kepatuhan Regulasi Google Play Payments** | ✅ **LULUS (100%)** | Dual-track payment memisahkan Play Billing resmi dengan direct web distribution (`docs/PAYMENTS.md`). |
 | **Kredensial Supabase & Google Cloud Riil** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan penyediaan URL proyek, Anon Key, dan Google OAuth Client ID nyata pada environment pengguna. |

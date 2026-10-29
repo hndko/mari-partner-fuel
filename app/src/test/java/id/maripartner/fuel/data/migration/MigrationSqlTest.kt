@@ -25,6 +25,7 @@ class MigrationSqlTest {
         val tahap5File = File(migrationDir, "20261029000005_maintenance_reminders_enhancement.sql")
         val tahap6File = File(migrationDir, "20261029000006_subscription_entitlements_and_quota.sql")
         val tahap7File = File(migrationDir, "20261029000007_payment_integration_and_activation.sql")
+        val tahap8File = File(migrationDir, "20261029000008_security_hardening_and_integrity.sql")
 
         assertTrue("File initial_schema.sql harus ada", schemaFile.exists())
         assertTrue("File rls_and_storage.sql harus ada", rlsFile.exists())
@@ -33,6 +34,7 @@ class MigrationSqlTest {
         assertTrue("File maintenance_reminders_enhancement.sql harus ada", tahap5File.exists())
         assertTrue("File subscription_entitlements_and_quota.sql harus ada", tahap6File.exists())
         assertTrue("File payment_integration_and_activation.sql harus ada", tahap7File.exists())
+        assertTrue("File security_hardening_and_integrity.sql harus ada", tahap8File.exists())
     }
 
     @Test
@@ -173,5 +175,19 @@ class MigrationSqlTest {
         assertTrue("Harus ada fungsi activate_subscription_for_payment", content.contains("activate_subscription_for_payment"))
         assertTrue("Harus ada fungsi handle_subscription_lifecycle_event", content.contains("handle_subscription_lifecycle_event"))
         assertTrue("Harus ada fungsi record_payment_webhook_event", content.contains("record_payment_webhook_event"))
+    }
+
+    @Test
+    fun migrationTahap8_hardensSecurityAndRevokesPublicPrivileges() {
+        val file = File(migrationDir, "20261029000008_security_hardening_and_integrity.sql")
+        val content = file.readText()
+
+        assertTrue("Harus me-revoke activate_subscription_for_payment dari public", content.contains("revoke execute on function public.activate_subscription_for_payment"))
+        assertTrue("Harus me-revoke handle_subscription_lifecycle_event dari public", content.contains("revoke execute on function public.handle_subscription_lifecycle_event"))
+        assertTrue("Harus me-revoke record_payment_webhook_event dari public", content.contains("revoke execute on function public.record_payment_webhook_event"))
+        assertTrue("Harus me-revoke reserve_ai_quota dari public", content.contains("revoke execute on function public.reserve_ai_quota"))
+        assertTrue("Harus me-revoke finalize_ai_quota dari public", content.contains("revoke execute on function public.finalize_ai_quota"))
+        assertTrue("Harus ada service_role guard pada activate_subscription", content.contains("auth.role() != 'service_role'"))
+        assertTrue("Harus ada proteksi re-aktivasi status paid", content.contains("v_tx.status = 'paid'"))
     }
 }

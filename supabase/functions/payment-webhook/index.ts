@@ -68,6 +68,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 1b. Verifikasi Tanda Tangan Webhook (Signature Verification)
+    const qrispySecret = Deno.env.get("QRISPY_WEBHOOK_SECRET");
+    const midtransKey = Deno.env.get("MIDTRANS_SERVER_KEY");
+
+    if (provider === "qrispy" && qrispySecret) {
+      const signatureHeader = req.headers.get("x-callback-signature") || req.headers.get("x-signature") || "";
+      if (!signatureHeader) {
+        return new Response(
+          JSON.stringify({ status: "error", message: "Tanda tangan webhook QRISpy tidak ditemukan" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else if (provider === "midtrans" && midtransKey) {
+      const clientSignature = rawPayload.signature_key || "";
+      if (!clientSignature) {
+        return new Response(
+          JSON.stringify({ status: "error", message: "Signature key Midtrans tidak ditemukan" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // 2. Proteksi Idempotensi Atomik: Simpan Event ke payment_webhook_events
     const { data: recordResult, error: recordError } = await adminClient.rpc(
       "record_payment_webhook_event",
@@ -122,9 +144,9 @@ Deno.serve(async (req) => {
       JSON.stringify({ status: "ok", message: "Webhook berhasil diproses." }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (_err: any) {
     return new Response(
-      JSON.stringify({ status: "error", message: "Internal error: " + err.message }),
+      JSON.stringify({ status: "error", message: "Terjadi kesalahan internal server saat memproses webhook" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

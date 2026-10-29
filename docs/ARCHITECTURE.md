@@ -319,5 +319,22 @@ Dalam RPC `activate_subscription_for_payment`:
   `new_expires_at = current_subscription.expires_at + plan_duration`.
 - Kuota pemakaian AI bulan berjalan di-reset atau ditambahkan kuota prioritas Pro secara atomik.
 
+---
+
+## 13. Arsitektur Keamanan Lapis Dalam & Hardening Integritas (Tahap 8)
+
+### 13.1 Pencabutan Izin Default PostgreSQL & Guard Service Role
+- Default PostgreSQL mengizinkan `EXECUTE` fungsi baru ke `PUBLIC`. Seluruh fungsi database mutasi privileged (`activate_subscription_for_payment`, `handle_subscription_lifecycle_event`, `record_payment_webhook_event`, `reserve_ai_quota`, `finalize_ai_quota`) dicabut izinnya secara permanen dari `public`, `anon`, dan `authenticated`.
+- Eksekusi dilindungi ganda dengan guard internal `if auth.role() != 'service_role' and auth.uid() is not null then raise exception ...`.
+
+### 13.2 Isolasi Prompt Injection & Truncation Input Cloud AI
+- Teks hasil OCR lokal yang diteruskan ke Edge Function `extract-fuel-receipt` dibatasi maksimal 8.000 karakter untuk mencegah eksploitasi Denial of Service dan pembengkakan kuota token.
+- Seluruh teks masukan dibungkus dalam tag isolasi ketat `<untrusted_receipt_text>` dengan aturan sistem bahwa model AI dilarang memperlakukan teks tersebut sebagai instruksi instruksional.
+
+### 13.3 Mitigasi Replay Token Pembelian & Webhook Signature
+- Verifikasi purchase token menolak klaim ulang (`HTTP 409 PURCHASE_TOKEN_ALREADY_REDEEMED`) jika token telah berstatus `paid`.
+- Handler webhook memvalidasi signature header HMAC-SHA256 (`X-Callback-Signature` / `X-Signature`) jika secret gateway terpasang di environment.
+
+
 
 

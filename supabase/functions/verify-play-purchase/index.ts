@@ -68,15 +68,26 @@ Deno.serve(async (req) => {
       .eq("provider_payment_id", payload.purchase_token)
       .maybeSingle();
 
-    if (existingTokenRecord && existingTokenRecord.user_id !== user.id) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          code: "PURCHASE_TOKEN_ALREADY_USED",
-          error: "Purchase token telah digunakan oleh akun lain. Pembelian tidak dapat dialihkan.",
-        }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (existingTokenRecord) {
+      if (existingTokenRecord.user_id !== user.id) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            code: "PURCHASE_TOKEN_ALREADY_USED",
+            error: "Purchase token telah digunakan oleh akun lain. Pembelian tidak dapat dialihkan.",
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else if (existingTokenRecord.status === "paid") {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            code: "PURCHASE_TOKEN_ALREADY_REDEEMED",
+            error: "Purchase token ini telah berhasil diverifikasi dan langganan telah aktif sebelumnya.",
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // 3. Tentukan Durasi dan Paket Internal
@@ -165,9 +176,9 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (_err: any) {
     return new Response(
-      JSON.stringify({ success: false, error: "Terjadi kesalahan internal: " + err.message }),
+      JSON.stringify({ success: false, error: "Terjadi kesalahan internal saat memverifikasi pembelian" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

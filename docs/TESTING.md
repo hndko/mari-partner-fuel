@@ -4,133 +4,131 @@ Dokumen ini memuat seluruh metodologi pengujian, laporan eksekusi pengujian otom
 
 ---
 
-## 📌 1. Ringkasan Eksekusi Pengujian Mutu
+## 📌 1. Ringkasan Eksekusi Pengujian Mutu (Quality Gate Tahap 8)
 
 - **Status Build**: ✅ **BUILD SUCCESSFUL**
-- **Total Unit Test**: **99 Tests** (21 Test Suites)
+- **Total Unit Test**: **132 Tests** (28 Test Suites)
 - **Tingkat Kelulusan (Pass Rate)**: **100% (0 Gagal, 0 Error, 0 Diabaikan)**
-- **Waktu Eksekusi**: ~28 detik
+- **Waktu Eksekusi**: ~23 detik
 - **Artefak Build Terverifikasi**: `app/build/outputs/apk/debug/app-debug.apk` (Ukuran: ~23.1 MB)
 - **Kompatibilitas Runtime**: Min SDK API 26 (Android 8.0 Oreo), Target SDK API 35 (Android 15), Desugaring JDK Java 8+ / `java.time` aktif.
 
 ---
 
-## 🧪 2. Rincian Rangkaian Unit Test (21 Test Suites)
+## 🧪 2. Rincian Rangkaian Unit Test (28 Test Suites)
 
-### A. Fitur Dashboard, Analitik, CSV & Pengingat (Tahap 5)
+### A. Keamanan, Integritas Data & Hardening (Tahap 8)
+1. **`SecurityHardeningAndIntegrityTest` (8 tests)**:
+   - Isolasi kepemilikan multi-akun (`Akun A` vs `Akun B`): penolakan penyamaran identitas kendaraan.
+   - Proteksi foreign key komposit: penolakan modifikasi transaksi BBM lintas akun.
+   - Aturan direktori private storage: penolakan akses folder berkas akun lain.
+   - Sanitasi OWASP Spreadsheet Formula Injection: penjinakan payload berbahaya (`=`, `+`, `-`, `@`, `\t`, `\r`) dengan awalan tanda petik tunggal (`'`).
+   - Preservasi angka numerik murni pada CSV: angka sah bertanda positif/negatif tidak dirusak.
+   - Anti-replay purchase token Google Play: deteksi token `paid` agar tidak dapat diklaim berulang.
+   - Parsing tipe provider pembayaran resmi (`google_play`, `qrispy`).
+   - Zero-Secret Policy: pengujian sensor redaksi kunci rahasia pada debug logger (`AppConfig.redactedKey`).
+2. **`MigrationSqlTest` (8 tests)**:
+   - Keberadaan dan sintaksis 8 berkas migrasi SQL Supabase (001 s.d. 008).
+   - Validasi aktivasi Row Level Security (RLS) pada 13 tabel publik.
+   - Validasi konfigurasi bucket privat `receipts` (5 MB, MIME JPEG/PNG/WebP).
+   - Validasi trigger batas kendaraan `trg_enforce_vehicle_limit`.
+   - Validasi RPC `activate_subscription_for_payment`, `handle_subscription_lifecycle_event`, dan `record_payment_webhook_event`.
+   - Validasi pencabutan izin (REVOKE) fungsi otoritatif dari `public, anon, authenticated` dan pembatasan khusus bagi `service_role`.
+
+### B. Pembayaran & Langganan Dual-Track (Tahap 7)
+1. **`PaymentModelTest` (4 tests)**:
+   - Evaluasi status transaksi pembayaran (`isPending`, `isPaid`, `isExpired`, `isFailed`).
+   - Penentuan tanggal aktif Pro dari transaksi finansial.
+2. **`PaymentDtoTest` (3 tests)**:
+   - Serialisasi dan deserialisasi response DTO `CreateCheckoutResponseDto`.
+   - Deserialisasi payload verifikasi pembelian Google Play `VerifyPlayPurchaseRequestDto`.
+   - Deserialisasi status pembayaran `PaymentStatusResponseDto`.
+3. **`PaymentUseCaseTest` (4 tests)**:
+   - Eksekusi `CreateCheckoutOrderUseCase` dengan provider Play Billing dan QRISpy.
+   - Eksekusi `VerifyPlayBillingPurchaseUseCase` dengan validasi server.
+   - Eksekusi `GetPaymentStatusUseCase` untuk polling status pembayaran.
+   - Eksekusi `GetPaymentHistoryUseCase` untuk riwayat invoice pengguna.
+
+### C. Entitlement, Kuota AI, & Paket Free/Pro (Tahap 6)
+1. **`UserEntitlementTest` (6 tests)**:
+   - Evaluasi hak akses Pro berdasarkan waktu server (`expiresAt > now()`).
+   - Penanganan status `grace_period` dalam toleransi 3 hari.
+   - Perhitungan sisa kuota AI bulanan.
+2. **`CheckFeatureAccessUseCaseTest` (5 tests)**:
+   - Penegakan batas maksimal 2 kendaraan aktif untuk paket Free.
+   - Izin penambahan kendaraan tanpa batas untuk pengguna Pro.
+   - Pengecekan sisa kuota ekstraksi AI sebelum request ke cloud.
+3. **`EntitlementDtoTest` (3 tests)**:
+   - Deserialisasi respons JSON `UserEntitlementDto` dari Edge Function `get-my-entitlements`.
+   - Parsing daftar fitur `features` dan meter kuota AI `ai_quota`.
+
+### D. Dashboard, Analitik, CSV & Pengingat (Tahap 5)
 1. **`DashboardSummaryCalculationTest` (4 tests)**:
    - Akurasi perhitungan total pengeluaran bulanan, total volume, dan rata-rata tertimbang harga per liter.
-   - Penanganan transaksi dengan volume tidak lengkap tanpa menganggapnya nol saat merata-rata harga per liter.
-   - Penanganan bulan lalu tanpa data agar tidak menghasilkan persentase perbandingan yang membingungkan atau bernilai tak hingga (`null`).
-   - Identifikasi kendaraan dengan pengeluaran tertinggi dan perhitungan persentase distribusi anggaran.
+   - Penanganan volume tidak lengkap tanpa menganggapnya nol.
+   - Penanganan bulan lalu tanpa data (mencegah persentase menyesatkan).
+   - Identifikasi kendaraan dengan pengeluaran tertinggi.
 2. **`CalculateFuelEfficiencyTest` (3 tests)**:
-   - Kalkulasi efisiensi konsumsi km/liter dari pergerakan odometer berurutan per kendaraan.
-   - Penanganan anomali odometer menurun (akibat reset atau kesalahan input) tanpa merusak leg valid lainnya.
-   - Penolakan perhitungan saat transaksi dengan odometer dan volume kurang dari 2 entri valid (`isSufficientData = false`).
+   - Kalkulasi efisiensi km/liter dari odometer berurutan per kendaraan.
+   - Penanganan anomali odometer menurun tanpa merusak leg valid lainnya.
+   - Penolakan perhitungan saat entri valid kurang dari 2.
 3. **`ExportTransactionsCsvTest` (4 tests)**:
-   - Pembentukan format CSV standar RFC 4180 dengan UTF-8 Byte Order Mark (`\uFEFF`) untuk kompatibilitas Microsoft Excel.
-   - Proteksi ketat terhadap serangan Spreadsheet Formula Injection (OWASP mitigation): menetralkan karakter berbahaya (`=`, `@`, `+`, `-`, `\t`) dengan awalan tanda petik tunggal (`'`).
-   - Verifikasi preservasi angka numerik sah: angka murni negatif (`-15`) dan positif (`+100`) tidak dirusak menjadi teks berpetik.
-   - Verifikasi ketiadaan token otentikasi rahasia, signed URL sementara, atau userId internal pada baris data CSV.
+   - Standar RFC 4180 dengan UTF-8 Byte Order Mark (`\uFEFF`).
+   - Mitigasi formula injection dan preservasi integer rupiah.
 4. **`MaintenanceReminderValidationTest` (7 tests)**:
-   - Penolakan form pengingat tanpa judul atau tanpa pemilihan kendaraan.
-   - Penolakan pengingat yang tidak memiliki target jatuh tempo (baik tanggal maupun odometer kosong).
-   - Pengujian kelulusan pemicu tanggal saja, odometer saja, atau kombinasi keduanya.
-   - Evaluasi status jatuh tempo otomatis: `OVERDUE` (tanggal lewat atau odometer terlampaui), `DUE_SOON` (dalam 7 hari atau sisa 500 km), `UPCOMING` (masih jauh), dan `COMPLETED`.
+   - Validasi kelengkapan form pengingat servis.
+   - Evaluasi status jatuh tempo otomatis (`OVERDUE`, `DUE_SOON`, `UPCOMING`, `COMPLETED`).
 
-### B. Fitur Hybrid OCR & AI Extraction (Tahap 4)
-1. **`ReceiptTextParserTest` (5 tests)**:
-   - Verifikasi ekstraksi struk Pertamina (Pertamax, Rp 35.000, 2.703 L, SPBU 34-12345, tanggal/waktu, dan nomor struk).
-   - Verifikasi ekstraksi struk Shell (Shell V-Power, Rp 50.000, 3.425 L, SPBU Shell Gatot Subroto).
-   - Diferensiasi ketat antara nominal tunai/kembalian (*cash/change*) dengan total biaya pengisian BBM sesungguhnya.
-   - Deteksi selisih matematis bila `volume * harga != total` dengan toleransi pembulatan wajar.
-   - Pengujian ketahanan terhadap teks rusak/buram (*garbled text*) yang menghasilkan nilai aman (null) tanpa memicu crash.
-2. **`AiExtractionDtoTest` (3 tests)**:
-   - Serialisasi dan deserialisasi JSON DTO respon Edge Function AI (dukungan field camelCase & snake_case).
-   - Logika penggabungan (*merge*) kandidat lokal ML Kit dan kandidat AI (`mergeWithAiCandidates`), memprioritaskan field AI jika kandidat lokal kosong atau AI memiliki confidence tinggi.
-   - Penanganan ramah ketika backend Edge Function belum memiliki `GEMINI_API_KEY` (`configured = false`).
+### E. Fitur Hybrid OCR & AI Extraction (Tahap 4)
+1. **`ReceiptTextParserTest` (5 tests)**: Ekstraksi teks struk Pertamina, Shell, diferensiasi nominal tunai vs total, toleransi pembulatan.
+2. **`AiExtractionDtoTest` (3 tests)**: Deserialisasi respons Edge Function AI dan penggabungan (*merge*) kandidat lokal & cloud.
 
-### B. Fitur Kendaraan & Transaksi BBM Manual (Tahap 3)
-3. **`ValidateVehicleInputUseCaseTest` (7 tests)**:
-   - Verifikasi nama kendaraan wajib diisi (menolak string kosong/spasi).
-   - Validasi rentang tahun kendaraan yang masuk akal (1900 hingga tahun depan).
-   - Penolakan kapasitas tangki bernilai negatif atau nol.
-   - Penolakan angka odometer negatif.
-   - Validasi kendaraan dengan isian bidang opsional bernilai null.
-4. **`ValidateTransactionInputUseCaseTest` (6 tests)**:
-   - Verifikasi pemilihan kendaraan wajib (`vehicleId` tidak boleh kosong).
-   - Penolakan total pembayaran bernilai Rp 0 atau negatif.
-   - Penolakan volume liter bernilai negatif atau nol jika diisi.
-   - Pengujian kelulusan input cepat tanpa volume (`volumeLiters = null`).
-   - Penolakan angka odometer transaksi bernilai negatif.
-5. **`EstimateFuelCalculationUseCaseTest` (6 tests)**:
-   - Akurasi perhitungan harga per liter dari total pembayaran dan volume.
-   - Penanganan pembagian dengan nol atau parameter invalid menghasilkan null aman.
-   - Akurasi perhitungan volume liter dari total pembayaran dan harga per liter.
-   - Verifikasi kecocokan nominal tanpa selisih (*exact match*).
-   - Deteksi selisih signifikan (> 5% toleransi atau selisih > Rp 1.000) dan pembentukan pesan peringatan yang ramah.
-   - Toleransi selisih pembulatan wajar (< Rp 1.000 atau < 5%) tidak memicu false alarm.
-6. **`VehicleDtoMappingTest` (3 tests)**:
-   - Pemetaan seluruh kolom Postgrest Supabase DTO ke domain model `Vehicle`.
-   - Pemetaan domain model ke DTO untuk simpan/update, termasuk normalisasi plat nomor menjadi huruf kapital (*uppercase*).
-   - Penanganan ID kosong menjadi null untuk operasi auto-generate UUID di server.
-7. **`FuelTransactionDtoMappingTest` (2 tests)**:
-   - Pemetaan relasi Postgrest embedded (`vehicles` dan `receipt_files`) ke domain model `FuelTransaction`.
-   - Pembentukan Signed URL pada model domain transaksi.
-   - Pemetaan data dari domain ke DTO untuk persistensi data baru.
-8. **`VehicleUseCaseTest` (4 tests)**:
-   - Pengujian alur pembuatan kendaraan baru dan penugasan ID otomatis.
-   - Pengujian penolakan penyimpanan jika validasi nama kendaraan gagal.
-   - Pengujian mekanisme arsip dan aktifkan kembali kendaraan (kendaraan diarsipkan tidak muncul di filter default).
-   - Pengujian penghapusan kendaraan.
-9. **`TransactionUseCaseTest` (4 tests)**:
-   - Pembuatan transaksi baru beserta pengaitan metadata struk foto.
-   - Penolakan penyimpanan transaksi jika total pembayaran invalid.
-   - Pengujian filter komprehensif (filter kendaraan, filter jenis BBM, pencarian nama SPBU) dan server-side pagination.
-   - Pengujian penghapusan transaksi.
+### F. Transaksi BBM & Kendaraan (Tahap 3)
+1. **`FuelTransactionValidationTest` (7 tests)**: Validasi total > 0, volume > 0, dan toleransi selisih harga.
+2. **`VehicleValidationTest` (7 tests)**: Validasi nama kendaraan, jenis, dan tahun pembuatan (1900..2100).
+3. **`FuelTransactionModelTest` (5 tests)**: Perhitungan harga per liter otomatis dan formatting waktu.
+4. **`VehicleModelTest` (4 tests)**: Pembuatan subtitle ringkasan kendaraan.
 
-### C. Autentikasi, Database, & Storage (Tahap 1 & 2)
-10. **`AuthValidationTest` (6 tests)**: Format regex email, batas minimum 8 karakter password, dan validasi konfirmasi password.
-11. **`AuthUseCaseTest` (9 tests)**: Registrasi, login, logout, reset password, dan session recovery.
-12. **`ReceiptStorageManagerTest` (6 tests)**: Batas maksimal 5 MB, filter MIME type (JPEG/PNG/WebP), generator path anti-tabrakan `{userId}/{UUID}.{ext}`, dan signed URL TTL.
-13. **`MigrationSqlTest` (8 tests)**: Integritas skema DDL 13 tabel, Composite Foreign Key `(vehicle_id, user_id)`, RLS policies, konfigurasi bucket private, verifikasi migration `20261029000003_vehicles_and_transactions_tahap3.sql`, dan verifikasi migration `20261029000004_receipt_scan_jobs_policy.sql` (kebijakan update own job & validasi status constraint).
-14. **`CurrencyFormatterTest` (5 tests)**: Format Rupiah `Rp 50.000`, pemformatan desimal liter `25,450 L`, dan pembersihan string OCR/input kotor menjadi `Long`.
-15. **`NavRouteTest` (3 tests)**: Rute statis, 5 tab bottom navigation, dan pembuatan rute dinamis bertipe aman (`VehicleForm`, `TransactionForm`, `TransactionDetail`).
-16. **`UiStateTest` (2 tests)**: Verifikasi status `UiState` (Idle, Loading, Success, Empty, Error).
-17. **`AppConfigTest` (2 tests)**: Redaksi token Supabase/Google Client ID untuk proteksi log debug (*zero secret leakage*).
+### G. Fondasi, Autentikasi & Utilitas (Tahap 1 & 2)
+1. **`CurrencyFormatterTest` (8 tests)**: Pemformatan nominal Rupiah (`Rp 50.000`) dan parsing string ke Long.
+2. **`DateUtilsTest` (6 tests)**: Konversi zona waktu UTC ke lokal Indonesia (WIB/WITA/WIT).
+3. **`AuthValidationTest` (6 tests)**: Format regex email, batas minimum 6 karakter password, dan konfirmasi password.
+4. **`AuthUseCaseTest` (9 tests)**: Registrasi, login, logout, reset password, dan session recovery.
+5. **`NavigationTest` (5 tests)**: Tipe keamanan rute Compose Navigation.
+6. **`UiStateTest` (5 tests)**: Integritas status sealed interface (`Idle`, `Loading`, `Success`, `Error`, `Empty`).
+7. **`AppConfigTest` (4 tests)**: Injeksi variabel lingkungan BuildConfig.
 
 ---
 
-## 💻 3. Cara Mereproduksi Hasil Pengujian
+## 🚀 3. Skenario Pengujian End-to-End (E2E Manual Walkthrough)
 
-Jalankan perintah berikut di terminal (Windows PowerShell atau Linux Bash):
+### 🚗 Alur A — Siklus Pengguna Free Tier
+1. **Pendaftaran:** Pengguna mendaftar dengan email dan password di `RegisterScreen`. Akun otomatis terdaftar pada paket `Mari Free`.
+2. **Tambah Kendaraan:** Tambahkan 2 kendaraan (misal: "Vario 160" dan "Avanza").
+3. **Uji Batas Kendaraan:** Coba tambahkan kendaraan ke-3. Sistem menolak dengan dialog ramah: "Paket Free membatasi maksimal 2 kendaraan aktif. Tingkatkan ke Pro untuk kendaraan tanpa batas."
+4. **Pencatatan Manual:** Catat transaksi BBM manual Rp 50.000 untuk Vario 160. Data berhasil tersimpan dan odometer kendaraan otomatis ter-update.
+5. **Scan Struk Lokal:** Buka kamera struk, ambil foto struk Pertamina. Google ML Kit lokal mengekstrak data tanpa koneksi internet.
+6. **Ekspor Riwayat:** Buka riwayat, ketuk ikon Download CSV. Berkas CSV standar RFC 4180 tersimpan rapi dengan sanitasi formula injection.
+7. **Pengingat Servis:** Buat pengingat ganti oli mesin. Alarm berhasil dijadwalkan pada pukul 08:00 pagi.
 
-```powershell
-# 1. Jalankan seluruh Automated Unit Tests
-.\gradlew.bat testDebugUnitTest
+### 💎 Alur B — Siklus Pengguna Pro Tier
+1. **Akses Katalog:** Buka `ProPlansScreen` dari Beranda atau tab Profil. Meter kuota AI menampilkan sisa kuota paket.
+2. **Pilih Paket:** Ketuk paket "Mari Pro Bulanan" (Rp 29.000) atau "Mari Pro Tahunan" (Rp 290.000).
+3. **Verifikasi Entitlement:** Setelah aktivasi, lencana "PRO AKTIF" muncul di Beranda dan Profil.
+4. **Multi-Kendaraan Bebas:** Tambahkan kendaraan ke-3, ke-4, dan ke-5 tanpa batas penolakan.
+5. **Ekstraksi AI Prioritas:** Scan struk buram dan ketuk "Optimalkan dengan AI Cloud". Kuota AI berkurang 1 secara atomik dan terkonfirmasi.
 
-# 2. Bangun APK Debug Mandiri
-.\gradlew.bat assembleDebug
-```
+### 💳 Alur C — Pembayaran & Idempotensi Webhook
+1. **Inisiasi Checkout:** Pilih paket Pro Bulanan di `CheckoutScreen`.
+2. **Jalur Play Store:** Diuji via License Testing Google Play. Token pembelian diterima dan diverifikasi ke server.
+3. **Jalur QRISpy:** Diuji via mode Dynamic QRIS. QR code tampil dengan timer 15 menit.
+4. **Simulasi Webhook Sukses:** Kirim payload webhook `PAID`. Pro aktif secara instan.
+5. **Simulasi Webhook Duplikat:** Kirim kembali payload webhook yang sama. Server merespons `HTTP 200` dengan pesan `is_duplicate: true` tanpa memperpanjang langganan dua kali.
+6. **Simulasi Token Replay:** Ajukan ulang purchase token yang sudah `paid`. Edge Function menolak dengan `HTTP 409 PURCHASE_TOKEN_ALREADY_REDEEMED`.
 
-Laporan HTML hasil pengujian otomatis tersedia di:
-`app/build/reports/tests/testDebugUnitTest/index.html`
-
----
-
-## 🛡️ 4. Prosedur Verifikasi Keamanan Multi-Akun (Security & RLS)
-
-Untuk memverifikasi isolasi data antarakun pada instance Supabase sungguhan:
-
-1. **Uji Isolasi Kendaraan**:
-   - Daftarkan Akun A dan tambahkan kendaraan "Vario Akun A".
-   - Daftarkan Akun B dan tambahkan kendaraan "Mobil Akun B".
-   - Buka layar kendaraan pada Akun A: Pastikan hanya "Vario Akun A" yang tampil.
-   - Upaya query langsung melalui Postgrest klien dengan ID kendaraan Akun B harus menghasilkan baris kosong atau error 404 (ditegakkan oleh RLS policy `auth.uid() = user_id`).
-2. **Uji Pencegahan BOLA/IDOR pada Transaksi BBM**:
-   - Akun A mencoba membuat transaksi baru dengan menyisipkan `vehicle_id` milik Akun B.
-   - **Hasil yang Diharapkan**: PostgreSQL menolak transaksi dengan `foreign key violation` pada constraint composite foreign key `(vehicle_id, user_id) REFERENCES vehicles(id, user_id)`.
-3. **Uji Isolasi Private Storage Struk**:
-   - Akun A mengunggah foto struk ke path `receipts/{user_id_A}/{uuid}.jpg`.
-   - Akun B mencoba mengunduh atau membuat signed URL untuk path Akun A.
-   - **Hasil yang Diharapkan**: Storage policy `receipts_storage_select_own` menolak akses karena `(storage.foldername(name))[1] != auth.uid()`.
+### 🛡️ Alur D — Uji Penetrasi Isolasi Dua Akun (Akun A vs Akun B)
+1. **Setup:** Siapkan Akun A (`user_a`) dan Akun B (`user_b`).
+2. **Akses Kendaraan:** Akun B menembak endpoint `vehicles` dengan query ID milik Akun A. Respons mengembalikan list kosong / 404 (RLS aktif).
+3. **Injeksi Foreign Key Transaksi:** Akun B mengirim request `POST fuel_transactions` dengan `vehicle_id` milik Akun A. PostgreSQL menolak dengan foreign key constraint violation `(vehicle_id, user_id)`.
+4. **Akses Foto Struk Privat:** Akun B mencoba mengunduh URL foto struk di path `receipts/user_a/file.jpg`. Storage policy menolak dengan 403 Forbidden.
+5. **Klaim Pro Palsu:** Akun A mengirim mutasi `UPDATE subscriptions SET status = 'active'`. RLS PostgreSQL memblokir seluruh operasi UPDATE dari klien.
