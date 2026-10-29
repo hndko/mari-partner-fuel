@@ -32,6 +32,9 @@ import id.maripartner.fuel.feature.reminders.RemindersViewModel
 import id.maripartner.fuel.feature.splash.SplashScreen
 import id.maripartner.fuel.feature.transactions.TransactionDetailScreen
 import id.maripartner.fuel.feature.subscription.ProPlansScreen
+import id.maripartner.fuel.feature.subscription.checkout.CheckoutScreen
+import id.maripartner.fuel.feature.subscription.qris.QrisPaymentScreen
+import id.maripartner.fuel.feature.subscription.status.PaymentStatusScreen
 import id.maripartner.fuel.feature.transactions.TransactionFormScreen
 import id.maripartner.fuel.feature.transactions.TransactionsScreen
 import id.maripartner.fuel.feature.vehicles.VehicleFormScreen
@@ -292,10 +295,53 @@ fun AppNavHost(
                 )
             }
 
-            // Halaman Paket & Langganan (Tahap 6)
+            // Halaman Paket & Langganan (Tahap 6 & 7)
             composable(NavRoute.ProPlans.route) {
                 ProPlansScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToCheckout = { planCode ->
+                        navController.navigate(NavRoute.Checkout.createRoute(planCode))
+                    }
+                )
+            }
+
+            // Halaman Checkout Pembayaran (Tahap 7)
+            composable(NavRoute.Checkout.route) { backStackEntry ->
+                val planCode = backStackEntry.arguments?.getString("planId") ?: "pro_monthly"
+                CheckoutScreen(
+                    planCode = planCode,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToQris = { ref ->
+                        navController.navigate(NavRoute.QrisPayment.createRoute(ref))
+                    },
+                    onNavigateToSuccess = { ref ->
+                        navController.navigate(NavRoute.PaymentStatus.createRoute(ref))
+                    }
+                )
+            }
+
+            // Halaman Pembayaran QRIS (Tahap 7)
+            composable(NavRoute.QrisPayment.route) { backStackEntry ->
+                val paymentRef = backStackEntry.arguments?.getString("paymentReference").orEmpty()
+                QrisPaymentScreen(
+                    paymentReference = paymentRef,
+                    onNavigateBack = { navController.popBackStack() },
+                    onPaymentSuccess = { ref ->
+                        navController.navigate(NavRoute.PaymentStatus.createRoute(ref))
+                    }
+                )
+            }
+
+            // Halaman Status Pembayaran Berhasil (Tahap 7)
+            composable(NavRoute.PaymentStatus.route) { backStackEntry ->
+                val paymentRef = backStackEntry.arguments?.getString("paymentReference").orEmpty()
+                PaymentStatusScreen(
+                    paymentReference = paymentRef,
+                    onNavigateToDashboard = {
+                        navController.navigate(NavRoute.Dashboard.route) {
+                            popUpTo(NavRoute.Dashboard.route) { inclusive = true }
+                        }
+                    }
                 )
             }
         }

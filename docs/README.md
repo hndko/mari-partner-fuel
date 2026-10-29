@@ -19,6 +19,7 @@ Gunakan indeks di bawah ini untuk menuju panduan yang sesuai dengan kebutuhan An
 | [**Desain Basis Data & RLS**](DATABASE.md) | Backend Engineer / DBA | Skema relasional PostgreSQL Supabase, composite foreign keys, indeks kinerja, dan kebijakan RLS. |
 | [**Kebijakan Keamanan & Privasi**](SECURITY.md) | Security Auditor / DevOps | Model ancaman (threat model), isolasi kredensial, private storage signed URL, dan proteksi BOLA/IDOR. |
 | [**Alur Pembayaran QRISpy**](PAYMENT_FLOWS.md) | FinTech / Integrator | Siklus pesanan QRISpy, alur QRIS dinamis, verifikasi webhook tanda tangan, dan idempotensi database. |
+| [**Sistem Pembayaran & Aktivasi (Dual-Track)**](PAYMENTS.md) | FinTech / Billing Dev | Arsitektur Dual-Track Google Play Billing & QRISpy, verifikasi server, anti-replay token, dan siklus webhook. |
 
 ---
 

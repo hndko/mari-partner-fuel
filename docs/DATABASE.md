@@ -28,6 +28,7 @@ Seluruh skema tersimpan rapi dalam migrasi SQL:
 - [`supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql`](../supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql)
 - [`supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql`](../supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql)
 - [`supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql`](../supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql)
+- [`supabase/migrations/20261029000007_payment_integration_and_activation.sql`](../supabase/migrations/20261029000007_payment_integration_and_activation.sql)
 
 | No | Nama Tabel | Deskripsi & Tujuan | Kebijakan RLS Klien Android |
 |:--:|:---|:---|:---|
@@ -108,6 +109,17 @@ create index idx_ai_usage_logs_user_month on public.ai_usage_logs(user_id, billi
   - `finalize_ai_quota(p_user_id uuid, p_idempotency_key text, p_success boolean)`: Konfirmasi kuota sukses atau pembebasan/refund kuota saat provider gagal.
   - `check_vehicle_limit()` & trigger `trg_enforce_vehicle_limit`: Mencegah penambahan kendaraan aktif baru yang melebihi batas paket Free secara langsung di database.
   - `test_set_user_subscription(...)`: Helper pengujian lingkungan development yang hak aksesnya dicabut dari publik/klien biasa dan hanya diizinkan bagi `service_role`.
+
+### 3.4 Peningkatan Integrasi Pembayaran & Aktivasi (Migrasi 007)
+- **Tabel `payment_transactions`**:
+  - Validasi constraint provider diperluas: `google_play`, `qrispy`, `midtrans`, `xendit`, `sandbox`.
+  - Penambahan kolom: `product_id text`, `base_plan_id text`, `billing_period text`, dan `metadata jsonb`.
+- **Tabel `subscriptions`**:
+  - Penambahan kolom relasi: `last_payment_transaction_id uuid references payment_transactions(id)`.
+- **Fungsi PostgreSQL (RPC Security Definer & Idempotensi)**:
+  - `activate_subscription_for_payment(p_payment_id uuid)`: Aktivasi atomik langganan Pro saat pembayaran diverifikasi. Jika paket masih aktif, sisa masa aktif diperpanjang secara kumulatif (`expires_at + duration`).
+  - `handle_subscription_lifecycle_event(p_user_id uuid, p_action text, p_reason text)`: Mengelola siklus langganan (`cancel`, `grace_period`, `revoke`, `refund`, `expire`).
+  - `record_payment_webhook_event(p_provider text, p_event_id text, p_event_type text, p_payload jsonb)`: Penguncian idempotensi webhook event gateway untuk mencegah aktivasi ganda.
 
 ---
 

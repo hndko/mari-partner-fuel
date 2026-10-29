@@ -43,4 +43,10 @@ sealed class NavRoute(val route: String) {
     data object Checkout : NavRoute("checkout/{planId}") {
         fun createRoute(planId: String) = "checkout/$planId"
     }
+    data object QrisPayment : NavRoute("qris_payment/{paymentReference}") {
+        fun createRoute(paymentReference: String) = "qris_payment/$paymentReference"
+    }
+    data object PaymentStatus : NavRoute("payment_status/{paymentReference}") {
+        fun createRoute(paymentReference: String) = "payment_status/$paymentReference"
+    }
 }

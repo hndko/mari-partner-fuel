@@ -54,6 +54,7 @@ import id.maripartner.fuel.domain.model.UserEntitlement
 @Composable
 fun ProPlansScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToCheckout: (planCode: String) -> Unit = {},
     viewModel: SubscriptionViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -115,7 +116,7 @@ fun ProPlansScreen(
                     PlanCard(
                         plan = plan,
                         isCurrentPlan = isCurrentPlan,
-                        onSelect = { viewModel.onEvent(SubscriptionUiEvent.SelectPlan(plan)) }
+                        onSelect = { onNavigateToCheckout(plan.code) }
                     )
                 }
 

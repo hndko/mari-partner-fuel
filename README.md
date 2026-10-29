@@ -12,8 +12,8 @@
   <img src="https://img.shields.io/badge/Minimum_SDK-API_26_(Android_8.0)-006D77?style=for-the-badge" alt="Min SDK 26" />
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
-  <img src="https://img.shields.io/badge/Payment-QRISpy-FF8F00?style=for-the-badge" alt="Payment QRISpy" />
-  <img src="https://img.shields.io/badge/Version-v1.5.0-blue?style=for-the-badge" alt="Version 1.5.0" />
+  <img src="https://img.shields.io/badge/Payment-Play_Billing_%26_QRISpy-FF8F00?style=for-the-badge" alt="Payment Dual-Track" />
+  <img src="https://img.shields.io/badge/Version-v1.6.0-blue?style=for-the-badge" alt="Version 1.6.0" />
 </p>
 
 ---
@@ -61,6 +61,11 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Kuota ekstraksi AI cloud ditegakkan secara atomik melalui PostgreSQL RPC (`reserve_ai_quota` & `finalize_ai_quota`) dengan proteksi idempotensi dan refund otomatis saat provider gagal.
   - Batas maksimal kendaraan aktif ditegakkan secara permanen di database via trigger PostgreSQL `trg_enforce_vehicle_limit`.
   - Halaman visual perbandingan paket (`ProPlansScreen`) dengan meter kuota AI dan kepatuhan Google Play Payments Policy.
+- 💳 **Integrasi Pembayaran & Aktivasi Pro (Dual-Track)**:
+  - Jalur 1 (Google Play Store): Google Play Billing v7.1.1 untuk auto-renewing subscriptions, verifikasi purchase token sisi server via Edge Function `verify-play-purchase`, dan anti-replay token reuse prevention.
+  - Jalur 2 (Direct/Web Distribution): Dynamic QRISpy dengan countdown 15 menit, verifikasi signature webhook, dan polling status fallback.
+  - Aktivasi Langganan Atomik: RPC `activate_subscription_for_payment` memperpanjang `expires_at` secara akumulatif jika paket masih aktif.
+  - Idempotensi Mutlak: RPC `record_payment_webhook_event` mencegah perpanjangan ganda akibat webhook berulang.
 - 🔒 **Zero-Secret & Isolasi RLS**: Proteksi akses lintas akun (anti-BOLA/IDOR) dan tanda tangan URL struk berumur pendek.
 
 ---
@@ -77,6 +82,7 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
 | **Local OCR** | Google ML Kit Text Recognition 19.0.1 | Pembacaan teks struk SPBU di perangkat (*on-device*) |
 | **Backend & Cloud** | Supabase SDK 3.0.1 (Auth, Postgrest, Storage, Functions) | Otentikasi, basis data relasional online, dan private storage |
 | **HTTP Engine** | Ktor Client OkHttp 3.0.0 | Client jaringan asinkron berkecepatan tinggi |
+| **Play Billing** | Google Play Billing Library 7.1.1 | Integrasi pembelian langganan digital in-app Google Play Store |
 | **Serialisasi** | Kotlinx Serialization 1.7.3 | Parsing JSON ketat dan type-safe |
 | **Testing** | JUnit 4, Kotlinx Coroutines Test, Espresso | Suite pengujian otomatis logika domain dan UI State |
 
@@ -187,6 +193,23 @@ Hasil uji: **99 tests lulus** (21 test suites):
 ```
 Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (~23.1 MB).
 
+### Menjalankan Fitur Tahap 7 (Integrasi Pembayaran & Aktivasi Pro)
+1. **Pilihan Paket & Checkout (`/pro_plans` -> `/checkout/{planId}`)**:
+   - Dari menu Akun atau Banner Pro di Beranda, buka katalog paket Pro.
+   - Ketuk paket pilihan (Bulanan Rp 29.000 atau Tahunan Rp 290.000) untuk membuka layar Checkout.
+   - Sistem menampilkan rincian biaya otoritatif server, PPN/biaya administrasi (Rp 0), dan metode pembayaran yang tersedia.
+2. **Jalur Google Play Billing (Play Store Build)**:
+   - Ketuk "Bayar via Google Play" untuk memicu bottom sheet Google Play Billing v7.1.1.
+   - Setelah pembelian disetujui, token dikirim ke Edge Function `verify-play-purchase` untuk divalidasi ke Google Developer API.
+   - Status Pro dan kuota AI langsung aktif secara atomik.
+3. **Jalur Dynamic QRISpy (Direct/Web Distribution)**:
+   - Pilih opsi pembayaran QRISpy, sistem akan men-generate QRIS dinamis unik dengan masa berlaku 15 menit.
+   - Layar `QrisPaymentScreen` menampilkan QR string, timer countdown, dan tombol unduh/simpan QR.
+   - Polling status otomatis mengecek konfirmasi webhook dari gateway.
+4. **Layar Status & Rekonsiliasi (`/payment_status/{paymentReference}`)**:
+   - Menampilkan konfirmasi status real-time: Pending (Kuning), Berhasil (Hijau/Teal), atau Kedaluwarsa (Merah).
+   - Hak Pro langsung aktif tanpa restart aplikasi.
+
 ### Menjalankan Fitur Tahap 5 (Dashboard, Analitik, Ekspor CSV, & Pengingat Servis)
 1. **Dashboard Statistik Real-Time (`/dashboard`)**:
    - Total pengeluaran bulan berjalan, total liter, rata-rata tertimbang biaya per liter, dan total transaksi.
@@ -254,6 +277,7 @@ Dokumentasi terperinci telah disusun sesuai standar enterprise di direktori [doc
 - 🗄️ [**Desain Basis Data & RLS**](docs/DATABASE.md) — Skema tabel Supabase dan aturan keamanan PostgreSQL.
 - 🛡️ [**Kebijakan Keamanan & Privasi**](docs/SECURITY.md) — Threat model dan perlindungan secret.
 - 💳 [**Alur Pembayaran QRISpy**](docs/PAYMENT_FLOWS.md) — Siklus pembayaran QRIS dan webhook idempotensi.
+- 💳 [**Sistem Pembayaran & Aktivasi (Dual-Track)**](docs/PAYMENTS.md) — Panduan teknis Google Play Billing, QRISpy, anti-replay token, dan webhook.
 - 🤖 [**AGENTS.md**](AGENTS.md) — Sumber acuan hukum dan 10 pilar aturan rekayasa agen.
 
 ---

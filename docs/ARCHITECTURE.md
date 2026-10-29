@@ -285,4 +285,39 @@ Pendekatan **Local-First Hybrid OCR** menjamin privasi, kecepatan pengenalan tek
 - Trigger PostgreSQL `trg_enforce_vehicle_limit` secara otomatis memeriksa jumlah kendaraan aktif pengguna terhadap batas `max_vehicles` dari paket yang sedang aktif saat operasi `INSERT` atau `UPDATE` status arsip.
 - Klien Android (`VehicleFormViewModel`) menyediakan validasi dini ramah pengguna melalui `CheckFeatureAccessUseCase.canAddVehicle()` sebelum pengiriman formulir.
 
+---
+
+## 12. Arsitektur Pembayaran Terpadu (Dual-Track Payments) & Aktivasi Langganan (Tahap 7)
+
+### 12.1 Regulasi Dual-Track (Google Play Billing vs QRISpy)
+1. **Google Play Store Build**: Untuk build yang didistribusikan melalui Play Store, aplikasi wajib menggunakan **Google Play Billing Library v7.1.1** (`com.android.billingclient:billing-ktx`). Pembelian paket langganan in-app ditagihkan secara otomatis via Google Play Account.
+2. **Direct/Web Distribution**: Untuk distribusi di luar Play Store (website resmi/sideload), gateway **QRISpy** (`https://api.qrispy.id`) digunakan dengan dynamic QRIS yang kedaluwarsa dalam 15 menit.
+3. Klien Android mengabstraksi kedua jalur di balik `PaymentRepository` dan use cases domain tanpa membocorkan logika platform ke UI layar Pro.
+
+### 12.2 Alur Google Play Billing & Anti-Replay Token
+```text
+[PlayBillingManager] ──(Launch Flow)──► [Google Play Store Sheet]
+        │                                       │
+        │◄──────(Purchase Completed)────────────┘
+        ▼
+[Edge Function: verify-play-purchase]
+        ├── 1. Validasi Keunikan Token di payment_transactions (Anti-Replay)
+        ├── 2. Verifikasi Token & Package Name ke Google Play Developer API
+        ├── 3. Konfirmasi Status Pembayaran 'paid'
+        └── 4. RPC activate_subscription_for_payment() (Atomik)
+```
+
+### 12.3 Alur Dynamic QRISpy & Idempotensi Webhook
+- Pembuatan order transaksi via `create-checkout` dengan `payment_reference` berformat unik `MPF-YYYYMMDD-XXXX`.
+- Gateway QRISpy memanggil Edge Function `payment-webhook`.
+- Payload diverifikasi melalui signature HMAC-SHA256, kemudian dicatat secara atomik ke tabel `payment_webhook_events` via RPC `record_payment_webhook_event`.
+- Duplikasi webhook diidentifikasi berdasarkan `event_id` dan direspons dengan HTTP 200 tanpa mengeksekusi mutasi kedua.
+
+### 12.4 Perpanjangan Langganan Atomik (Cumulative Extension)
+Dalam RPC `activate_subscription_for_payment`:
+- Jika pengguna telah memiliki langganan Pro aktif untuk paket yang sama, tanggal kedaluwarsa baru dihitung dari sisa masa aktif yang ada:
+  `new_expires_at = current_subscription.expires_at + plan_duration`.
+- Kuota pemakaian AI bulan berjalan di-reset atau ditambahkan kuota prioritas Pro secara atomik.
+
+
 

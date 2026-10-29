@@ -86,7 +86,10 @@ Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diper
 | **Bypass Kuota AI Bersamaan (*Race Condition*)** | Menembak request AI paralel melebihi batas kuota bulanan | PostgreSQL RPC `reserve_ai_quota` atomik mengunci dan mencatat status `reserved`; tolak HTTP 403 `AI_QUOTA_EXCEEDED` sebelum AI eksternal dipanggil. |
 | **Pemalsuan Hak Akses Pro (*Client Claim*)** | Klien memanipulasi payload `is_pro: true` atau status subscription | Edge Function `get-my-entitlements` dan RPC `get_user_effective_entitlement` memvalidasi masa aktif dari database via server time (`now() <= expires_at`). |
 | **Pelanggaran Batas Kendaraan Free Tier** | Menambahkan lebih dari 2 kendaraan aktif tanpa Pro | PostgreSQL Trigger `trg_enforce_vehicle_limit` menolak `INSERT`/`UPDATE` kendaraan aktif melebihi batas paket di database. |
-| **Simulasi Checkout Palsu** | Pengguna mengklaim status Pro melalui tombol mock | Klien menerapkan Zero-Mock Purchase; menampilkan dialog transparan bahwa alur pembayaran riil terintegrasi pada Tahap 7. |
+| **Replay Purchase Token Play Store** | Menyerahkan `purchase_token` yang sama dari akun berbeda atau transaksi lama | Edge Function `verify-play-purchase` memeriksa keunikan token pada `payment_transactions(provider, provider_payment_id)` dan menolak dengan HTTP 403 `PURCHASE_TOKEN_ALREADY_USED`. |
+| **Bypass Google Play Billing Verification** | Mengirim claim pembelian sukses tanpa verifikasi store | Edge Function `verify-play-purchase` memvalidasi token langsung ke Google Play Developer API via Service Account sebelum memanggil RPC aktivasi. |
+| **Pemalsuan Signature Webhook QRISpy** | Mengirim HTTP callback palsu ke endpoint webhook | Edge Function `payment-webhook` memvalidasi signature HMAC-SHA256 / X-API-Token secara timing-safe sebelum memproses event. |
+| **Duplikasi Webhook Pembayaran (Double Activation)**| Gateway mengirim webhook sukses berulang kali | PostgreSQL RPC `record_payment_webhook_event` mengunci `event_id` secara atomik; duplikat diabaikan tanpa memperpanjang langganan ganda. |
 
 ---
 
@@ -105,8 +108,12 @@ Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diper
 | **Unit Test Agregasi Finansial & Efisiensi Odometer** | ✅ **LULUS (100%)** | Perhitungan dashboard tanpa N+1, rata-rata tertimbang, penanganan incomplete volume & anomali odometer. |
 | **Unit Test Entitlement, Batas Kendaraan, & Kuota AI (Tahap 6)** | ✅ **LULUS (100%)** | Perhitungan batas 2 kendaraan Free, status kedaluwarsa/grace period, kuota habis (`UserEntitlementTest`, `CheckFeatureAccessUseCaseTest`). |
 | **Unit Test Deserialisasi Entitlement & Plan DTO (Tahap 6)** | ✅ **LULUS (100%)** | Deserialisasi JSON respons `UserEntitlementDto` dan fitur `SubscriptionPlanDto` (`EntitlementDtoTest`). |
-| **Verifikasi Integritas Skema & RLS SQL (13 Tabel + Policy Tahap 4, 5, 6)** | ✅ **LULUS (100%)** | 13 tabel RLS aktif, composite FK, trigger kendaraan, dan RPC reservasi/finalisasi kuota teruji via `MigrationSqlTest`. |
+| **Unit Test Model & State Pembayaran (Tahap 7)** | ✅ **LULUS (100%)** | Validasi status pembayaran, parsing provider type, status kelayakan Pro (`PaymentModelTest`). |
+| **Unit Test Serialisasi DTO Checkout & Status (Tahap 7)** | ✅ **LULUS (100%)** | Deserialisasi order QRISpy, verifikasi purchase token, dan respons transaksi (`PaymentDtoTest`). |
+| **Unit Test Use Case Pembayaran & Aktivasi (Tahap 7)** | ✅ **LULUS (100%)** | Pembuatan order, validasi purchase token Google Play, polling status pembayaran (`PaymentUseCaseTest`). |
+| **Verifikasi Integritas Skema SQL & Migrasi 007 (Tahap 7)** | ✅ **LULUS (100%)** | Validasi constraint provider, RPC `activate_subscription_for_payment`, dan idempotensi webhook via `MigrationSqlTest`. |
 | **Build Android Bebas Secret** | ✅ **LULUS (100%)** | Injeksi aman BuildConfig; zero AI/payment secret di APK; `.env` & `local.properties` diabaikan oleh Git. |
-| **Evaluasi Kepatuhan Google Play Payments Policy** | ✅ **LULUS (100%)** | Riset kepatuhan regulasi Play Store selesai dan didokumentasikan di `docs/PAYMENT_FLOWS.md`. |
+| **Kepatuhan Regulasi Google Play Payments** | ✅ **LULUS (100%)** | Dual-track payment memisahkan Play Billing resmi dengan direct web distribution (`docs/PAYMENTS.md`). |
 | **Kredensial Supabase & Google Cloud Riil** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan penyediaan URL proyek, Anon Key, dan Google OAuth Client ID nyata pada environment pengguna. |
 | **Kredensial Gemini API Key Riil di Supabase Edge Function** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan pemasangan secret `GEMINI_API_KEY` via `supabase secrets set` untuk eksekusi cloud AI riil. |
+| **Kredensial Google Play Service Account & Merchant QRISpy Riil** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` dan `QRISPY_API_KEY` pada Supabase Secrets untuk transaksi moneter riil. |

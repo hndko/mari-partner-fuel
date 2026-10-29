@@ -13,8 +13,8 @@ android {
         applicationId = "id.maripartner.fuel"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.5.0"
+        versionCode = 7
+        versionName = "1.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -106,6 +106,9 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+
+    // Google Play Billing System
+    implementation(libs.play.billing.ktx)
 
     // Testing
     testImplementation(libs.junit)

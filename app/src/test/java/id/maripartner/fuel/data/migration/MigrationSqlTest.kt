@@ -24,6 +24,7 @@ class MigrationSqlTest {
         val tahap4File = File(migrationDir, "20261029000004_receipt_scan_jobs_policy.sql")
         val tahap5File = File(migrationDir, "20261029000005_maintenance_reminders_enhancement.sql")
         val tahap6File = File(migrationDir, "20261029000006_subscription_entitlements_and_quota.sql")
+        val tahap7File = File(migrationDir, "20261029000007_payment_integration_and_activation.sql")
 
         assertTrue("File initial_schema.sql harus ada", schemaFile.exists())
         assertTrue("File rls_and_storage.sql harus ada", rlsFile.exists())
@@ -31,6 +32,7 @@ class MigrationSqlTest {
         assertTrue("File receipt_scan_jobs_policy.sql harus ada", tahap4File.exists())
         assertTrue("File maintenance_reminders_enhancement.sql harus ada", tahap5File.exists())
         assertTrue("File subscription_entitlements_and_quota.sql harus ada", tahap6File.exists())
+        assertTrue("File payment_integration_and_activation.sql harus ada", tahap7File.exists())
     }
 
     @Test
@@ -157,5 +159,19 @@ class MigrationSqlTest {
         assertTrue("Harus ada trigger check_vehicle_limit", content.contains("trg_enforce_vehicle_limit"))
         assertTrue("Fungsi test_set_user_subscription harus dicabut dari publik", content.contains("revoke execute on function public.test_set_user_subscription"))
         assertTrue("Fungsi test_set_user_subscription hanya boleh diakses service_role", content.contains("grant execute on function public.test_set_user_subscription(uuid, text, integer, text) to service_role;"))
+    }
+
+    @Test
+    fun migrationTahap7_configuresPaymentAndActivation() {
+        val file = File(migrationDir, "20261029000007_payment_integration_and_activation.sql")
+        val content = file.readText()
+
+        assertTrue("Harus memperluas provider check", content.contains("check (provider in ('google_play', 'qrispy', 'midtrans', 'xendit', 'sandbox'))"))
+        assertTrue("Harus menambahkan product_id", content.contains("product_id text"))
+        assertTrue("Harus menambahkan base_plan_id", content.contains("base_plan_id text"))
+        assertTrue("Harus menambahkan last_payment_transaction_id", content.contains("last_payment_transaction_id uuid"))
+        assertTrue("Harus ada fungsi activate_subscription_for_payment", content.contains("activate_subscription_for_payment"))
+        assertTrue("Harus ada fungsi handle_subscription_lifecycle_event", content.contains("handle_subscription_lifecycle_event"))
+        assertTrue("Harus ada fungsi record_payment_webhook_event", content.contains("record_payment_webhook_event"))
     }
 }
