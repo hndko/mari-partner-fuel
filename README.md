@@ -15,6 +15,8 @@
   <img src="https://img.shields.io/badge/Payment-Play_Billing_%26_QRISpy-FF8F00?style=for-the-badge" alt="Payment Dual-Track" />
   <img src="https://img.shields.io/badge/Tests-137_Passing-brightgreen?style=for-the-badge" alt="Tests 137 Passing" />
   <img src="https://img.shields.io/badge/Release_Candidate-RC--1-blue?style=for-the-badge" alt="Release Candidate RC-1" />
+  <img src="https://img.shields.io/badge/Production_Readiness-Ready_for_Closed_Testing-3ECF8E?style=for-the-badge" alt="Ready for Closed Testing" />
+  <img src="https://img.shields.io/badge/AAB_Size-7.57_MB-blue?style=for-the-badge" alt="AAB Size 7.57 MB" />
   <img src="https://img.shields.io/badge/Version-v1.7.0-blue?style=for-the-badge" alt="Version 1.7.0" />
 </p>
 
@@ -78,8 +80,15 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
 - 🧪 **Pengujian Mutu Menyeluruh, Kinerja & Release Candidate (Tahap 9)**:
   - 137 pengujian otomatis (100% pass rate di 29 test suites) mencakup unit test, regression prevention, dan stress test.
   - Benchmark performa terukur: ekspor CSV 1.000 transaksi dalam 84 ms, agregasi finansial 1.000 data dalam 3 ms, efisiensi BBM sequential odometer dalam 54 ms.
-  - Build Release Candidate terverifikasi: Android App Bundle (AAB) sebesar ~14.8 MB dan Universal Signed APK sebesar ~15.3 MB dengan optimasi R8 / ProGuard.
   - Kepatuhan penuh Google Play Store: Target SDK API 35 (Android 15), Minimum SDK API 26 (Android 8.0), desugaring JDK Java 8+ / `java.time`, Least Privilege permissions, dan audit privasi.
+- 🛡️ **Kesiapan Produksi & Audit Rilis Final (Tahap 10)**:
+  - **Status Resmi: READY FOR CLOSED TESTING** (Layak masuk pengujian Google Play Closed Track).
+  - Optimasi R8 Minification & Resource Shrinking aktif: Universal Signed APK tereduksi **85.3%** menjadi **`3.39 MB`**, Android App Bundle (AAB) tereduksi menjadi **`7.57 MB`**.
+  - Runbook Deployment 15 Langkah terstruktur di [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) dengan pemisahan rollback aplikasi vs mitigasi database.
+  - Prosedur Pemulihan Bencana (*Disaster Recovery*) di [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md) dengan SLA target RPO 1 jam & RTO 2 jam.
+  - Standar Pemantauan & Observability di [`docs/MONITORING_ALERTING.md`](docs/MONITORING_ALERTING.md) dengan ambang batas alert P0/P1/P2 dan zero-secret logging.
+  - Rencana Tanggap Darurat di [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) mencakup mitigasi terstruktur untuk 10 skenario insiden kritis.
+  - Prosedur Operasional Finansial di [`docs/PAYMENT_OPERATIONS.md`](docs/PAYMENT_OPERATIONS.md) dan Analisis Biaya Operasional di [`docs/COST_CAPACITY.md`](docs/COST_CAPACITY.md).
 - 🔒 **Zero-Secret & Isolasi RLS**: Proteksi akses lintas akun (anti-BOLA/IDOR) dan tanda tangan URL struk berumur pendek.
 
 ---
@@ -298,8 +307,14 @@ Dokumentasi terperinci telah disusun sesuai standar enterprise di direktori [doc
 - 📊 [**Laporan Hasil Pengujian QA (Tahap 9)**](docs/QA_TEST_RESULTS.md) — Rekap hasil 137 unit test, 29 test suites, verifikasi 10 modul fungsional, dan smoke test checklist.
 - ⚡ [**Laporan Tolok Ukur Kinerja (Performance)**](docs/PERFORMANCE.md) — Benchmark kinerja: throughput CSV 1.000 data, agregasi finansial, efisiensi BBM, ukuran artefak R8.
 - 🚀 [**Daftar Periksa Kesiapan Rilis (Release Checklist)**](docs/RELEASE_CHECKLIST.md) — SOP pelepasan rilis, Google Play target SDK 35, izin least privilege, verifikasi AAB/APK, dan prosedur rollback.
+- 🛡️ [**Audit Kesiapan Produksi (Production Readiness)**](docs/PRODUCTION_READINESS.md) — Audit kesiapan produksi menyeluruh (Tahap 10), evaluasi arsitektur, isolasi data, dan status Closed Testing.
+- 💾 [**Pencadangan & Pemulihan Bencana (Backup & DR)**](docs/BACKUP_RESTORE.md) — Prosedur backup database Supabase, private storage receipts, target RPO (1 jam) & RTO (2 jam), dan restore runbook.
+- 📈 [**Pemantauan & Notifikasi (Monitoring & Alerting)**](docs/MONITORING_ALERTING.md) — Observability native, ambang batas waspada P0/P1/P2, investigasi error log, dan sensor zero-PII.
+- 🚨 [**Tanggap Darurat Insiden (Incident Response)**](docs/INCIDENT_RESPONSE.md) — Prosedur darurat penanganan 10 skenario insiden (kebocoran secret, BOLA/IDOR, AI outage, gagal bayar, crash spike).
+- 💳 [**Operasional Pembayaran (Payment Operations)**](docs/PAYMENT_OPERATIONS.md) — SOP operasional langganan, rekonsiliasi manual pending orders, siklus auto-renew Play Billing, dan refund.
+- 💰 [**Analisis Biaya & Kapasitas (Cost & Capacity)**](docs/COST_CAPACITY.md) — Struktur biaya infrastruktur aktual (Supabase, Gemini AI, Play Console), proyeksi kapasitas 100 s.d. 10.000 user.
 - ⚠️ [**Batasan Teknis & Known Issues**](docs/KNOWN_ISSUES.md) — Catatan kredensial produksi eksternal, batasan alarm reboot Android, dan mitigasi Doze mode.
-- 🚀 [**Panduan Deployment Produksi**](docs/DEPLOYMENT.md) — Urutan migrasi database Supabase 001-008, deploy Edge Functions, dan panduan signing rilis.
+- 🚀 [**Panduan Deployment Produksi**](docs/DEPLOYMENT.md) — Runbook 15 langkah deployment produksi, urutan migrasi SQL 001-008, deploy Edge Functions, dan rollback.
 - 🤖 [**AGENTS.md**](AGENTS.md) — Sumber acuan hukum dan 10 pilar aturan rekayasa agen.
 
 ---

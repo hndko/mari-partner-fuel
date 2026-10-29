@@ -11,10 +11,11 @@ Dokumen ini adalah prosedur operasional standar (SOP) pelepasan rilis (*Release 
 - **Format Paket Produksi**: Android App Bundle (`.aab`) & Universal Signed APK (`.apk`)
 - **Minimum Android SDK**: API 26 (Android 8.0 Oreo)
 - **Target Android SDK**: API 35 (Android 15 Vanilla Ice Cream)
-- **Status Rilis**: **Release Candidate (RC-1)**
-- **Artefak Terverifikasi**:
-  - `app/build/outputs/bundle/release/app-release.aab` (~14.8 MB)
-  - `app/build/outputs/apk/release/app-release.apk` (~15.3 MB)
+- **Status Rilis**: **Release Candidate (RC-1) — Production Readiness Audited (Tahap 10)**
+- **Kesiapan Distribusi**: **READY FOR CLOSED TESTING** (Google Play Closed Track)
+- **Artefak Terverifikasi (R8 Minified & Resource Shrunk)**:
+  - `app/build/outputs/bundle/release/app-release.aab` (`7.57 MB` / `7,573,323 bytes`)
+  - `app/build/outputs/apk/release/app-release.apk` (`3.39 MB` / `3,389,559 bytes`)
 
 ---
 
@@ -64,7 +65,7 @@ Setiap item di bawah ini wajib bernilai `[x]` sebelum proses kompilasi rilis dil
 - [x] **R8 Obfuscation & Shrinking**:
   - `isMinifyEnabled = true` dan `isShrinkResources = true` aktif pada build release.
   - Aturan `proguard-rules.pro` melindungi DTO Supabase, Model Domain, Ktor, Play Billing, dan Google ML Kit.
-  - Ukuran AAB tereduksi ~36% dibandingkan build debug (Debug APK: 23.1 MB vs Release AAB: 14.8 MB).
+  - Ukuran APK tereduksi ~85.3% dibandingkan build debug (Debug APK: 23.1 MB vs Release APK: 3.39 MB, Release AAB: 7.57 MB).
 
 ---
 

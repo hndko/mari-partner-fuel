@@ -26,8 +26,14 @@ Gunakan indeks di bawah ini untuk menuju panduan yang sesuai dengan kebutuhan An
 | [**Laporan Hasil Pengujian QA (Tahap 9)**](QA_TEST_RESULTS.md) | QA / Lead Dev | Rekap hasil 137 unit test, 29 test suites, verifikasi 10 modul fungsional, dan smoke test checklist. |
 | [**Laporan Tolok Ukur Kinerja (Performance)**](PERFORMANCE.md) | Performance / DevOps | Benchmark kinerja: throughput CSV 1.000 data, agregasi finansial, efisiensi BBM, ukuran artefak R8. |
 | [**Daftar Periksa Kesiapan Rilis (Release Checklist)**](RELEASE_CHECKLIST.md) | Release Lead / DevOps | SOP pelepasan rilis, Google Play target SDK 35, izin least privilege, verifikasi AAB/APK, dan prosedur rollback. |
+| [**Audit Kesiapan Produksi (Production Readiness)**](PRODUCTION_READINESS.md) | Lead Architect / Auditor | Audit kesiapan produksi menyeluruh (Tahap 10), evaluasi arsitektur, isolasi data, dan status Closed Testing. |
+| [**Pencadangan & Pemulihan Bencana (Backup & DR)**](BACKUP_RESTORE.md) | DevOps / DBA | Prosedur backup database Supabase, private storage receipts, target RPO (1 jam) & RTO (2 jam), dan restore runbook. |
+| [**Pemantauan & Notifikasi (Monitoring & Alerting)**](MONITORING_ALERTING.md) | DevOps / SRE | Observability native, ambang batas waspada P0/P1/P2, investigasi error log, dan sensor zero-PII. |
+| [**Tanggap Darurat Insiden (Incident Response)**](INCIDENT_RESPONSE.md) | Incident Commander / Sec | Prosedur darurat penanganan 10 skenario insiden (kebocoran secret, BOLA/IDOR, AI outage, gagal bayar, crash spike). |
+| [**Operasional Pembayaran (Payment Operations)**](PAYMENT_OPERATIONS.md) | FinTech / Billing Dev | SOP operasional langganan, rekonsiliasi manual pending orders, siklus auto-renew Play Billing, dan refund. |
+| [**Analisis Biaya & Kapasitas (Cost & Capacity)**](COST_CAPACITY.md) | Product Owner / DevOps | Struktur biaya infrastruktur aktual (Supabase, Gemini AI, Play Console), proyeksi kapasitas 100 s.d. 10.000 user. |
 | [**Batasan Teknis & Known Issues**](KNOWN_ISSUES.md) | Seluruh Tim | Catatan kredensial produksi eksternal, batasan alarm reboot Android, dan mitigasi Doze mode. |
-| [**Panduan Deployment Produksi**](DEPLOYMENT.md) | DevOps / Release Lead | Urutan migrasi database Supabase 001-008, deploy Edge Functions, dan panduan signing rilis. |
+| [**Panduan Deployment Produksi**](DEPLOYMENT.md) | DevOps / Release Lead | Runbook 15 langkah deployment produksi, urutan migrasi SQL 001-008, deploy Edge Functions, dan rollback. |
 
 ---
 

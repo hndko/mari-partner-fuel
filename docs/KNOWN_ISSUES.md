@@ -22,7 +22,7 @@ Semua komponen kode telah siap dan teruji menggunakan sandbox/fixtures. Transaks
 1. **Penjadwalan Alarm Setelah Reboot:**
    - Android secara default membatalkan seluruh alarm `AlarmManager` ketika perangkat di-reboot.
    - **Mitigasi Saat Ini:** Seluruh pengingat aktif dijadwalkan ulang secara otomatis saat pengguna membuka layar Pengingat (`/reminders`).
-   - **Status Tahap 9:** BroadcastReceiver `BootCompletedReceiver` disiapkan untuk mendaftarkan ulang jadwal pengingat servis begitu sistem selesai boot tanpa mewajibkan pengguna membuka UI.
+   - **Status Tahap 9 & 10:** BroadcastReceiver `BootCompletedReceiver` disiapkan untuk mendaftarkan ulang jadwal pengingat servis begitu sistem selesai boot tanpa mewajibkan pengguna membuka UI.
 2. **Manajemen Daya Agresif (OEM Battery Savers):**
    - Pabrikan seperti Xiaomi (MIUI/HyperOS), Huawei, dan Samsung dapat menunda alarm `RTC_WAKEUP` pada mode hemat daya ekstrem.
    - **Mitigasi Saat Ini:** Menggunakan `setAndAllowWhileIdle()` pada Android 6.0+ untuk meminimalkan penundaan alarm.
@@ -51,3 +51,11 @@ Semua komponen kode telah siap dan teruji menggunakan sandbox/fixtures. Transaks
    - Akses foto struk dari private bucket storage dibatasi dengan URL berumur 15 menit. Tampilan gambar di cache klien Android diperbarui secara transparan jika URL kedaluwarsa.
 3. **Anti-Replay Token Purchase:**
    - Token pembelian Google Play yang sudah digunakan dilarang untuk dipakai ulang pada akun yang sama maupun akun lain via pengecekan status `isPaid` dan hash token di database.
+
+---
+
+## 📋 5. Batasan Verifikasi Lingkungan Produksi (Audit Tahap 10)
+
+1. **Akses Dashboard Produksi Supabase**: Audit statis dan verifikasi skema migrasi telah tuntas. Namun, pengujian beban riil pada compute cluster produksi Supabase hanya dapat diverifikasi setelah akun organisasi produksi aktif.
+2. **Merchant Live Transaksi Bank**: Penagihan QRIS dengan uang riil via QRISpy dan auto-renewing Google Play Billing memerlukan penyelesaian proses KYC entitas bisnis perusahaan pada masing-masing provider.
+3. **Tautan Dokumen Legal Publik**: URL `https://maripartner.id/privacy-policy` dan `https://maripartner.id/delete-account` wajib di-hosting di server landing page publik sebelum pengajuan rilis ke Google Play Store.
