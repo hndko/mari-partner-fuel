@@ -25,7 +25,7 @@ import java.time.LocalDate
 /**
  * ViewModel pengelola daftar dan form pengingat servis perawatan kendaraan.
  */
-class RemindersViewModel(
+class RemindersViewModel @JvmOverloads constructor(
     application: Application,
     private val reminderRepository: MaintenanceReminderRepository = MaintenanceReminderRepositoryImpl(),
     private val vehicleRepository: VehicleRepository = VehicleRepositoryImpl(),
