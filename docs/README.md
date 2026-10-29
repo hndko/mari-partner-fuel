@@ -21,7 +21,11 @@ Gunakan indeks di bawah ini untuk menuju panduan yang sesuai dengan kebutuhan An
 | [**Alur Pembayaran QRISpy**](PAYMENT_FLOWS.md) | FinTech / Integrator | Siklus pesanan QRISpy, alur QRIS dinamis, verifikasi webhook tanda tangan, dan idempotensi database. |
 | [**Sistem Pembayaran & Aktivasi (Dual-Track)**](PAYMENTS.md) | FinTech / Billing Dev | Arsitektur Dual-Track Google Play Billing & QRISpy, verifikasi server, anti-replay token, dan siklus webhook. |
 | [**Laporan Audit Keamanan (Tahap 8)**](SECURITY_AUDIT.md) | Security Auditor / QA | Hasil audit komprehensif, mitigasi temuan Critical/High, RLS RPC hardening, dan hasil quality gate. |
-| [**Panduan Pengujian & Kasus Uji**](TESTING.md) | QA / Tester | Rekap 132 unit test, 28 test suites, dan skenario pengujian E2E (Free, Pro, Pembayaran, Multi-Akun). |
+| [**Panduan Pengujian & Kasus Uji**](TESTING.md) | QA / Tester | Rekap 137 unit test, 29 test suites, dan skenario pengujian E2E (Free, Pro, Pembayaran, Multi-Akun). |
+| [**Rencana Pengujian Mutu (QA Test Plan)**](QA_TEST_PLAN.md) | QA Lead / Tester | Matriks pengujian menyeluruh, kompatibilitas perangkat API 26-35, cakupan fungsional, dan SLA performa. |
+| [**Laporan Hasil Pengujian QA (Tahap 9)**](QA_TEST_RESULTS.md) | QA / Lead Dev | Rekap hasil 137 unit test, 29 test suites, verifikasi 10 modul fungsional, dan smoke test checklist. |
+| [**Laporan Tolok Ukur Kinerja (Performance)**](PERFORMANCE.md) | Performance / DevOps | Benchmark kinerja: throughput CSV 1.000 data, agregasi finansial, efisiensi BBM, ukuran artefak R8. |
+| [**Daftar Periksa Kesiapan Rilis (Release Checklist)**](RELEASE_CHECKLIST.md) | Release Lead / DevOps | SOP pelepasan rilis, Google Play target SDK 35, izin least privilege, verifikasi AAB/APK, dan prosedur rollback. |
 | [**Batasan Teknis & Known Issues**](KNOWN_ISSUES.md) | Seluruh Tim | Catatan kredensial produksi eksternal, batasan alarm reboot Android, dan mitigasi Doze mode. |
 | [**Panduan Deployment Produksi**](DEPLOYMENT.md) | DevOps / Release Lead | Urutan migrasi database Supabase 001-008, deploy Edge Functions, dan panduan signing rilis. |
 

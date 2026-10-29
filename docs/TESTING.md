@@ -4,20 +4,31 @@ Dokumen ini memuat seluruh metodologi pengujian, laporan eksekusi pengujian otom
 
 ---
 
-## 📌 1. Ringkasan Eksekusi Pengujian Mutu (Quality Gate Tahap 8)
+## 📌 1. Ringkasan Eksekusi Pengujian Mutu (Quality Gate Tahap 9 — Release Candidate)
 
 - **Status Build**: ✅ **BUILD SUCCESSFUL**
-- **Total Unit Test**: **132 Tests** (28 Test Suites)
+- **Total Unit Test**: **137 Tests** (29 Test Suites)
 - **Tingkat Kelulusan (Pass Rate)**: **100% (0 Gagal, 0 Error, 0 Diabaikan)**
-- **Waktu Eksekusi**: ~23 detik
-- **Artefak Build Terverifikasi**: `app/build/outputs/apk/debug/app-debug.apk` (Ukuran: ~23.1 MB)
+- **Waktu Eksekusi**: ~43 detik
+- **Artefak Build Terverifikasi**:
+  - `app/build/outputs/apk/debug/app-debug.apk` (Ukuran: ~23.1 MB)
+  - `app/build/outputs/apk/release/app-release.apk` (Ukuran: ~15.3 MB — R8 Minified)
+  - `app/build/outputs/bundle/release/app-release.aab` (Ukuran: ~14.8 MB — Google Play Release Bundle)
 - **Kompatibilitas Runtime**: Min SDK API 26 (Android 8.0 Oreo), Target SDK API 35 (Android 15), Desugaring JDK Java 8+ / `java.time` aktif.
 
 ---
 
-## 🧪 2. Rincian Rangkaian Unit Test (28 Test Suites)
+## 🧪 2. Rincian Rangkaian Unit Test (29 Test Suites)
 
-### A. Keamanan, Integritas Data & Hardening (Tahap 8)
+### A. Kinerja, Throughput & Stress Test (Tahap 9)
+1. **`PerformanceAndStressTest` (5 tests)**:
+   - **Ekspor CSV 1.000 Transaksi**: Melakukan parsing, pengurutan, escaping formula RFC 4180, dan penulisan byte buffer untuk 1.000 entri transaksi (Waktu eksekusi: 84 ms, SLA: < 500 ms).
+   - **Agregasi Finansial 1.000 Transaksi**: Perhitungan total belanja, total liter, rata-rata tertimbang, perbandingan bulan lalu, dan kendaraan terboros pada 1.000 entri (Waktu eksekusi: 3 ms, SLA: < 50 ms).
+   - **Kalkulasi Efisiensi BBM Sequential Odometer 1.000 Transaksi**: Pengurutan timestamp, verifikasi integritas odometer menanjak, dan perhitungan 500 leg konsumsi km/liter (Waktu eksekusi: 54 ms, SLA: < 200 ms).
+   - **Pencarian & Filter Real-Time 1.000 Transaksi**: Filter multi-parameter (kendaraan + nama SPBU substring) pada daftar 1.000 transaksi (Waktu eksekusi: 5 ms, SLA: < 50 ms).
+   - **Throughput Formatter Mata Uang 10.000 Iterasi**: Pemformatan Rupiah instan `formatRupiah` dan parsing ke nilai Long pada 10.000 data acak (Waktu eksekusi: 25 ms, SLA: < 150 ms).
+
+### B. Keamanan, Integritas Data & Hardening (Tahap 8)
 1. **`SecurityHardeningAndIntegrityTest` (8 tests)**:
    - Isolasi kepemilikan multi-akun (`Akun A` vs `Akun B`): penolakan penyamaran identitas kendaraan.
    - Proteksi foreign key komposit: penolakan modifikasi transaksi BBM lintas akun.

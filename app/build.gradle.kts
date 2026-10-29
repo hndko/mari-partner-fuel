@@ -37,9 +37,33 @@ android {
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = (project.findProperty("RELEASE_STORE_FILE") as? String)
+                ?: System.getenv("RELEASE_STORE_FILE")
+            if (storeFilePath != null && file(storeFilePath).exists()) {
+                storeFile = file(storeFilePath)
+                storePassword = (project.findProperty("RELEASE_STORE_PASSWORD") as? String)
+                    ?: System.getenv("RELEASE_STORE_PASSWORD")
+                keyAlias = (project.findProperty("RELEASE_KEY_ALIAS") as? String)
+                    ?: System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = (project.findProperty("RELEASE_KEY_PASSWORD") as? String)
+                    ?: System.getenv("RELEASE_KEY_PASSWORD")
+            } else {
+                // Fallback aman ke debug keystore untuk pengujian Release Candidate lokal/CI
+                val debugKeystore = getByName("debug")
+                storeFile = debugKeystore.storeFile
+                storePassword = debugKeystore.storePassword
+                keyAlias = debugKeystore.keyAlias
+                keyPassword = debugKeystore.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
