@@ -196,26 +196,30 @@ Variabel publik `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dapat dimasukkan ke `loca
 
 ## 🧪 Perintah Testing & Build
 
+### ⚡ Menjalankan Aplikasi di HP / Emulator Tanpa Android Studio (Mode Ringan)
+Untuk menguji aplikasi langsung di smartphone fisik Android (USB/Wi-Fi) atau emulator AVD lokal (`test_avd`) tanpa membuka Android Studio yang berat di laptop:
+```powershell
+.\run-app.bat
+```
+Script batch otomatis ini akan:
+1. Mendeteksi lokasi Android SDK dan perangkat fisik Anda secara otomatis.
+2. Memberikan pilihan untuk menggunakan HP fisik (0% beban emulator di laptop) atau menyalakan AVD dengan parameter hemat RAM/CPU.
+3. Mengompilasi APK debug via Gradle daemon, memasangnya ke perangkat, dan membuka aplikasi secara instan.
+4. Menyediakan opsi pemantauan Logcat real-time khusus filter `id.maripartner.fuel`.
+
 ### Menjalankan Unit Test (100% Lulus)
 ```powershell
 .\gradlew.bat testDebugUnitTest
 ```
-Hasil uji: **99 tests lulus** (21 test suites):
-- Agregasi dashboard & perbandingan bulan (`DashboardSummaryCalculationTest` - 4 tests)
-- Estimasi efisiensi konsumsi BBM km/L (`CalculateFuelEfficiencyTest` - 3 tests)
-- Ekspor CSV & mitigasi formula injection (`ExportTransactionsCsvTest` - 4 tests)
-- Validasi & status jatuh tempo pengingat servis (`MaintenanceReminderValidationTest` - 7 tests)
-- Pembacaan & parsing teks struk SPBU (`ReceiptTextParserTest` - 5 tests)
-- DTO ekstraksi AI & fallback serialisasi (`AiExtractionDtoTest` - 3 tests)
-- Validasi data kendaraan (`ValidateVehicleInputUseCaseTest` - 7 tests)
-- Validasi transaksi manual (`ValidateTransactionInputUseCaseTest` - 6 tests)
-- Estimasi volume & toleransi selisih harga (`EstimateFuelCalculationUseCaseTest` - 6 tests)
-- Pemetaan Postgrest DTO & domain model (`VehicleDtoMappingTest` - 3 tests, `FuelTransactionDtoMappingTest` - 2 tests)
-- Alur Use Case kendaraan & transaksi (`VehicleUseCaseTest` - 4 tests, `TransactionUseCaseTest` - 4 tests)
-- Verifikasi skema DDL & trigger SQL (`MigrationSqlTest` - 9 tests)
-- Pengujian autentikasi & validasi input (`AuthUseCaseTest` - 9 tests, `AuthValidationTest` - 6 tests)
-- Manajemen private bucket storage (`ReceiptStorageManagerTest` - 6 tests)
-- Formatting & utilitas (`CurrencyFormatterTest` - 5 tests, `NavRouteTest` - 3 tests, `UiStateTest` - 2 tests, `AppConfigTest` - 2 tests).
+Hasil uji: **137 tests lulus 100%** (29 test suites):
+- Benchmark performa & stress testing (`PerformanceAndStressTest` - 5 tests)
+- Hardening keamanan & integritas data (`SecurityHardeningAndIntegrityTest` - 8 tests)
+- Verifikasi skema DDL, migrasi & trigger SQL (`MigrationSqlTest` - 8 tests)
+- Alur Use Case & model pembayaran (`PaymentModelTest`, `PaymentDtoTest`, `PaymentUseCaseTest` - 11 tests)
+- Entitlement & penegakan kuota AI (`UserEntitlementTest`, `CheckFeatureAccessUseCaseTest`, `EntitlementDtoTest` - 14 tests)
+- Agregasi dashboard, efisiensi BBM km/L & ekspor CSV (`DashboardSummaryCalculationTest`, `CalculateFuelEfficiencyTest`, `ExportTransactionsCsvTest`, `MaintenanceReminderValidationTest` - 18 tests)
+- Pembacaan & parsing OCR struk ML Kit serta validasi transaksi (`ReceiptTextParserTest`, `AiExtractionDtoTest`, `FuelTransactionValidationTest`, `VehicleValidationTest` - 26 tests)
+- Autentikasi, navigasi & utilitas (`AuthUseCaseTest`, `AuthValidationTest`, `CurrencyFormatterTest`, `DateUtilsTest`, `NavigationTest`, `UiStateTest`, `AppConfigTest` - 47 tests).
 
 ### Membangun APK Debug
 ```powershell
@@ -331,6 +335,7 @@ Dokumentasi terperinci telah disusun sesuai standar enterprise di direktori [doc
 - 💰 [**Analisis Biaya & Kapasitas (Cost & Capacity)**](docs/COST_CAPACITY.md) — Struktur biaya infrastruktur aktual (Supabase, Gemini AI, Play Console), proyeksi kapasitas 100 s.d. 10.000 user.
 - ⚠️ [**Batasan Teknis & Known Issues**](docs/KNOWN_ISSUES.md) — Catatan kredensial produksi eksternal, batasan alarm reboot Android, dan mitigasi Doze mode.
 - 🚀 [**Panduan Deployment Produksi**](docs/DEPLOYMENT.md) — Runbook 15 langkah deployment produksi, urutan migrasi SQL 001-008, deploy Edge Functions, dan rollback.
+- 🌟 [**Buku Panduan Master Deployment Lengkap (A-Z)**](docs/PANDUAN_DEPLOYMENT_LENGKAP.md) — **Panduan terpadu satu pintu dari A sampai Z**: Keystore, Build R8 AAB/APK, setup Supabase 8 migrasi, Storage, 7 Edge Functions, QRISpy, Gemini AI, Closed Testing 20 tester 14 hari, hingga Staged Rollout.
 - 🤖 [**AGENTS.md**](AGENTS.md) — Sumber acuan hukum dan 10 pilar aturan rekayasa agen.
 
 ---
