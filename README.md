@@ -89,6 +89,13 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Standar Pemantauan & Observability di [`docs/MONITORING_ALERTING.md`](docs/MONITORING_ALERTING.md) dengan ambang batas alert P0/P1/P2 dan zero-secret logging.
   - Rencana Tanggap Darurat di [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) mencakup mitigasi terstruktur untuk 10 skenario insiden kritis.
   - Prosedur Operasional Finansial di [`docs/PAYMENT_OPERATIONS.md`](docs/PAYMENT_OPERATIONS.md) dan Analisis Biaya Operasional di [`docs/COST_CAPACITY.md`](docs/COST_CAPACITY.md).
+- 🏪 **Google Play Closed Testing, Store Listing & Publikasi (Tahap 11)**:
+  - Audit Regulasi Google Play 2026 di [`docs/PLAY_RELEASE_AUDIT.md`](docs/PLAY_RELEASE_AUDIT.md): Kepatuhan Target SDK API 35 (Android 15), paket AAB `7.57 MB`, Play App Signing, dan 137 unit tests 100% pass.
+  - Draf Lengkap Daftar Toko (*Store Listing*) di [`docs/PLAY_STORE_LISTING.md`](docs/PLAY_STORE_LISTING.md) dalam bahasa Indonesia beserta spesifikasi aset grafis (ikon 512x512, feature graphic 1024x500, screenshot 9:16).
+  - Panduan Keamanan Data (*Data Safety*) & Draf Kebijakan Privasi di [`docs/PLAY_DATA_SAFETY_AND_PRIVACY.md`](docs/PLAY_DATA_SAFETY_AND_PRIVACY.md) serta petunjuk akun reviewer (*App Access*).
+  - Kepatuhan Pembayaran Google Play di [`docs/PLAY_BILLING_COMPLIANCE.md`](docs/PLAY_BILLING_COMPLIANCE.md): Penegakan in-app subscription Play Billing v7.1.1, SKU bulanan/tahunan, dan lisensi pengujian bebas biaya riil.
+  - Rencana Pengujian Tertutup di [`docs/CLOSED_TESTING_PLAN.md`](docs/CLOSED_TESTING_PLAN.md): Regulasi 20 penguji / 14 hari akun personal, checklist pengujian di [`docs/CLOSED_TESTING_CHECKLIST.md`](docs/CLOSED_TESTING_CHECKLIST.md), dan template umpan balik di [`docs/TESTER_FEEDBACK_TEMPLATE.md`](docs/TESTER_FEEDBACK_TEMPLATE.md).
+  - Runbook Publikasi Produksi di [`docs/PLAY_PRODUCTION_RELEASE_RUNBOOK.md`](docs/PLAY_PRODUCTION_RELEASE_RUNBOOK.md): Peluncuran bertahap (*staged rollout*) 20% -> 50% -> 100%, protokol penghentian rilis (*halt rollout*), dan master checklist di [`docs/PLAY_RELEASE_CHECKLIST.md`](docs/PLAY_RELEASE_CHECKLIST.md).
 - 🔒 **Zero-Secret & Isolasi RLS**: Proteksi akses lintas akun (anti-BOLA/IDOR) dan tanda tangan URL struk berumur pendek.
 
 ---
@@ -308,6 +315,15 @@ Dokumentasi terperinci telah disusun sesuai standar enterprise di direktori [doc
 - ⚡ [**Laporan Tolok Ukur Kinerja (Performance)**](docs/PERFORMANCE.md) — Benchmark kinerja: throughput CSV 1.000 data, agregasi finansial, efisiensi BBM, ukuran artefak R8.
 - 🚀 [**Daftar Periksa Kesiapan Rilis (Release Checklist)**](docs/RELEASE_CHECKLIST.md) — SOP pelepasan rilis, Google Play target SDK 35, izin least privilege, verifikasi AAB/APK, dan prosedur rollback.
 - 🛡️ [**Audit Kesiapan Produksi (Production Readiness)**](docs/PRODUCTION_READINESS.md) — Audit kesiapan produksi menyeluruh (Tahap 10), evaluasi arsitektur, isolasi data, dan status Closed Testing.
+- 🔍 [**Audit Rilis Google Play (Tahap 11)**](docs/PLAY_RELEASE_AUDIT.md) — Audit kesiapan rilis Google Play Console, regulasi target SDK 35, verifikasi bundle AAB, dan mitigasi risiko.
+- 🏪 [**Draf Daftar Toko (Store Listing)**](docs/PLAY_STORE_LISTING.md) — Metadata lengkap Play Store (nama, deskripsi singkat & lengkap bahasa Indonesia, checklist aset grafis).
+- 🔒 [**Keamanan Data & Privasi (Data Safety)**](docs/PLAY_DATA_SAFETY_AND_PRIVACY.md) — Kuesioner Data Safety Play Console, draf Kebijakan Privasi resmi, dan instruksi akun peninjau (App Access).
+- 💳 [**Kepatuhan Pembayaran (Play Billing)**](docs/PLAY_BILLING_COMPLIANCE.md) — Kepatuhan Google Play Payments Policy, integrasi Play Billing v7.1.1, SKU paket Pro, dan license testing.
+- 👥 [**Rencana Pengujian Tertutup (Closed Testing)**](docs/CLOSED_TESTING_PLAN.md) — Strategi closed testing akun personal (20 penguji / 14 hari), roadmap pengujian harian, dan kuesioner produksi.
+- ✅ [**Daftar Periksa Pengujian Tertutup**](docs/CLOSED_TESTING_CHECKLIST.md) — Panduan uji langkah demi langkah fungsional, edge cases, offline handling, dan kriteria kelulusan exit criteria.
+- 📋 [**Formulir Umpan Balik Penguji**](docs/TESTER_FEEDBACK_TEMPLATE.md) — Template pengumpulan laporan kendala, bug triage, rating kemudahan fitur, dan masukan penguji.
+- 🚀 [**Runbook Publikasi Produksi (Staged Rollout)**](docs/PLAY_PRODUCTION_RELEASE_RUNBOOK.md) — SOP transisi ke produksi publik, rollout bertahap 20% -> 50% -> 100%, protokol halt rollout, dan mitigasi darurat.
+- 📋 [**Master Checklist Rilis Google Play**](docs/PLAY_RELEASE_CHECKLIST.md) — Checklist terpadu kesiapan teknis, store listing, kebijakan privasi, billing, dan stopping gate produksi.
 - 💾 [**Pencadangan & Pemulihan Bencana (Backup & DR)**](docs/BACKUP_RESTORE.md) — Prosedur backup database Supabase, private storage receipts, target RPO (1 jam) & RTO (2 jam), dan restore runbook.
 - 📈 [**Pemantauan & Notifikasi (Monitoring & Alerting)**](docs/MONITORING_ALERTING.md) — Observability native, ambang batas waspada P0/P1/P2, investigasi error log, dan sensor zero-PII.
 - 🚨 [**Tanggap Darurat Insiden (Incident Response)**](docs/INCIDENT_RESPONSE.md) — Prosedur darurat penanganan 10 skenario insiden (kebocoran secret, BOLA/IDOR, AI outage, gagal bayar, crash spike).
