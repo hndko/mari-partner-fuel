@@ -84,18 +84,14 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
 - 🛡️ **Kesiapan Produksi & Audit Rilis Final (Tahap 10)**:
   - **Status Resmi: READY FOR CLOSED TESTING** (Layak masuk pengujian Google Play Closed Track).
   - Optimasi R8 Minification & Resource Shrinking aktif: Universal Signed APK tereduksi **85.3%** menjadi **`3.39 MB`**, Android App Bundle (AAB) tereduksi menjadi **`7.57 MB`**.
-  - Runbook Deployment 15 Langkah terstruktur di [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) dengan pemisahan rollback aplikasi vs mitigasi database.
-  - Prosedur Pemulihan Bencana (*Disaster Recovery*) di [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md) dengan SLA target RPO 1 jam & RTO 2 jam.
-  - Standar Pemantauan & Observability di [`docs/MONITORING_ALERTING.md`](docs/MONITORING_ALERTING.md) dengan ambang batas alert P0/P1/P2 dan zero-secret logging.
-  - Rencana Tanggap Darurat di [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) mencakup mitigasi terstruktur untuk 10 skenario insiden kritis.
-  - Prosedur Operasional Finansial di [`docs/PAYMENT_OPERATIONS.md`](docs/PAYMENT_OPERATIONS.md) dan Analisis Biaya Operasional di [`docs/COST_CAPACITY.md`](docs/COST_CAPACITY.md).
+  - Prosedur Pemulihan Bencana (*Disaster Recovery*) dengan SLA target RPO 1 jam & RTO 2 jam.
+  - Standar Pemantauan & Observability dengan ambang batas alert P0/P1/P2 dan zero-secret logging.
+  - Rencana Tanggap Darurat mencakup mitigasi terstruktur untuk skenario insiden kritis.
 - 🏪 **Google Play Closed Testing, Store Listing & Publikasi (Tahap 11)**:
-  - Audit Regulasi Google Play 2026 di [`docs/PLAY_RELEASE_AUDIT.md`](docs/PLAY_RELEASE_AUDIT.md): Kepatuhan Target SDK API 35 (Android 15), paket AAB `7.57 MB`, Play App Signing, dan 137 unit tests 100% pass.
-  - Draf Lengkap Daftar Toko (*Store Listing*) di [`docs/PLAY_STORE_LISTING.md`](docs/PLAY_STORE_LISTING.md) dalam bahasa Indonesia beserta spesifikasi aset grafis (ikon 512x512, feature graphic 1024x500, screenshot 9:16).
-  - Panduan Keamanan Data (*Data Safety*) & Draf Kebijakan Privasi di [`docs/PLAY_DATA_SAFETY_AND_PRIVACY.md`](docs/PLAY_DATA_SAFETY_AND_PRIVACY.md) serta petunjuk akun reviewer (*App Access*).
-  - Kepatuhan Pembayaran Google Play di [`docs/PLAY_BILLING_COMPLIANCE.md`](docs/PLAY_BILLING_COMPLIANCE.md): Penegakan in-app subscription Play Billing v7.1.1, SKU bulanan/tahunan, dan lisensi pengujian bebas biaya riil.
-  - Rencana Pengujian Tertutup di [`docs/CLOSED_TESTING_PLAN.md`](docs/CLOSED_TESTING_PLAN.md): Regulasi 20 penguji / 14 hari akun personal, checklist pengujian di [`docs/CLOSED_TESTING_CHECKLIST.md`](docs/CLOSED_TESTING_CHECKLIST.md), dan template umpan balik di [`docs/TESTER_FEEDBACK_TEMPLATE.md`](docs/TESTER_FEEDBACK_TEMPLATE.md).
-  - Runbook Publikasi Produksi di [`docs/PLAY_PRODUCTION_RELEASE_RUNBOOK.md`](docs/PLAY_PRODUCTION_RELEASE_RUNBOOK.md): Peluncuran bertahap (*staged rollout*) 20% -> 50% -> 100%, protokol penghentian rilis (*halt rollout*), dan master checklist di [`docs/PLAY_RELEASE_CHECKLIST.md`](docs/PLAY_RELEASE_CHECKLIST.md).
+  - Kepatuhan Target SDK API 35 (Android 15), paket AAB `7.57 MB`, Play App Signing, dan 137 unit tests 100% pass.
+  - Draf Lengkap Daftar Toko (*Store Listing*) dalam bahasa Indonesia beserta spesifikasi aset grafis (ikon 512x512, feature graphic 1024x500, screenshot 9:16).
+  - Kepatuhan Pembayaran Google Play: Penegakan in-app subscription Play Billing v7.1.1, SKU bulanan/tahunan, dan lisensi pengujian bebas biaya riil.
+  - Rencana Pengujian Tertutup: Regulasi 20 penguji / 14 hari akun personal dan runbook rilis publikasi bertahap (*staged rollout*).
 - 🔒 **Zero-Secret & Isolasi RLS**: Proteksi akses lintas akun (anti-BOLA/IDOR) dan tanda tangan URL struk berumur pendek.
 
 ---
@@ -298,23 +294,11 @@ Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (~23.1 MB).
 
 ---
 
-## 📚 Suite Dokumentasi Lengkap
+## 📚 Dokumentasi & Panduan Setup
 
-Dokumentasi resmi telah distrukturisasi secara ramping, modular, dan bebas redundansi ke dalam **14 dokumen rujukan utama** di direktori [docs/](docs/):
-- 🧭 [**Portal Dokumentasi**](docs/README.md) — Hub navigasi seluruh dokumentasi resmi proyek.
-- 📋 [**PRD Baseline**](docs/PRD.md) — Spesifikasi produk asli, persona pengguna, dan kriteria penerimaan MVP.
-- 📐 [**Spesifikasi Arsitektur**](docs/ARCHITECTURE.md) — Desain Clean MVVM + Repository, Unidirectional Data Flow (`UiState`), dan mitigasi API 26.
-- 🗄️ [**Desain Basis Data & RLS**](docs/DATABASE.md) — Skema relasional PostgreSQL Supabase, relasi foreign key komposit anti-IDOR, dan urutan migrasi SQL 001-008.
-- 🛡️ [**Kebijakan Keamanan & Audit**](docs/SECURITY.md) — Model ancaman (*Threat Model*), Zero-Secret Policy, perlindungan private storage signed URL, mitigasi formula injection, dan hardening migrasi 008.
-- 🧪 [**Panduan QA & Testing Hub**](docs/TESTING.md) — Rekap 137 unit test (29 test suites, 100% lulus), tolok ukur performa 1.000 data transaksi, dan matriks kompatibilitas Android API 26–35.
-- 💳 [**Sistem Pembayaran Dual-Track**](docs/PAYMENTS.md) — Arsitektur Dual-Track Play Billing v7.1.1 & QRISpy Dynamic Gateway, verifikasi purchase token sisi server, anti-replay, dan prosedur refund.
-- 🚀 [**Panduan Master Deployment (A-Z)**](docs/DEPLOYMENT.md) — **Panduan operasional rilis terpadu dari A sampai Z**: Keystore signing, kompilasi R8 AAB/APK, setup Supabase, 7 Edge Functions, hingga Staged Rollout.
-- 👥 [**Panduan Closed Testing**](docs/CLOSED_TESTING.md) — Rencana pengujian tertutup Google Play (aturan 20 tester / 14 hari), checklist 6 fase pengujian, dan formulir umpan balik penguji.
-- 🏪 [**Metadata Toko & Privasi**](docs/STORE_LISTING.md) — Metadata lengkap Play Store (nama, deskripsi singkat & lengkap bahasa Indonesia), kuesioner Keamanan Data (*Data Safety*), draf Kebijakan Privasi, dan akun reviewer.
-- 🛡️ [**Manual Operasional & SRE**](docs/OPERATIONS.md) — Audit kesiapan produksi, SOP Backup & DR (RPO 1 jam / RTO 2 jam), standar monitoring P0/P1/P2, respons darurat 10 insiden, dan analisis biaya kapasitas.
-- ⚠️ [**Batasan Teknis & Known Issues**](docs/KNOWN_ISSUES.md) — Catatan kredensial produksi eksternal, penanganan Doze mode OEM, dan prasyarat verifikasi lingkungan live.
-- 📖 [**Buku Panduan Pengguna**](docs/USER_MANUAL.md) — Panduan visual langkah demi langkah penggunaan fitur aplikasi: Beranda, Scan Struk OCR, Input Manual, Kendaraan, Analitik km/liter, dan Ekspor CSV.
-- 🛠️ [**Panduan Pengembang & CLI**](docs/DEVELOPER_GUIDE.md) — Standar coding Clean Architecture, injeksi konfigurasi aman, referensi perintah CLI Gradle/ADB, dan panduan pengujian ringan via `run-app.bat`.
+Panduan setup aplikasi dari awal telah dirangkum lengkap dalam satu panduan terpadu yang praktis di direktori [docs/](docs/):
+- 🧭 [**Panduan Setup Lengkap dari Awal (Langkah demi Langkah)**](docs/README.md) — Panduan mulai dari nol: Prasyarat Java & Android SDK, setup backend Supabase gratis (SQL migrasi 001-008 & storage), konfigurasi `local.properties`, menjalankan via `run-app.bat` (HP fisik USB 0% emulator overhead atau AVD), pengujian fitur, hingga troubleshooting FAQ.
+- 🚀 [**Script Pengujian Cepat (`run-app.bat`)**](run-app.bat) — Script otomatis interaktif satu klik untuk mendeteksi HP USB fisik dan emulator AVD tanpa membuka Android Studio yang berat.
 - 🤖 [**AGENTS.md**](AGENTS.md) — Sumber acuan hukum dan 10 pilar aturan rekayasa agen.
 
 ---

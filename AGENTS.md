@@ -1,6 +1,6 @@
 # 🤖 AGENTS.md — Panduan & Aturan Utama Pengembangan Proyek Mari Partner Fuel
 
-Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertinggi bagi seluruh AI Coding Assistant dan pengembang yang bekerja pada repositori **Mari Partner Fuel**. Seluruh instruksi dalam dokumen ini bersifat mengikat dan wajib dipatuhi tanpa pengecualian. Jika aturan bertentangan, urutan prioritasnya adalah: **keamanan dan integritas data**, **instruksi pengguna saat ini**, **dokumen ini (AGENTS.md)**, **PRD (`docs/PRD.md`)**, lalu **pola kode lama**.
+Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertinggi bagi seluruh AI Coding Assistant dan pengembang yang bekerja pada repositori **Mari Partner Fuel**. Seluruh instruksi dalam dokumen ini bersifat mengikat dan wajib dipatuhi tanpa pengecualian. Jika aturan bertentangan, urutan prioritasnya adalah: **keamanan dan integritas data**, **instruksi pengguna saat ini**, **dokumen ini (AGENTS.md)**, lalu **pola kode lama**.
 
 ---
 
@@ -13,7 +13,7 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 - **Backend & Basis Data**: Supabase PostgreSQL 15+, Private Storage, Row Level Security (RLS), Edge Functions
 - **OCR & AI Strategy**: Google ML Kit Text Recognition (lokal) + Cloud AI Fallback via Edge Function
 - **Payment Gateway**: Dual-Track (Google Play Billing v7.1.1 untuk Play Store, QRISpy/Midtrans untuk Direct/Web)
-- **Dokumentasi Proyek**: [Portal Dokumentasi](docs/README.md) & [Buku Panduan Pengembang](docs/DEVELOPER_GUIDE.md)
+- **Dokumentasi Proyek**: [Panduan Setup Lengkap](docs/README.md)
 - **Histori Rilis**: `README.md`
 - **Sumber Versi Runtime**: `app/build.gradle.kts` (`versionName = "1.7.0"`, `versionCode = 8`)
 
@@ -183,7 +183,7 @@ Sebuah fase atau fitur dinyatakan selesai (*Definition of Done*) jika dan hanya 
 
 1. **Pengkinian `AGENTS.md`**: Setiap ada aturan arsitektur baru atau penyesuaian aturan, langsung dicatat pada dokumen ini.
 2. **Pengkinian `README.md`**: Setiap fitur baru selesai, perbarui tabel fitur dan panduan build di `README.md`.
-3. **Pengkinian `docs/` Suite**: Jaga sinkronisasi antara `docs/README.md`, `DEVELOPER_GUIDE.md`, `USER_MANUAL.md`, dan `DEPLOYMENT.md`.
+3. **Pengkinian Dokumentasi**: Jaga sinkronisasi dengan panduan di `docs/README.md`.
 
 ---
 
@@ -238,20 +238,7 @@ mari-partner-fuel/
 │       └── test/java/id/maripartner/fuel/
 │           └── core/                     # Unit test suites (Currency, Nav, State, Config)
 ├── docs/
-│   ├── README.md                         # Hub Navigasi Dokumentasi
-│   ├── PRD.md                            # Product Requirement Document Baseline
-│   ├── ARCHITECTURE.md                   # Clean Architecture Specification
-│   ├── DATABASE.md                       # PostgreSQL Schema & RLS Policies
-│   ├── SECURITY.md                       # Threat Model, OWASP & Security Audit
-│   ├── TESTING.md                        # QA Hub: 137 Tests & Performance Benchmarks
-│   ├── PAYMENTS.md                       # Dual-Track Play Billing & QRISpy
-│   ├── DEPLOYMENT.md                     # Master Deployment Runbook A-Z
-│   ├── CLOSED_TESTING.md                 # Closed Testing 20 Tester / 14 Hari
-│   ├── STORE_LISTING.md                  # Store Listing, Data Safety & Privacy
-│   ├── OPERATIONS.md                     # Backup/DR, Monitoring, Incidents & Costs
-│   ├── KNOWN_ISSUES.md                   # Technical Limitations & External Prerequisites
-│   ├── USER_MANUAL.md                    # Buku Panduan Pengguna Lengkap
-│   └── DEVELOPER_GUIDE.md                # Panduan Pengembang & CLI Reference
+│   └── README.md                         # Panduan Setup Lengkap dari Nol & Operasional
 ├── gradle/
 │   ├── libs.versions.toml                # Gradle Version Catalog
 │   └── wrapper/
@@ -265,6 +252,7 @@ mari-partner-fuel/
 ├── gradlew                               # Linux/macOS Wrapper
 ├── gradlew.bat                           # Windows Wrapper
 ├── README.md                             # Portal Utama Repositori
+├── run-app.bat                           # Script Pengujian Cepat HP USB & Emulator
 └── settings.gradle.kts                   # Plugin & Dependency Repositories
 ```
 
@@ -279,7 +267,7 @@ mari-partner-fuel/
 - **`data/`**: Abstraksi data sumber ganda (Supabase remote API + ML Kit on-device hardware OCR).
 - **`domain/`**: Inti logika bisnis murni tanpa dependensi framework luar agar mudah diuji dengan unit test secepat kilat.
 - **`feature/`**: Modul layar interaktif terpisah per domain fungsional (*Bounded Context*).
-- **`docs/`**: Suite dokumentasi menyeluruh untuk staf operasional, pengembang, dan auditor keamanan.
+- **`docs/`**: Panduan setup menyeluruh dari awal, konfigurasi database, dan petunjuk operasional.
 
 ---
 
