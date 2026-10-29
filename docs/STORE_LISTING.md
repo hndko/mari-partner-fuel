@@ -1,10 +1,10 @@
-# 🏪 PLAY_STORE_LISTING.md — Draft Metadata & Panduan Aset Google Play Store
+# 🏪 STORE_LISTING.md — Metadata Toko, Keamanan Data & Kebijakan Privasi Google Play
 
-Dokumen ini memuat draf resmi daftar toko (*Store Listing*) untuk aplikasi **Mari Partner Fuel** di Google Play Console. Seluruh teks disusun dalam bahasa Indonesia yang profesional, jelas, mematuhi panduan penulisan Google Play, dan **hanya mencantumkan fitur nyata** yang telah diimplementasikan pada versi `1.7.0`.
+Dokumen ini adalah acuan terpadu untuk pengaturan **Google Play Store Listing**, pengisian formulir **Keamanan Data (Data Safety)**, draf resmi **Kebijakan Privasi (Privacy Policy)**, dan petunjuk akses reviewer (*App Access*) untuk aplikasi **Mari Partner Fuel**.
 
 ---
 
-## 📱 1. Metadata Utama Aplikasi
+## 📱 1. Metadata Utama Aplikasi (Store Listing)
 
 | Elemen Listing | Batas Karakter | Draf Konten Resmi Mari Partner Fuel |
 |---|:---:|---|
@@ -13,9 +13,8 @@ Dokumen ini memuat draf resmi daftar toko (*Store Listing*) untuk aplikasi **Mar
 | **Kategori Utama** | Pilihan Konsol | **Otomotif & Kendaraan** (*Auto & Vehicles*) |
 | **Kategori Sekunder** | Pilihan Konsol | **Produktivitas** (*Productivity*) |
 | **Tags / Label** | Maks 5 Tag | `Pengeluaran BBM`, `Otomotif`, `Servis Kendaraan`, `Efisiensi BBM`, `Catatan Finansial` |
-| **Kontak Support Email**| Wajib | `support@maripartner.id` *(Dapat disesuaikan pemilik)* |
-| **Website Resmi** | Opsional | `https://maripartner.id` *(Dapat disesuaikan pemilik)* |
-| **Alamat Fisik** | Opsional/Badan | *Sesuai data legal entitas pengembang* |
+| **Kontak Support Email**| Wajib | `support@maripartner.id` |
+| **Website Resmi** | Opsional | `https://maripartner.id` |
 
 ---
 
@@ -67,16 +66,49 @@ Unduh Mari Partner Fuel sekarang dan kendalikan pengeluaran bahan bakar kendaraa
 
 ---
 
-## 🎨 3. Spesifikasi & Daftar Periksa Aset Grafis (Graphic Assets Checklist)
+## 🎨 3. Daftar Periksa Aset Grafis (Graphic Assets)
 
-Seluruh aset grafis wajib disiapkan oleh desainer grafis/pemilik proyek sebelum rilis toko publik:
+- [ ] **Ikon Aplikasi (App Icon)**: 512 x 512 px, 32-bit PNG (maks 1 MB). Logo dispenser BBM *Petrol Teal* (`#006D77`) dengan aksen *Fuel Amber* (`#FFB703`).
+- [ ] **Gambar Fitur (Feature Graphic)**: 1024 x 500 px, JPEG / PNG (maks 15 MB). Banner horizontal bertuliskan "Mari Partner Fuel".
+- [ ] **Tangkapan Layar Ponsel (Phone Screenshots)**: Minimal 4 screenshot rasio 9:16 (1080 x 1920 px atau 1080 x 2400 px) dari antarmuka riil (Dashboard, Kamera OCR, Analitik km/liter, Kendaraan & Servis).
 
-| No | Aset Grafis | Dimensi & Format Wajib | Keterangan & Panduan Desain | Status Ketersediaan |
-|:--:|---|---|---|:---:|
-| **1** | **Ikon Aplikasi (App Icon)** | 512 x 512 px, 32-bit PNG (maks 1 MB) | Ikon logo dispenser BBM *Petrol Teal* (`#006D77`) dengan aksen tetesan *Fuel Amber* (`#FFB703`). Latar belakang solid tanpa transparansi. | ⏳ PERLU DIBUAT DRAF |
-| **2** | **Gambar Fitur (Feature Graphic)** | 1024 x 500 px, JPEG / 24-bit PNG (maks 15 MB) | Banner promosi horizontal di halaman Play Store. Menampilkan tipografi "Mari Partner Fuel" dan visual ponsel cerdas yang sedang memindai struk SPBU. | ⏳ PERLU DIBUAT DRAF |
-| **3** | **Tangkapan Layar Ponsel (Phone Screenshots)** | Minimal 4 tangkapan layar, rasio 9:16 (Contoh: 1080 x 1920 px atau 1080 x 2400 px), PNG/JPEG | Menampilkan alur riil aplikasi yang telah diuji: <br>1. Dashboard Statistik & Ringkasan Pengeluaran<br>2. Layar Pemindaian Struk Kamera & Review OCR<br>3. Layar Analitik Grafik Konsumsi km/liter<br>4. Layar Manajemen Kendaraan & Pengingat Servis | ⏳ DIAMBIL DARI BUILD AKTUAL |
-| **4** | **Tangkapan Layar Tablet 7" & 10"** | Rasio 16:10 / 16:9, min 1080 px | Opsional namun direkomendasikan agar aplikasi tampil prima di perangkat layar lebar/tablet. | ⏳ OPSIONAL |
+---
 
-> ⚠️ **Catatan Penting Google Play Policy**:
-> Dilarang menempatkan teks promosi berlebihan pada screenshot (misal: "Aplikasi Terbaik No. 1", "Paling Murah", atau "Rating Bintang 5"). Screenshot wajib menggambarkan antarmuka pengguna riil dari aplikasi yang sedang berjalan.
+## 🔒 4. Panduan Isian Keamanan Data (Data Safety Form)
+
+- **Apakah aplikasi mengumpulkan data?**: Ya.
+- **Apakah data dienkripsi saat transit?**: Ya (HTTPS / TLS 1.3).
+- **Apakah pengguna dapat meminta data dihapus?**: Ya (Tersedia tombol hapus akun di profil dan form web).
+- **Apakah data dibagikan ke pihak ketiga?**: **TIDAK (0%)**.
+- **Jenis data yang dikumpulkan**:
+  1. *Info Pribadi*: Alamat Email (untuk autentikasi akun & fungsionalitas aplikasi).
+  2. *Info Finansial*: Riwayat Pengeluaran BBM & Transaksi (untuk fitur inti aplikasi).
+  3. *Foto/Video*: Foto Struk SPBU (untuk pemindaian OCR & arsip digital).
+  4. *Info Performa*: Log Crash & Diagnostik (Google Play Android Vitals).
+
+---
+
+## 📄 5. Draf Kebijakan Privasi Resmi (Privacy Policy)
+
+```text
+KEBIJAKAN PRIVASI MARI PARTNER FUEL
+Terakhir Diperbarui: 29 Oktober 2026
+
+Mari Partner ("kami") berkomitmen untuk melindungi privasi pengguna aplikasi Mari Partner Fuel:
+1. INFORMASI YANG DIKUMPULKAN: Alamat email akun, data transaksi BBM (tanggal, nominal, liter, jenis bahan bakar, SPBU), data kendaraan, dan foto struk yang diambil via kamera/galeri.
+2. PENGGUNAAN INFORMASI: Informasi digunakan secara eksklusif untuk operasional fitur aplikasi (analitik pengeluaran, konsumsi km/liter, pengingat servis) dan ekstraksi OCR struk. Kami TIDAK MENJUAL atau membagikan data Anda kepada pihak ketiga.
+3. PEMROSESAN STRUK: Pemrosesan teks struk diutamakan secara lokal di perangkat Anda (on-device) melalui Google ML Kit tanpa kuota internet. Pemrosesan cloud AI hanya berjalan atas persetujuan Anda.
+4. KEAMANAN DATA: Komunikasi data dienkripsi penuh dengan TLS 1.3/HTTPS. Data tersimpan di PostgreSQL dengan Row Level Security (RLS) dan private storage signed URL (15 menit).
+5. PENGHAPUSAN AKUN & DATA: Pengguna dapat menghapus akun dan seluruh datanya kapan saja secara mandiri melalui menu Profil -> Hapus Akun, atau melalui formulir web di https://maripartner.id/delete-account. Seluruh data transaksi, kendaraan, dan foto struk dihapus permanen dalam 1x24 jam.
+6. KONTAK: support@maripartner.id | https://maripartner.id
+```
+
+---
+
+## 🔑 6. Petunjuk Akses Aplikasi untuk Reviewer (App Access)
+
+- **Status Akses**: Dibatasi (*Memerlukan akun login*).
+- **Kredensial Akun Uji**:
+  - Email: `reviewer@maripartner.id`
+  - Password: `[PasswordUjiYangDikonfigurasiPemilik]`
+- **Keterangan**: Reviewer juga dapat membuat akun baru secara instan via "Daftar Akun Baru". Akun uji telah dilengkapi data contoh kendaraan dan transaksi untuk memeriksa dashboard dan grafik analitik.

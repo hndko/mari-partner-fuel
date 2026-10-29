@@ -13,7 +13,7 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 - **Backend & Basis Data**: Supabase PostgreSQL 15+, Private Storage, Row Level Security (RLS), Edge Functions
 - **OCR & AI Strategy**: Google ML Kit Text Recognition (lokal) + Cloud AI Fallback via Edge Function
 - **Payment Gateway**: Dual-Track (Google Play Billing v7.1.1 untuk Play Store, QRISpy/Midtrans untuk Direct/Web)
-- **Dokumentasi Proyek**: [Portal Dokumentasi](docs/README.md) & [Buku Panduan Pengembang](docs/03-developer-guide.md)
+- **Dokumentasi Proyek**: [Portal Dokumentasi](docs/README.md) & [Buku Panduan Pengembang](docs/DEVELOPER_GUIDE.md)
 - **Histori Rilis**: `README.md`
 - **Sumber Versi Runtime**: `app/build.gradle.kts` (`versionName = "1.7.0"`, `versionCode = 8`)
 
@@ -183,7 +183,7 @@ Sebuah fase atau fitur dinyatakan selesai (*Definition of Done*) jika dan hanya 
 
 1. **Pengkinian `AGENTS.md`**: Setiap ada aturan arsitektur baru atau penyesuaian aturan, langsung dicatat pada dokumen ini.
 2. **Pengkinian `README.md`**: Setiap fitur baru selesai, perbarui tabel fitur dan panduan build di `README.md`.
-3. **Pengkinian `docs/` Suite**: Jaga sinkronisasi antara `docs/README.md`, `01-daftar-command.md`, `02-buku-panduan-pengguna.md`, `03-developer-guide.md`, dan `04-panduan-deployment.md`.
+3. **Pengkinian `docs/` Suite**: Jaga sinkronisasi antara `docs/README.md`, `DEVELOPER_GUIDE.md`, `USER_MANUAL.md`, dan `DEPLOYMENT.md`.
 
 ---
 
@@ -238,16 +238,20 @@ mari-partner-fuel/
 │       └── test/java/id/maripartner/fuel/
 │           └── core/                     # Unit test suites (Currency, Nav, State, Config)
 ├── docs/
-│   ├── README.md                         # Documentation Hub
-│   ├── 01-daftar-command.md              # CLI Reference & Daily Operations
-│   ├── 02-buku-panduan-pengguna.md       # User Manual Book
-│   ├── 03-developer-guide.md             # Developer & Architecture Guide
-│   ├── 04-panduan-deployment.md          # Deployment & Store Release Guide
+│   ├── README.md                         # Hub Navigasi Dokumentasi
 │   ├── PRD.md                            # Product Requirement Document Baseline
 │   ├── ARCHITECTURE.md                   # Clean Architecture Specification
 │   ├── DATABASE.md                       # PostgreSQL Schema & RLS Policies
-│   ├── SECURITY.md                       # Threat Model & Secret Protection
-│   └── PAYMENT_FLOWS.md                  # QRISpy Payment & Webhook Lifecycle
+│   ├── SECURITY.md                       # Threat Model, OWASP & Security Audit
+│   ├── TESTING.md                        # QA Hub: 137 Tests & Performance Benchmarks
+│   ├── PAYMENTS.md                       # Dual-Track Play Billing & QRISpy
+│   ├── DEPLOYMENT.md                     # Master Deployment Runbook A-Z
+│   ├── CLOSED_TESTING.md                 # Closed Testing 20 Tester / 14 Hari
+│   ├── STORE_LISTING.md                  # Store Listing, Data Safety & Privacy
+│   ├── OPERATIONS.md                     # Backup/DR, Monitoring, Incidents & Costs
+│   ├── KNOWN_ISSUES.md                   # Technical Limitations & External Prerequisites
+│   ├── USER_MANUAL.md                    # Buku Panduan Pengguna Lengkap
+│   └── DEVELOPER_GUIDE.md                # Panduan Pengembang & CLI Reference
 ├── gradle/
 │   ├── libs.versions.toml                # Gradle Version Catalog
 │   └── wrapper/

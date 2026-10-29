@@ -300,42 +300,21 @@ Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (~23.1 MB).
 
 ## 📚 Suite Dokumentasi Lengkap
 
-Dokumentasi terperinci telah disusun sesuai standar enterprise di direktori [docs/](docs/):
-- 🧭 [**Portal Dokumentasi**](docs/README.md) — Hub navigasi seluruh panduan proyek.
-- ⚡ [**01. Daftar Perintah Wajib & Operasional**](docs/01-daftar-command.md) — Referensi CLI Gradle, ADB, dan troubleshooting.
-- 📖 [**02. Buku Panduan Pengguna (Manual Book)**](docs/02-buku-panduan-pengguna.md) — Panduan visual dan alur fitur untuk pengguna & QA.
-- 🛠️ [**03. Panduan Pengembang & Arsitektur**](docs/03-developer-guide.md) — Panduan arsitektur kode, Clean MVVM, dan UDF.
-- 🚀 [**04. Panduan Deployment & Distribusi**](docs/04-panduan-deployment.md) — Keystore signing, R8/Proguard, dan rilis Google Play.
-- 📋 [**PRD Baseline**](docs/PRD.md) — Spesifikasi produk asli Mari Partner Fuel.
-- 📐 [**Spesifikasi Arsitektur**](docs/ARCHITECTURE.md) — Desain teknis komponen dan aliran data.
-- 🗄️ [**Desain Basis Data & RLS**](docs/DATABASE.md) — Skema tabel Supabase dan aturan keamanan PostgreSQL.
-- 🛡️ [**Kebijakan Keamanan & Privasi**](docs/SECURITY.md) — Threat model dan perlindungan secret.
-- 💳 [**Alur Pembayaran QRISpy**](docs/PAYMENT_FLOWS.md) — Siklus pembayaran QRIS dan webhook idempotensi.
-- 💳 [**Sistem Pembayaran & Aktivasi (Dual-Track)**](docs/PAYMENTS.md) — Panduan teknis Google Play Billing, QRISpy, anti-replay token, dan webhook.
-- 🛡️ [**Laporan Audit Keamanan (Tahap 8)**](docs/SECURITY_AUDIT.md) — Laporan audit komprehensif, mitigasi temuan Critical/High, RLS RPC hardening, dan hasil quality gate.
-- 🧪 [**Panduan Pengujian & Kasus Uji**](docs/TESTING.md) — Rekap 137 unit test, 29 test suites, dan skenario pengujian E2E (Free, Pro, Pembayaran, Multi-Akun).
-- 📋 [**Rencana Pengujian Mutu (QA Test Plan)**](docs/QA_TEST_PLAN.md) — Matriks pengujian menyeluruh, kompatibilitas perangkat API 26-35, cakupan fungsional, dan SLA performa.
-- 📊 [**Laporan Hasil Pengujian QA (Tahap 9)**](docs/QA_TEST_RESULTS.md) — Rekap hasil 137 unit test, 29 test suites, verifikasi 10 modul fungsional, dan smoke test checklist.
-- ⚡ [**Laporan Tolok Ukur Kinerja (Performance)**](docs/PERFORMANCE.md) — Benchmark kinerja: throughput CSV 1.000 data, agregasi finansial, efisiensi BBM, ukuran artefak R8.
-- 🚀 [**Daftar Periksa Kesiapan Rilis (Release Checklist)**](docs/RELEASE_CHECKLIST.md) — SOP pelepasan rilis, Google Play target SDK 35, izin least privilege, verifikasi AAB/APK, dan prosedur rollback.
-- 🛡️ [**Audit Kesiapan Produksi (Production Readiness)**](docs/PRODUCTION_READINESS.md) — Audit kesiapan produksi menyeluruh (Tahap 10), evaluasi arsitektur, isolasi data, dan status Closed Testing.
-- 🔍 [**Audit Rilis Google Play (Tahap 11)**](docs/PLAY_RELEASE_AUDIT.md) — Audit kesiapan rilis Google Play Console, regulasi target SDK 35, verifikasi bundle AAB, dan mitigasi risiko.
-- 🏪 [**Draf Daftar Toko (Store Listing)**](docs/PLAY_STORE_LISTING.md) — Metadata lengkap Play Store (nama, deskripsi singkat & lengkap bahasa Indonesia, checklist aset grafis).
-- 🔒 [**Keamanan Data & Privasi (Data Safety)**](docs/PLAY_DATA_SAFETY_AND_PRIVACY.md) — Kuesioner Data Safety Play Console, draf Kebijakan Privasi resmi, dan instruksi akun peninjau (App Access).
-- 💳 [**Kepatuhan Pembayaran (Play Billing)**](docs/PLAY_BILLING_COMPLIANCE.md) — Kepatuhan Google Play Payments Policy, integrasi Play Billing v7.1.1, SKU paket Pro, dan license testing.
-- 👥 [**Rencana Pengujian Tertutup (Closed Testing)**](docs/CLOSED_TESTING_PLAN.md) — Strategi closed testing akun personal (20 penguji / 14 hari), roadmap pengujian harian, dan kuesioner produksi.
-- ✅ [**Daftar Periksa Pengujian Tertutup**](docs/CLOSED_TESTING_CHECKLIST.md) — Panduan uji langkah demi langkah fungsional, edge cases, offline handling, dan kriteria kelulusan exit criteria.
-- 📋 [**Formulir Umpan Balik Penguji**](docs/TESTER_FEEDBACK_TEMPLATE.md) — Template pengumpulan laporan kendala, bug triage, rating kemudahan fitur, dan masukan penguji.
-- 🚀 [**Runbook Publikasi Produksi (Staged Rollout)**](docs/PLAY_PRODUCTION_RELEASE_RUNBOOK.md) — SOP transisi ke produksi publik, rollout bertahap 20% -> 50% -> 100%, protokol halt rollout, dan mitigasi darurat.
-- 📋 [**Master Checklist Rilis Google Play**](docs/PLAY_RELEASE_CHECKLIST.md) — Checklist terpadu kesiapan teknis, store listing, kebijakan privasi, billing, dan stopping gate produksi.
-- 💾 [**Pencadangan & Pemulihan Bencana (Backup & DR)**](docs/BACKUP_RESTORE.md) — Prosedur backup database Supabase, private storage receipts, target RPO (1 jam) & RTO (2 jam), dan restore runbook.
-- 📈 [**Pemantauan & Notifikasi (Monitoring & Alerting)**](docs/MONITORING_ALERTING.md) — Observability native, ambang batas waspada P0/P1/P2, investigasi error log, dan sensor zero-PII.
-- 🚨 [**Tanggap Darurat Insiden (Incident Response)**](docs/INCIDENT_RESPONSE.md) — Prosedur darurat penanganan 10 skenario insiden (kebocoran secret, BOLA/IDOR, AI outage, gagal bayar, crash spike).
-- 💳 [**Operasional Pembayaran (Payment Operations)**](docs/PAYMENT_OPERATIONS.md) — SOP operasional langganan, rekonsiliasi manual pending orders, siklus auto-renew Play Billing, dan refund.
-- 💰 [**Analisis Biaya & Kapasitas (Cost & Capacity)**](docs/COST_CAPACITY.md) — Struktur biaya infrastruktur aktual (Supabase, Gemini AI, Play Console), proyeksi kapasitas 100 s.d. 10.000 user.
-- ⚠️ [**Batasan Teknis & Known Issues**](docs/KNOWN_ISSUES.md) — Catatan kredensial produksi eksternal, batasan alarm reboot Android, dan mitigasi Doze mode.
-- 🚀 [**Panduan Deployment Produksi**](docs/DEPLOYMENT.md) — Runbook 15 langkah deployment produksi, urutan migrasi SQL 001-008, deploy Edge Functions, dan rollback.
-- 🌟 [**Buku Panduan Master Deployment Lengkap (A-Z)**](docs/PANDUAN_DEPLOYMENT_LENGKAP.md) — **Panduan terpadu satu pintu dari A sampai Z**: Keystore, Build R8 AAB/APK, setup Supabase 8 migrasi, Storage, 7 Edge Functions, QRISpy, Gemini AI, Closed Testing 20 tester 14 hari, hingga Staged Rollout.
+Dokumentasi resmi telah distrukturisasi secara ramping, modular, dan bebas redundansi ke dalam **14 dokumen rujukan utama** di direktori [docs/](docs/):
+- 🧭 [**Portal Dokumentasi**](docs/README.md) — Hub navigasi seluruh dokumentasi resmi proyek.
+- 📋 [**PRD Baseline**](docs/PRD.md) — Spesifikasi produk asli, persona pengguna, dan kriteria penerimaan MVP.
+- 📐 [**Spesifikasi Arsitektur**](docs/ARCHITECTURE.md) — Desain Clean MVVM + Repository, Unidirectional Data Flow (`UiState`), dan mitigasi API 26.
+- 🗄️ [**Desain Basis Data & RLS**](docs/DATABASE.md) — Skema relasional PostgreSQL Supabase, relasi foreign key komposit anti-IDOR, dan urutan migrasi SQL 001-008.
+- 🛡️ [**Kebijakan Keamanan & Audit**](docs/SECURITY.md) — Model ancaman (*Threat Model*), Zero-Secret Policy, perlindungan private storage signed URL, mitigasi formula injection, dan hardening migrasi 008.
+- 🧪 [**Panduan QA & Testing Hub**](docs/TESTING.md) — Rekap 137 unit test (29 test suites, 100% lulus), tolok ukur performa 1.000 data transaksi, dan matriks kompatibilitas Android API 26–35.
+- 💳 [**Sistem Pembayaran Dual-Track**](docs/PAYMENTS.md) — Arsitektur Dual-Track Play Billing v7.1.1 & QRISpy Dynamic Gateway, verifikasi purchase token sisi server, anti-replay, dan prosedur refund.
+- 🚀 [**Panduan Master Deployment (A-Z)**](docs/DEPLOYMENT.md) — **Panduan operasional rilis terpadu dari A sampai Z**: Keystore signing, kompilasi R8 AAB/APK, setup Supabase, 7 Edge Functions, hingga Staged Rollout.
+- 👥 [**Panduan Closed Testing**](docs/CLOSED_TESTING.md) — Rencana pengujian tertutup Google Play (aturan 20 tester / 14 hari), checklist 6 fase pengujian, dan formulir umpan balik penguji.
+- 🏪 [**Metadata Toko & Privasi**](docs/STORE_LISTING.md) — Metadata lengkap Play Store (nama, deskripsi singkat & lengkap bahasa Indonesia), kuesioner Keamanan Data (*Data Safety*), draf Kebijakan Privasi, dan akun reviewer.
+- 🛡️ [**Manual Operasional & SRE**](docs/OPERATIONS.md) — Audit kesiapan produksi, SOP Backup & DR (RPO 1 jam / RTO 2 jam), standar monitoring P0/P1/P2, respons darurat 10 insiden, dan analisis biaya kapasitas.
+- ⚠️ [**Batasan Teknis & Known Issues**](docs/KNOWN_ISSUES.md) — Catatan kredensial produksi eksternal, penanganan Doze mode OEM, dan prasyarat verifikasi lingkungan live.
+- 📖 [**Buku Panduan Pengguna**](docs/USER_MANUAL.md) — Panduan visual langkah demi langkah penggunaan fitur aplikasi: Beranda, Scan Struk OCR, Input Manual, Kendaraan, Analitik km/liter, dan Ekspor CSV.
+- 🛠️ [**Panduan Pengembang & CLI**](docs/DEVELOPER_GUIDE.md) — Standar coding Clean Architecture, injeksi konfigurasi aman, referensi perintah CLI Gradle/ADB, dan panduan pengujian ringan via `run-app.bat`.
 - 🤖 [**AGENTS.md**](AGENTS.md) — Sumber acuan hukum dan 10 pilar aturan rekayasa agen.
 
 ---

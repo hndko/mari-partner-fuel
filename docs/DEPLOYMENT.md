@@ -1,140 +1,274 @@
-# 🚀 DEPLOYMENT.md — Runbook Deployment Produksi & Prosedur Pelepasan Rilis
+# 🚀 DEPLOYMENT.md — Panduan Master Deployment Produksi End-to-End
 
-Dokumen ini adalah runbook resmi 15 langkah (*Deployment Runbook*) untuk merilis pembaruan sistem **Mari Partner Fuel** (*Klien Android, PostgreSQL Supabase, Storage, Edge Functions, dan Integrasi Pembayaran*).
-
-> ⚠️ **ATURAN KESELAMATAN WAJIB**:
-> 1. Dilarang melakukan deployment ke lingkungan produksi tanpa persetujuan tertulis (*explicit sign-off*) dari Product Owner dan Lead Architect.
-> 2. Dilarang menjalankan migrasi destruktif (`DROP TABLE`, `TRUNCATE`) pada basis data produksi yang sedang aktif.
-> 3. Seluruh langkah di bawah ini wajib diuji terlebih dahulu pada lingkungan Staging sebelum diterapkan ke Produksi.
+Buku panduan ini memuat instruksi operasional resmi, menyeluruh, dan bertahap (*step-by-step master guide*) dari **A sampai Z** untuk mendeploy dan merilis sistem **Mari Partner Fuel** (*Klien Android Native Kotlin/Jetpack Compose, Backend PostgreSQL Supabase, Private Storage, Edge Functions, serta Integrasi Pembayaran Google Play Billing & QRISpy*).
 
 ---
 
-## 📋 15 Langkah Standar Operasional Deployment (Deployment Runbook)
+## 🧭 Peta Alur Deployment Produksi
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        15 LANGKAH STANDAR OPERASIONAL DEPLOYMENT                       │
+│                        ALUR DEPLOYMENT PRODUKSI MARI PARTNER FUEL                      │
 ├─────────────────┬─────────────────┬─────────────────┬─────────────────┬────────────────┤
-│ 1. Git Freeze   │ 2. QA & Test    │ 3. Secrets Check│ 4. Pre-DB Backup│ 5. DB Migration│
-│ 6. Edge Funcs   │ 7. Storage RLS  │ 8. AI & Payment │ 9. Build AAB/APK│ 10. Smoke Test │
-│ 11. Monitoring  │ 12. Abort Check │ 13. App Rollback│ 14. DB Mitigasi │ 15. Sign-Off   │
+│ 1. Prasyarat    │ 2. Keystore     │ 3. Build R8     │ 4. Supabase DB  │ 5. Edge Funcs  │
+│    Alat & JDK 21│    & Signing    │    AAB & APK    │    & Storage    │    & Secrets   │
+├─────────────────┼─────────────────┼─────────────────┼─────────────────┼────────────────┤
+│ 6. Layanan AI   │ 7. Play Console │ 8. Closed Test  │ 9. Staged       │ 10. Monitoring │
+│    & QRISpy Gate│    Listing/Data │    20 Testers   │    Rollout 20%  │    & Rollback  │
 └─────────────────┴─────────────────┴─────────────────┴─────────────────┴────────────────┘
 ```
 
 ---
 
-### Langkah 1: Pemeriksaan Branch dan Commit yang Akan Dirilis
-- Pastikan branch adalah `main` atau `release/v1.7.0`.
-- Periksa status Git bersih tanpa *uncommitted changes*:
-  ```bash
-  git status
-  git log -1 --format="Commit: %h - %s (%ci)"
-  ```
+## 🛠️ Bagian 1: Prasyarat Lingkungan & Alat Rilis
 
-### Langkah 2: Pemeriksaan Kelulusan Test & Status Blocker
-- Jalankan seluruh 137 unit test dan benchmark performa:
-  ```powershell
-  .\gradlew.bat testDebugUnitTest
-  ```
-- Pastikan 100% test lulus (0 gagal, 0 error).
+Sebelum memulai deployment, pastikan komputer/server Anda telah terpasang perangkat lunak berikut:
 
-### Langkah 3: Verifikasi Environment & Secrets Vault
-- Pastikan variabel lingkungan produksi pada Supabase Vault telah terkonfigurasi dengan benar tanpa mengekspos nilainya ke log:
-  - `GEMINI_API_KEY`
-  - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
-  - `QRISPY_API_KEY`
-  - `QRISPY_WEBHOOK_SECRET`
-
-### Langkah 4: Pencadangan Basis Data Pra-Deployment (Pre-Deployment Backup)
-- Lakukan snapshot manual basis data sebelum menerapkan migrasi:
-  ```bash
-  # Dump manual via Supabase CLI
-  supabase db dump --project-ref <PROD_PROJECT_REF> -f pre_deploy_backup_$(date +%Y%m%d).sql
-  ```
-
-### Langkah 5: Penerapan Migrasi Basis Data (Database Migrations)
-- Terapkan seluruh migrasi SQL yang belum terpasang secara sekuensial:
-  ```bash
-  supabase db push --project-ref <PROD_PROJECT_REF>
-  ```
-- Verifikasi tabel publik dan kebijakan RLS:
-  ```sql
-  SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public';
-  ```
-
-### Langkah 6: Deployment Supabase Edge Functions
-- Deploy seluruh 7 Edge Functions backend:
-  ```bash
-  supabase functions deploy extract-fuel-receipt --project-ref <PROD_PROJECT_REF>
-  supabase functions deploy get-my-entitlements --project-ref <PROD_PROJECT_REF>
-  supabase functions deploy create-checkout --project-ref <PROD_PROJECT_REF>
-  supabase functions deploy verify-play-purchase --project-ref <PROD_PROJECT_REF>
-  supabase functions deploy get-payment-status --project-ref <PROD_PROJECT_REF>
-  supabase functions deploy payment-webhook --project-ref <PROD_PROJECT_REF>
-  supabase functions deploy sync-subscription --project-ref <PROD_PROJECT_REF>
-  ```
-
-### Langkah 7: Verifikasi Konfigurasi Storage & Kebijakan RLS
-- Pastikan bucket `receipts` berstatus privat (*Public: false*).
-- Pastikan policy membatasi pembacaan foto hanya untuk pemilik via token folder path `auth.uid() = (storage.foldername(name))[1]`.
-
-### Langkah 8: Verifikasi Endpoint Provider AI & Pembayaran
-- Lakukan health-check ringan pada endpoint Edge Functions:
-  - Validasi penolakan tanpa token JWT (`HTTP 401 Unauthorized`).
-  - Validasi penolakan webhook tanpa signature HMAC sah (`HTTP 401 Invalid Signature`).
-
-### Langkah 9: Pembuatan Artefak Build Android Release
-- Kompilasi paket rilis produksi dengan optimasi R8 / ProGuard:
-  ```powershell
-  # A. Buat Android App Bundle untuk Google Play Store:
-  .\gradlew.bat bundleRelease
-
-  # B. Buat Universal Signed APK untuk Direct/Web Distribution:
-  .\gradlew.bat assembleRelease
-  ```
-- Verifikasi artefak:
-  - `app/build/outputs/bundle/release/app-release.aab` (~7.57 MB)
-  - `app/build/outputs/apk/release/app-release.apk` (~3.39 MB)
-
-### Langkah 10: Smoke Test Fungsional Aplikasi
-- Pasang artefak release APK pada minimal 2 perangkat uji (API 26 dan API 34+).
-- Uji alur inti:
-  1. Login dengan akun uji staging.
-  2. Tambah 1 transaksi BBM manual dengan format Rupiah.
-  3. Scan 1 struk fisik menggunakan Google ML Kit lokal on-device.
-  4. Periksa ringkasan kartu finansial di Dashboard.
-  5. Ekspor riwayat ke CSV dan periksa integritas tanda tangan UTF-8 BOM.
-
-### Langkah 11: Pemeriksaan Monitoring & Observability
-- Buka Supabase Dashboard -> Reports.
-- Pastikan tidak ada lonjakan error 5xx atau kebuntuan *connection pool*.
-
-### Langkah 12: Kriteria Pembatalan Deployment (Deployment Abort Criteria)
-Deployment WAJIB dibatalkan seketika jika:
-- Terjadi error SQL syntax atau kegagalan foreign key saat `supabase db push`.
-- Error rate Edge Function > 2% pada smoke test.
-- Terjadi crash aplikasi (*Fatal Exception*) pada perangkat Android API 26.
-- Terdeteksi kebocoran kredensial rahasia di log atau repositori.
+1. **Java Development Kit (JDK 21 LTS)**:
+   - Verifikasi instalasi:
+     ```powershell
+     java -version
+     # Pastikan output menampilkan: openjdk version "21.x.x"
+     ```
+2. **Android SDK & Command-Line Tools**:
+   - Lokasi standar Windows: `C:\Users\%USERNAME%\AppData\Local\Android\Sdk`
+   - Paket yang wajib terpasang:
+     - `platforms;android-35`
+     - `build-tools;35.0.0`
+     - `platform-tools` (adb)
+3. **Supabase CLI** (Opsional jika menggunakan CLI, atau dapat menggunakan Supabase Web Dashboard):
+   - Instalasi via Scoop / NPM:
+     ```powershell
+     npm install -g supabase
+     supabase --version
+     ```
+4. **Git Client**:
+   - Memastikan branch `main` berada pada commit rilis stabil tanpa perubahan yang belum di-commit.
 
 ---
 
-## 🔄 Prosedur Rollback Darurat
+## 🔑 Bagian 2: Manajemen Keystore & Keamanan Kredensial Produksi
 
-### 13. Prosedur Rollback Aplikasi Android (App Rollback)
-1. **Google Play Console (Closed / Production Track)**:
-   - Masuk ke Google Play Console -> Pilih rilis aktif -> Klik **Halt rollout**.
-   - Naikkan `versionCode` pada branch perbaikan: `versionCode = 9`, `versionName = "1.7.1"`.
-   - Build dan unggah AAB perbaikan darurat (*hotfix*) dengan target rollout 100%.
-2. **Direct APK**:
-   - Ganti tautan unduhan APK di portal resmi dengan versi stabil sebelumnya (`v1.6.0`).
+Aplikasi Android untuk Google Play Store wajib ditandatangani (*signed*) menggunakan kunci rilis resmi (*Release Keystore*).
 
-### 14. Prosedur Rollback & Mitigasi Migrasi Basis Data (Database Rollback)
-> ⚠️ **PERINGATAN**: Dilarang me-rollback database secara membabi-buta dengan `DROP TABLE` jika data transaksi pelanggan baru sudah mulai masuk ke produksi!
-- **Jika data belum ada perubahan**: Pulihkan database dari snapshot dump pra-deployment (`pre_deploy_backup.sql`).
-- **Jika data pelanggan sudah tercatat**: Terapkan *compensating migration* (expand-and-contract) untuk menonaktifkan kolom atau fungsi baru tanpa menghapus data transaksi yang sudah tercipta.
+### 2.1 Membuat Kunci Rilis Baru (Jika Belum Tersedia)
+Jalankan utilitas `keytool` bawaan JDK untuk menghasilkan berkas keystore produksi:
+
+```powershell
+keytool -genkeypair -v `
+  -keystore "mari_partner_release.keystore" `
+  -alias "mari_partner_key" `
+  -keyalg RSA `
+  -keysize 2048 `
+  -validity 10000
+```
+*Simpan berkas `mari_partner_release.keystore` dan password-nya di tempat yang sangat aman (misal: Bitwarden / 1Password / Vault perusahaan).*
+
+> ⚠️ **PERINGATAN ZERO-SECRET**:
+> Dilarang meng-commit berkas `*.keystore`, `*.jks`, atau password ke dalam repositori Git! Berkas ini telah dikecualikan di `.gitignore`.
+
+### 2.2 Konfigurasi Signing di Proyek Lokal
+Tambahkan konfigurasi berikut ke berkas `local.properties` (atau set sebagai variabel lingkungan):
+
+```properties
+# Tambahkan di baris paling bawah local.properties:
+RELEASE_STORE_FILE=C:\\Path\\To\\mari_partner_release.keystore
+RELEASE_STORE_PASSWORD=PasswordKeystoreAnda
+RELEASE_KEY_ALIAS=mari_partner_key
+RELEASE_KEY_PASSWORD=PasswordKeyAnda
+
+# Konfigurasi Supabase Produksi Klien (Aman di APK/BuildConfig):
+SUPABASE_URL=https://prod-mpf.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOi...anon_key_produksi...
+GOOGLE_WEB_CLIENT_ID=xxxxxxxxxxxx.apps.googleusercontent.com
+```
 
 ---
 
-### Langkah 15: Verifikasi Akhir & Persetujuan Rilis (Sign-Off)
-- Lead Architect, QA Lead, dan DevOps menandatangani checklist kesiapan rilis.
-- Dokumentasikan status rilis pada `README.md` dan arsipkan catatan deployment.
+## 📦 Bagian 3: Kompilasi Paket Rilis Produksi (AAB & APK)
+
+Proyek telah dikonfigurasi dengan **R8 Minification** dan **Resource Shrinking** (`isMinifyEnabled = true`, `isShrinkResources = true`).
+
+### 3.1 Menjalankan Verifikasi Test Mutu
+Sebelum kompilasi rilis, pastikan 100% dari 137 unit test lulus tanpa kegagalan:
+
+```powershell
+.\gradlew.bat testDebugUnitTest
+```
+
+### 3.2 Membuat Android App Bundle (AAB) untuk Google Play Store
+Paket AAB adalah format wajib untuk rilis toko Google Play:
+
+```powershell
+.\gradlew.bat bundleRelease
+```
+- **Lokasi Artefak Keluaran**:
+  `app/build/outputs/bundle/release/app-release.aab`
+- **Ukuran Hasil Kompilasi**: **`7.57 MB`** *(Tereduksi ~36% dibandingkan build debug)*.
+
+### 3.3 Membuat Universal Signed APK untuk Distribusi Langsung (Direct/Web)
+Jika Anda membutuhkan berkas APK fisik untuk pengujian lokal mandiri atau distribusi web:
+
+```powershell
+.\gradlew.bat assembleRelease
+```
+- **Lokasi Artefak Keluaran**:
+  `app/build/outputs/apk/release/app-release.apk`
+- **Ukuran Hasil Kompilasi**: **`3.39 MB`** *(Tereduksi ~85.3% dibandingkan build debug)*.
+
+---
+
+## 🗄️ Bagian 4: Setup Backend Supabase Cloud Lengkap
+
+### 4.1 Pembuatan Proyek Supabase Produksi
+1. Buka [Supabase Dashboard](https://supabase.com/dashboard) dan klik **New project**.
+2. Masukkan nama proyek: `mari-partner-fuel-prod`.
+3. Pilih wilayah server (*Region*): **Singapore (`ap-southeast-1`)** *(Direkomendasikan untuk latensi tercepat pengguna Indonesia)*.
+4. Buat dan simpan password database PostgreSQL yang kuat.
+
+### 4.2 Menjalankan 8 Berkas Migrasi SQL (Secara Berurutan)
+Buka menu **SQL Editor** pada Supabase Dashboard, lalu salin dan jalankan isi dari 8 berkas migrasi SQL secara berurutan:
+
+```text
+Urutan Eksekusi Wajib:
+1. supabase/migrations/20261029000001_initial_schema.sql
+   -> Membuat tabel: user_profiles, vehicles, fuel_transactions, maintenance_reminders.
+2. supabase/migrations/20261029000002_rls_and_storage.sql
+   -> Mengaktifkan RLS dasar dan membuat private storage bucket 'receipts'.
+3. supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql
+   -> Mengunci foreign key komposit (vehicle_id, user_id) anti-BOLA/IDOR.
+4. supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql
+   -> Membuat tabel dan kebijakan antrean pelacakan scan OCR struk.
+5. supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql
+   -> Otomasi kalkulasi status jatuh tempo pengingat servis.
+6. supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql
+   -> Katalog paket Pro, RPC atomic quota reserve/finalize, trigger batas 2 kendaraan Free.
+7. supabase/migrations/20261029000007_payment_integration_and_activation.sql
+   -> Tabel transaksi pembayaran, log webhook, RPC activate_subscription_for_payment.
+8. supabase/migrations/20261029000008_security_hardening_and_integrity.sql
+   -> Pencabutan izin publik (REVOKE EXECUTE) pada seluruh fungsi finansial;
+      Akses dibatasi eksklusif hanya untuk peran 'service_role'.
+```
+
+### 4.3 Verifikasi Keamanan RLS & Private Storage Bucket
+Jalankan kueri verifikasi berikut di SQL Editor:
+
+```sql
+-- 1. Pastikan Row Level Security aktif pada seluruh 13 tabel publik:
+SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public';
+
+-- 2. Pastikan Storage Bucket 'receipts' berstatus private (public = false):
+SELECT id, name, public FROM storage.buckets WHERE id = 'receipts';
+```
+
+---
+
+## ⚡ Bagian 5: Deployment Supabase Edge Functions & Setup Secrets Vault
+
+### 5.1 Deployment 7 Edge Functions Backend
+Jalankan perintah Supabase CLI dari direktori proyek:
+
+```bash
+# Hubungkan CLI ke proyek Supabase produksi Anda:
+supabase link --project-ref <YOUR_PRODUCTION_PROJECT_REF>
+
+# Deploy seluruh 7 fungsi backend:
+supabase functions deploy extract-fuel-receipt
+supabase functions deploy get-my-entitlements
+supabase functions deploy create-checkout
+supabase functions deploy verify-play-purchase
+supabase functions deploy get-payment-status
+supabase functions deploy payment-webhook
+supabase functions deploy sync-subscription
+```
+
+### 5.2 Memasukkan Kunci Rahasia ke Supabase Secrets Vault
+Kunci rahasia backend **TIDAK PERNAH** ditaruh di APK klien. Masukkan rahasia langsung ke Supabase Vault:
+
+```bash
+# Kunci API Google Gemini untuk AI Fallback:
+supabase secrets set GEMINI_API_KEY="AIzaSyYourProductionGeminiKey"
+
+# Service Account Google Play untuk Verifikasi Pembelian In-App:
+supabase secrets set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"mpf-prod",...}'
+
+# Kredensial Live Merchant Gateway QRISpy:
+supabase secrets set QRISPY_API_KEY="qrispy_live_xxxxxxxxxxxxxxxx"
+supabase secrets set QRISPY_WEBHOOK_SECRET="whsec_xxxxxxxxxxxxxxxx"
+```
+
+---
+
+## 💳 Bagian 6: Integrasi Layanan Pihak Ketiga (QRISpy & Gemini AI)
+
+### 6.1 Pengaturan Webhook QRISpy Gateway
+1. Buka portal merchant [https://dashboard.qrispy.id](https://dashboard.qrispy.id).
+2. Masuk ke menu **Pengaturan** -> **Webhooks / Callback URL**.
+3. Daftarkan URL webhook resmi Edge Function:
+   `https://<YOUR_PRODUCTION_PROJECT_REF>.supabase.co/functions/v1/payment-webhook`
+4. Pilih event: `payment.success`, `payment.failed`, `payment.expired`.
+5. Salin *Webhook Signing Secret* dan masukkan ke Supabase Vault (`QRISPY_WEBHOOK_SECRET`).
+
+### 6.2 Pengaturan Google Gemini Cloud AI
+1. Buka [Google AI Studio](https://aistudio.google.com/) atau Google Cloud Console.
+2. Buat API Key untuk model `gemini-1.5-flash`.
+3. Pasang batas kuota harian (*Daily Budget Alert*) di Google Cloud Console untuk mencegah lonjakan tagihan tak terduga.
+
+---
+
+## 🏪 Bagian 7: Pengaturan Google Play Console (Closed Testing & Store Listing)
+
+Ikuti panduan lengkap di [`docs/STORE_LISTING.md`](STORE_LISTING.md) dan [`docs/CLOSED_TESTING.md`](CLOSED_TESTING.md):
+- **Store Listing**: Nama (17 char), Deskripsi Singkat (79 char), Deskripsi Lengkap bahasa Indonesia, Ikon 512x512, Feature Graphic 1024x500, Screenshot 9:16.
+- **Data Safety**: Dikumpulkan: Email, Riwayat BBM, Foto Struk, Crash Logs. Data **tidak dibagikan ke pihak ketiga**, dienkripsi penuh dalam transit.
+- **Kebijakan Privasi**: Tautkan ke `https://maripartner.id/privacy-policy`.
+- **Produk Langganan**: `mari_pro_monthly` (Rp 29.000) dan `mari_pro_yearly` (Rp 290.000).
+
+---
+
+## 👥 Bagian 8: Pelaksanaan Closed Testing (20 Penguji / 14 Hari)
+
+Sesuai regulasi Google Play bagi akun pengembang personal:
+1. Jalur Closed Testing dibuat di Play Console dengan rilis `1.7.0 (8) - Closed Beta`.
+2. Minimal 20 penguji nyata terdaftar via email Google.
+3. Jalankan pengujian selama minimal 14 hari berturut-turut.
+4. Kumpulkan laporan kendala via [`docs/CLOSED_TESTING.md`](CLOSED_TESTING.md).
+
+---
+
+## 🚀 Bagian 9: Peluncuran Bertahap ke Publik (Staged Rollout)
+
+Setelah closed testing disetujui Google:
+1. Buka **Release** -> **Production** -> **Create new release**.
+2. Pilih metode peluncuran: **Staged rollout** -> Atur persentase awal: **`20%`**.
+3. Jadwal Peningkatan Rollout:
+   - **Hari 1–2 (20%)**: Pantau crash rate dan keluhan pengguna.
+   - **Hari 3–4 (50%)**: Tingkatkan jika crash rate < 0.5%.
+   - **Hari 5 (100%)**: Rilis penuh ke seluruh pengguna publik.
+
+---
+
+## 🚨 Bagian 10: Protokol Tanggap Darurat & Penghentian Rollout (Halt Rollout)
+
+Jika terdeteksi lonjakan crash (> 1%) atau kegagalan fatal pada rilis produksi:
+1. Buka Play Console -> Production -> Klik **Halt rollout** seketika.
+2. Buat branch perbaikan darurat: `hotfix/v1.7.1`.
+3. Perbaiki bug, perbarui nomor versi: `versionCode = 9`, `versionName = "1.7.1"`.
+4. Kompilasi AAB baru: `.\gradlew.bat bundleRelease`.
+5. Rilis AAB hotfix baru dengan rollout 100% untuk menimpa rilis bermasalah.
+
+---
+
+## ⚡ Bagian 11: Menjalankan Aplikasi di Komputer Pengembang (Tanpa Android Studio)
+
+Untuk menguji aplikasi di laptop tanpa membuka Android Studio yang berat, cukup jalankan script batch otomatis yang telah disediakan di root repositori:
+
+```powershell
+.\run-app.bat
+```
+Script akan:
+1. Otomatis mendeteksi Android SDK dan HP fisik Anda (0% beban emulator di laptop!).
+2. Atau menawarkan untuk menyalakan emulator AVD (`test_avd`) dalam mode hemat sumber daya (tanpa animasi boot, memory 2GB, 2 core CPU).
+3. Mengompilasi APK debug via Gradle daemon.
+4. Memasang APK dan membuka aplikasi secara instan di layar perangkat.
+5. Menyediakan opsi pemantauan logcat real-time khusus Mari Partner Fuel.
