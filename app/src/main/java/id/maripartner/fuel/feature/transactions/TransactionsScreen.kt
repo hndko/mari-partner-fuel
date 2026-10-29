@@ -1,5 +1,7 @@
 package id.maripartner.fuel.feature.transactions
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Search
@@ -47,7 +50,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,6 +76,30 @@ fun TransactionsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+    var pendingCsvContent by remember { mutableStateOf<String?>(null) }
+
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null && pendingCsvContent != null) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { stream ->
+                    stream.write(pendingCsvContent!!.toByteArray(Charsets.UTF_8))
+                }
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Riwayat transaksi berhasil diekspor ke file CSV.")
+                }
+            } catch (e: Exception) {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Gagal menyimpan file CSV: ${e.message}")
+                }
+            } finally {
+                pendingCsvContent = null
+            }
+        }
+    }
 
     // Pagination trigger saat scroll mendekati ujung daftar
     val shouldLoadMore by remember {
@@ -98,6 +128,25 @@ fun TransactionsScreen(
             FuelTopBar(
                 title = "Riwayat Pengeluaran BBM",
                 actions = {
+                    IconButton(
+                        onClick = {
+                            viewModel.exportCsv { csvString ->
+                                pendingCsvContent = csvString
+                                val defaultFileName = "mari-partner-fuel-transaksi-${java.time.LocalDate.now()}.csv"
+                                createDocumentLauncher.launch(defaultFileName)
+                            }
+                        },
+                        enabled = !uiState.isExporting
+                    ) {
+                        if (uiState.isExporting) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.FileDownload,
+                                contentDescription = "Ekspor CSV"
+                            )
+                        }
+                    }
                     IconButton(
                         onClick = {
                             val nextSort = if (uiState.filter.sortOrder == SortOrder.NEWEST_FIRST) {

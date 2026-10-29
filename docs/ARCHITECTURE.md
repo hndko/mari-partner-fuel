@@ -219,3 +219,28 @@ Pendekatan **Local-First Hybrid OCR** menjamin privasi, kecepatan pengenalan tek
    - Seluruh kolom dapat disunting oleh pengguna di layar `ScanReviewScreen`.
    - Transaksi baru disimpan ke database jika dan hanya jika pengguna menekan tombol **Konfirmasi & Simpan Transaksi**.
 
+---
+
+## 10. Arsitektur Dashboard, Analitik, Ekspor CSV, & Pengingat Servis (Tahap 5)
+
+### 10.1 Agregasi Dashboard & Analitik Pengeluaran
+- **Zero N+1 Query:** Pengambilan data transaksi menggunakan filter rentang tanggal server-side (`TransactionFilter`) pada Postgrest Supabase. Seluruh kalkulasi agregasi (total biaya, total volume, rata-rata tertimbang, perbandingan antarbulan, persentase pengeluaran per kendaraan) dieksekusi secara instan dan efisien di Domain Layer (`GetDashboardSummaryUseCase` & `GetAnalyticsReportUseCase`).
+- **Penanganan Data Volume Tidak Lengkap:** Transaksi tanpa volume tidak dianggap 0 saat menghitung rata-rata harga per liter; hanya transaksi dengan volume yang dimasukkan dalam kalkulasi weighted average, disertai flag informatif `hasIncompleteVolumeData`.
+- **Mencegah Angka Menyesatkan (*Misleading Comparisons*):** Jika periode pembanding belum memiliki data (Rp 0), persentase perubahan dinyatakan sebagai `null` (bukan tak hingga / Infinity).
+
+### 10.2 Estimasi Efisiensi BBM (km/L) Berbasis Odometer
+- `CalculateFuelEfficiencyUseCase` memproses transaksi berurutan per kendaraan berdasarkan odometer naik.
+- Validasi selisih jarak: `delta_km = curr_odo - prev_odo`. Jika `delta_km <= 0` (odometer menurun akibat reset atau kesalahan ketik) atau `delta_km > 5000 km`, sistem menandainya sebagai anomali dan mengabaikannya agar tidak merusak akurasi rata-rata.
+- Memerlukan minimal 2 pencatatan transaksi berurutan dengan odometer dan volume lengkap untuk menyajikan estimasi km/liter.
+
+### 10.3 Ekspor CSV & Mitigasi Formula Injection (OWASP Compliance)
+- `ExportTransactionsCsvUseCase` mengonversi seluruh riwayat transaksi pengguna ke format CSV standar RFC 4180.
+- **Proteksi Formula Injection:** Nilai teks yang diawali karakter eksekusi spreadsheet (`=`, `+`, `-`, `@`, `\t`, `\r`) dinetralkan dengan menyisipkan awalan tanda petik tunggal (`'`). Angka murni negatif (`-50`) atau positif (`+100`) dipertahankan sebagai numerik sah.
+- **Enkoding UTF-8 dengan BOM:** Menyertakan karakter Byte Order Mark (`\uFEFF`) di awal berkas agar Microsoft Excel di Windows dapat membaca aksen dan pemisah secara otomatis.
+- **Integrasi SAF:** Menggunakan Android Storage Access Framework (`CreateDocument("text/csv")`) untuk memberikan kendali penuh lokasi berkas kepada pengguna tanpa meminta izin storage berlebih.
+
+### 10.4 Pengingat Perawatan Kendaraan & Alarm Notifikasi
+- Dikelola oleh `MaintenanceReminderRepositoryImpl` dengan relasi Composite FK `(vehicle_id, user_id)` untuk mencegah IDOR.
+- Pemicu ganda: Tanggal kalender (`target_date`), batas kilometer odometer (`target_odometer_km`), atau kombinasi keduanya.
+- Notifikasi lokal dijadwalkan secara aman menggunakan `AlarmManager.setAndAllowWhileIdle()` pada pukul 08:00 pagi melalui `ReminderNotificationReceiver` pada channel `fuel_service_reminders`. Alarm dibatalkan secara atomik saat pengingat diselesaikan atau dihapus.
+

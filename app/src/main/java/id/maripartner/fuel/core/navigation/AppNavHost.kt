@@ -26,6 +26,9 @@ import id.maripartner.fuel.feature.profile.ProfileScreen
 import id.maripartner.fuel.feature.receipt_scan.ReceiptScanScreen
 import id.maripartner.fuel.feature.receipt_scan.ReceiptScanViewModel
 import id.maripartner.fuel.feature.receipt_scan.ScanReviewScreen
+import id.maripartner.fuel.feature.reminders.ReminderFormScreen
+import id.maripartner.fuel.feature.reminders.RemindersScreen
+import id.maripartner.fuel.feature.reminders.RemindersViewModel
 import id.maripartner.fuel.feature.splash.SplashScreen
 import id.maripartner.fuel.feature.transactions.TransactionDetailScreen
 import id.maripartner.fuel.feature.transactions.TransactionFormScreen
@@ -39,7 +42,8 @@ fun AppNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = NavRoute.Splash.route,
     authViewModel: AuthViewModel = viewModel(),
-    receiptScanViewModel: ReceiptScanViewModel = viewModel()
+    receiptScanViewModel: ReceiptScanViewModel = viewModel(),
+    remindersViewModel: RemindersViewModel = viewModel()
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -135,6 +139,12 @@ fun AppNavHost(
                     },
                     onNavigateToProPlans = {
                         navController.navigate(NavRoute.ProPlans.route)
+                    },
+                    onNavigateToReminders = {
+                        navController.navigate(NavRoute.Reminders.route)
+                    },
+                    onNavigateToTransactions = {
+                        navController.navigate(NavRoute.Transactions.route)
                     }
                 )
             }
@@ -251,6 +261,33 @@ fun AppNavHost(
                         }
                     },
                     viewModel = receiptScanViewModel
+                )
+            }
+
+            // 7. Sub-alur Pengingat Perawatan Kendaraan
+            composable(NavRoute.Reminders.route) {
+                RemindersScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToCreate = { navController.navigate(NavRoute.ReminderForm.createRoute()) },
+                    onNavigateToEdit = { id -> navController.navigate(NavRoute.ReminderForm.createRoute(id)) },
+                    viewModel = remindersViewModel
+                )
+            }
+
+            composable(
+                route = NavRoute.ReminderForm.route,
+                arguments = listOf(navArgument("id") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                })
+            ) { backStackEntry ->
+                val reminderId = backStackEntry.arguments?.getString("id")
+                ReminderFormScreen(
+                    reminderId = reminderId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() },
+                    viewModel = remindersViewModel
                 )
             }
 

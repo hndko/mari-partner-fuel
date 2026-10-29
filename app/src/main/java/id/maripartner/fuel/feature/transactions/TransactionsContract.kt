@@ -14,6 +14,7 @@ data class TransactionsUiState(
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
     val canLoadMore: Boolean = true,
+    val isExporting: Boolean = false,
     val errorMessage: String? = null,
     val actionMessage: String? = null
 )

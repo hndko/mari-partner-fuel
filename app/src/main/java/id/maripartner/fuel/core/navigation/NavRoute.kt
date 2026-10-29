@@ -32,6 +32,12 @@ sealed class NavRoute(val route: String) {
         fun createRoute(id: String) = "transaction_detail/$id"
     }
 
+    // Maintenance Reminders
+    data object Reminders : NavRoute("reminders")
+    data object ReminderForm : NavRoute("reminder_form?id={id}") {
+        fun createRoute(id: String? = null) = if (id != null) "reminder_form?id=$id" else "reminder_form"
+    }
+
     // Pro Subscription & Checkout
     data object ProPlans : NavRoute("pro_plans")
     data object Checkout : NavRoute("checkout/{planId}") {

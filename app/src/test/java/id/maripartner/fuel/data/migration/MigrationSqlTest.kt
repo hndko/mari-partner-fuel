@@ -22,11 +22,25 @@ class MigrationSqlTest {
         val rlsFile = File(migrationDir, "20261029000002_rls_and_storage.sql")
         val tahap3File = File(migrationDir, "20261029000003_vehicles_and_transactions_tahap3.sql")
         val tahap4File = File(migrationDir, "20261029000004_receipt_scan_jobs_policy.sql")
+        val tahap5File = File(migrationDir, "20261029000005_maintenance_reminders_enhancement.sql")
 
         assertTrue("File initial_schema.sql harus ada", schemaFile.exists())
         assertTrue("File rls_and_storage.sql harus ada", rlsFile.exists())
         assertTrue("File vehicles_and_transactions_tahap3.sql harus ada", tahap3File.exists())
         assertTrue("File receipt_scan_jobs_policy.sql harus ada", tahap4File.exists())
+        assertTrue("File maintenance_reminders_enhancement.sql harus ada", tahap5File.exists())
+    }
+
+    @Test
+    fun migrationTahap5_enhancesMaintenanceReminders() {
+        val file = File(migrationDir, "20261029000005_maintenance_reminders_enhancement.sql")
+        val content = file.readText()
+
+        assertTrue("Harus menambahkan composite foreign key vehicle user", content.contains("fk_maintenance_reminders_vehicle_user"))
+        assertTrue("Harus menambahkan completed_at", content.contains("completed_at timestamptz"))
+        assertTrue("Harus menambahkan last_notified_at", content.contains("last_notified_at timestamptz"))
+        assertTrue("Harus ada check constraint pemicu jatuh tempo", content.contains("chk_maintenance_reminders_trigger"))
+        assertTrue("Harus ada indeks jatuh tempo", content.contains("idx_maintenance_reminders_due"))
     }
 
     @Test

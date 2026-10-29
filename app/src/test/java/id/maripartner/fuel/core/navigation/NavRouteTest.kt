@@ -15,6 +15,7 @@ class NavRouteTest {
         assertEquals("analytics", NavRoute.Analytics.route)
         assertEquals("vehicles", NavRoute.Vehicles.route)
         assertEquals("profile", NavRoute.Profile.route)
+        assertEquals("reminders", NavRoute.Reminders.route)
     }
 
     @Test
@@ -25,6 +26,8 @@ class NavRouteTest {
         assertEquals("vehicle_form?id=veh-999", NavRoute.VehicleForm.createRoute("veh-999"))
         assertEquals("transaction_form", NavRoute.TransactionForm.createRoute())
         assertEquals("transaction_form?id=tx-888", NavRoute.TransactionForm.createRoute("tx-888"))
+        assertEquals("reminder_form", NavRoute.ReminderForm.createRoute())
+        assertEquals("reminder_form?id=rem-777", NavRoute.ReminderForm.createRoute("rem-777"))
     }
 
     @Test

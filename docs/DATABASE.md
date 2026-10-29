@@ -26,6 +26,7 @@ Seluruh skema tersimpan rapi dalam migrasi SQL:
 - [`supabase/migrations/20261029000002_rls_and_storage.sql`](../supabase/migrations/20261029000002_rls_and_storage.sql)
 - [`supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql`](../supabase/migrations/20261029000003_vehicles_and_transactions_tahap3.sql)
 - [`supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql`](../supabase/migrations/20261029000004_receipt_scan_jobs_policy.sql)
+- [`supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql`](../supabase/migrations/20261029000005_maintenance_reminders_enhancement.sql)
 
 | No | Nama Tabel | Deskripsi & Tujuan | Kebijakan RLS Klien Android |
 |:--:|:---|:---|:---|
@@ -79,6 +80,14 @@ create index idx_ai_usage_logs_user_month on public.ai_usage_logs(user_id, billi
 - **Tabel `receipt_scan_jobs`**:
   - Menambahkan kebijakan RLS `receipt_scan_jobs_update_own` untuk mengizinkan operasi `UPDATE` bagi pengguna pemilik data (`auth.uid() = user_id`).
   - Menjamin transisi status scan yang mulus (`pending` -> `processing` -> `completed` / `failed`) serta pembaruan `extracted_data` dan `confidence_score` selama siklus pemindaian OCR lokal maupun AI tanpa pelanggaran hak akses.
+
+### 3.6 Penyempurnaan Pengingat Perawatan Tahap 5 (`20261029000005_maintenance_reminders_enhancement.sql`)
+- **Tabel `maintenance_reminders`**:
+  - Menambahkan Composite Foreign Key `fk_maintenance_reminders_vehicle_user (vehicle_id, user_id)` yang merujuk ke `public.vehicles(id, user_id)`. Ini menegakkan proteksi isolasi kepemilikan data (anti-BOLA/IDOR), sehingga akun pengguna tidak dapat menghubungkan pengingat servis ke kendaraan milik pengguna lain.
+  - Menambahkan kolom `completed_at timestamptz` untuk mencatat tanggal dan jam penyelesaian servis.
+  - Menambahkan kolom `last_notified_at timestamptz` untuk riwayat waktu pengiriman notifikasi alarm lokal.
+  - Menambahkan check constraint `chk_maintenance_reminders_trigger` guna menjamin minimal salah satu pemicu jatuh tempo (`target_odometer_km` atau `target_date`) wajib terisi.
+  - Menambahkan indeks komposit performa tinggi: `idx_maintenance_reminders_due (user_id, is_completed, target_date)` dan `idx_maintenance_reminders_vehicle (vehicle_id, is_completed)`.
 
 ---
 

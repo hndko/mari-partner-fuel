@@ -34,6 +34,11 @@
             </intent-filter>
         </activity>
 
+        <!-- BroadcastReceiver untuk notifikasi alarm pengingat perawatan -->
+        <receiver
+            android:name=".core.notification.ReminderNotificationReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>

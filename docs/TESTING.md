@@ -7,17 +7,38 @@ Dokumen ini memuat seluruh metodologi pengujian, laporan eksekusi pengujian otom
 ## 📌 1. Ringkasan Eksekusi Pengujian Mutu
 
 - **Status Build**: ✅ **BUILD SUCCESSFUL**
-- **Total Unit Test**: **80 Tests** (17 Test Suites)
+- **Total Unit Test**: **99 Tests** (21 Test Suites)
 - **Tingkat Kelulusan (Pass Rate)**: **100% (0 Gagal, 0 Error, 0 Diabaikan)**
-- **Waktu Eksekusi**: ~26 detik
+- **Waktu Eksekusi**: ~28 detik
 - **Artefak Build Terverifikasi**: `app/build/outputs/apk/debug/app-debug.apk` (Ukuran: ~23.1 MB)
 - **Kompatibilitas Runtime**: Min SDK API 26 (Android 8.0 Oreo), Target SDK API 35 (Android 15), Desugaring JDK Java 8+ / `java.time` aktif.
 
 ---
 
-## 🧪 2. Rincian Rangkaian Unit Test (17 Test Suites)
+## 🧪 2. Rincian Rangkaian Unit Test (21 Test Suites)
 
-### A. Fitur Hybrid OCR & AI Extraction (Tahap 4)
+### A. Fitur Dashboard, Analitik, CSV & Pengingat (Tahap 5)
+1. **`DashboardSummaryCalculationTest` (4 tests)**:
+   - Akurasi perhitungan total pengeluaran bulanan, total volume, dan rata-rata tertimbang harga per liter.
+   - Penanganan transaksi dengan volume tidak lengkap tanpa menganggapnya nol saat merata-rata harga per liter.
+   - Penanganan bulan lalu tanpa data agar tidak menghasilkan persentase perbandingan yang membingungkan atau bernilai tak hingga (`null`).
+   - Identifikasi kendaraan dengan pengeluaran tertinggi dan perhitungan persentase distribusi anggaran.
+2. **`CalculateFuelEfficiencyTest` (3 tests)**:
+   - Kalkulasi efisiensi konsumsi km/liter dari pergerakan odometer berurutan per kendaraan.
+   - Penanganan anomali odometer menurun (akibat reset atau kesalahan input) tanpa merusak leg valid lainnya.
+   - Penolakan perhitungan saat transaksi dengan odometer dan volume kurang dari 2 entri valid (`isSufficientData = false`).
+3. **`ExportTransactionsCsvTest` (4 tests)**:
+   - Pembentukan format CSV standar RFC 4180 dengan UTF-8 Byte Order Mark (`\uFEFF`) untuk kompatibilitas Microsoft Excel.
+   - Proteksi ketat terhadap serangan Spreadsheet Formula Injection (OWASP mitigation): menetralkan karakter berbahaya (`=`, `@`, `+`, `-`, `\t`) dengan awalan tanda petik tunggal (`'`).
+   - Verifikasi preservasi angka numerik sah: angka murni negatif (`-15`) dan positif (`+100`) tidak dirusak menjadi teks berpetik.
+   - Verifikasi ketiadaan token otentikasi rahasia, signed URL sementara, atau userId internal pada baris data CSV.
+4. **`MaintenanceReminderValidationTest` (7 tests)**:
+   - Penolakan form pengingat tanpa judul atau tanpa pemilihan kendaraan.
+   - Penolakan pengingat yang tidak memiliki target jatuh tempo (baik tanggal maupun odometer kosong).
+   - Pengujian kelulusan pemicu tanggal saja, odometer saja, atau kombinasi keduanya.
+   - Evaluasi status jatuh tempo otomatis: `OVERDUE` (tanggal lewat atau odometer terlampaui), `DUE_SOON` (dalam 7 hari atau sisa 500 km), `UPCOMING` (masih jauh), dan `COMPLETED`.
+
+### B. Fitur Hybrid OCR & AI Extraction (Tahap 4)
 1. **`ReceiptTextParserTest` (5 tests)**:
    - Verifikasi ekstraksi struk Pertamina (Pertamax, Rp 35.000, 2.703 L, SPBU 34-12345, tanggal/waktu, dan nomor struk).
    - Verifikasi ekstraksi struk Shell (Shell V-Power, Rp 50.000, 3.425 L, SPBU Shell Gatot Subroto).

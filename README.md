@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
   <img src="https://img.shields.io/badge/Payment-QRISpy-FF8F00?style=for-the-badge" alt="Payment QRISpy" />
-  <img src="https://img.shields.io/badge/Version-v1.3.0-blue?style=for-the-badge" alt="Version 1.3.0" />
+  <img src="https://img.shields.io/badge/Version-v1.4.0-blue?style=for-the-badge" alt="Version 1.4.0" />
 </p>
 
 ---
@@ -159,7 +159,11 @@ Variabel publik `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dapat dimasukkan ke `loca
 ```powershell
 .\gradlew.bat testDebugUnitTest
 ```
-Hasil uji: **80 tests lulus** (17 test suites):
+Hasil uji: **99 tests lulus** (21 test suites):
+- Agregasi dashboard & perbandingan bulan (`DashboardSummaryCalculationTest` - 4 tests)
+- Estimasi efisiensi konsumsi BBM km/L (`CalculateFuelEfficiencyTest` - 3 tests)
+- Ekspor CSV & mitigasi formula injection (`ExportTransactionsCsvTest` - 4 tests)
+- Validasi & status jatuh tempo pengingat servis (`MaintenanceReminderValidationTest` - 7 tests)
 - Pembacaan & parsing teks struk SPBU (`ReceiptTextParserTest` - 5 tests)
 - DTO ekstraksi AI & fallback serialisasi (`AiExtractionDtoTest` - 3 tests)
 - Validasi data kendaraan (`ValidateVehicleInputUseCaseTest` - 7 tests)
@@ -167,7 +171,7 @@ Hasil uji: **80 tests lulus** (17 test suites):
 - Estimasi volume & toleransi selisih harga (`EstimateFuelCalculationUseCaseTest` - 6 tests)
 - Pemetaan Postgrest DTO & domain model (`VehicleDtoMappingTest` - 3 tests, `FuelTransactionDtoMappingTest` - 2 tests)
 - Alur Use Case kendaraan & transaksi (`VehicleUseCaseTest` - 4 tests, `TransactionUseCaseTest` - 4 tests)
-- Verifikasi skema DDL & trigger SQL (`MigrationSqlTest` - 8 tests)
+- Verifikasi skema DDL & trigger SQL (`MigrationSqlTest` - 9 tests)
 - Pengujian autentikasi & validasi input (`AuthUseCaseTest` - 9 tests, `AuthValidationTest` - 6 tests)
 - Manajemen private bucket storage (`ReceiptStorageManagerTest` - 6 tests)
 - Formatting & utilitas (`CurrencyFormatterTest` - 5 tests, `NavRouteTest` - 3 tests, `UiStateTest` - 2 tests, `AppConfigTest` - 2 tests).
@@ -177,6 +181,28 @@ Hasil uji: **80 tests lulus** (17 test suites):
 .\gradlew.bat assembleDebug
 ```
 Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (~23.1 MB).
+
+### Menjalankan Fitur Tahap 5 (Dashboard, Analitik, Ekspor CSV, & Pengingat Servis)
+1. **Dashboard Statistik Real-Time (`/dashboard`)**:
+   - Total pengeluaran bulan berjalan, total liter, rata-rata tertimbang biaya per liter, dan total transaksi.
+   - Perbandingan pengeluaran terhadap bulan lalu dengan persentase dan selisih nominal (mencegah persentase menyesatkan bila pembanding nol).
+   - Kartu kendaraan dengan pengeluaran tertinggi bulan ini dan grafik ringkasan distribusi per kendaraan.
+   - Daftar 5 transaksi terkini dengan rincian SPBU, kendaraan, dan nominal.
+2. **Analitik Finansial & Konsumsi BBM (`/analytics`)**:
+   - Filter periode: Bulan Ini, Bulan Lalu, 3 Bulan, 6 Bulan, Tahun Ini, dan Rentang Khusus.
+   - Grafik tren pengeluaran time-series harian/bulanan berbasis Compose Canvas.
+   - Distribusi persentase pengeluaran per kendaraan.
+   - Estimasi efisiensi BBM (km/liter) berbasis selisih odometer berurutan per kendaraan dengan penanganan anomali odometer.
+3. **Ekspor Riwayat CSV Aman (`/transactions`)**:
+   - Ketuk ikon Download pada bilah atas layar Riwayat untuk mengekspor riwayat transaksi ke format CSV standar RFC 4180.
+   - Dilengkapi **OWASP Formula Injection Mitigation**: menetralkan input berbahaya berawalan `=`, `+`, `-`, `@`, `\t` dengan petik tunggal (`'`) tanpa merusak format angka numerik yang sah.
+   - Menyertakan **UTF-8 BOM (`\uFEFF`)** sehingga file dapat langsung dibuka dengan rapi di Microsoft Excel maupun Google Sheets.
+   - Menggunakan Android Storage Access Framework (SAF) agar pengguna bebas memilih direktori penyimpanan.
+4. **Pengingat Perawatan & Servis Kendaraan (`/reminders`)**:
+   - Catat pengingat ganti oli mesin, servis berkala, atau pemeriksaan rem.
+   - Pemicu jatuh tempo ganda: berdasarkan tanggal target, batas kilometer odometer, atau kombinasi keduanya.
+   - Status visual dinamis: **Sudah Jatuh Tempo** (Merah), **Mendekati Jatuh Tempo** (Kuning/Amber), **Mendatang** (Teal), dan **Selesai** (Hijau).
+   - Penjadwalan alarm lokal Android (`AlarmManager` & `ReminderNotificationReceiver`) pada pukul 08:00 pagi saat tanggal target tiba.
 
 ### Menjalankan Fitur Tahap 4 (Hybrid OCR & AI Receipt Extraction)
 1. **Pemindaian Struk On-Device (`/receipt_scan`)**:

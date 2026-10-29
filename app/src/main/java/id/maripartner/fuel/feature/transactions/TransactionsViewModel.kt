@@ -25,7 +25,8 @@ class TransactionsViewModel(
     private val transactionRepository: FuelTransactionRepository = FuelTransactionRepositoryImpl(),
     private val vehicleRepository: VehicleRepository = VehicleRepositoryImpl(),
     private val getTransactionsUseCase: GetTransactionsUseCase = GetTransactionsUseCase(transactionRepository),
-    private val getVehiclesUseCase: GetVehiclesUseCase = GetVehiclesUseCase(vehicleRepository)
+    private val getVehiclesUseCase: GetVehiclesUseCase = GetVehiclesUseCase(vehicleRepository),
+    private val exportTransactionsCsvUseCase: id.maripartner.fuel.domain.usecase.export.ExportTransactionsCsvUseCase = id.maripartner.fuel.domain.usecase.export.ExportTransactionsCsvUseCase()
 ) : ViewModel() {
 
     companion object {
@@ -143,5 +144,28 @@ class TransactionsViewModel(
 
     private fun loadNextPage() {
         loadTransactions(reset = false)
+    }
+
+    /**
+     * Menghasilkan string CSV dari transaksi yang sesuai filter aktif.
+     */
+    fun exportCsv(onReady: (String) -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isExporting = true) }
+            val currentFilter = _uiState.value.filter
+            val result = transactionRepository.getTransactions(currentFilter, limit = 1000, offset = 0)
+            _uiState.update { it.copy(isExporting = false) }
+
+            when (result) {
+                is AppResult.Success -> {
+                    val vehiclesMap = _uiState.value.availableVehicles.associateBy { it.id }
+                    val csvText = exportTransactionsCsvUseCase.exportToCsvString(result.data, vehiclesMap)
+                    onReady(csvText)
+                }
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(errorMessage = "Gagal mengekspor data: ${result.exception.message}") }
+                }
+            }
+        }
     }
 }
