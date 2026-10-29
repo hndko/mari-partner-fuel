@@ -53,12 +53,22 @@ Supabase bertindak sebagai basis data online, autentikasi pengguna, dan penyimpa
 ### 2.1 Buat Akun & Proyek Baru
 1. Buka situs [supabase.com](https://supabase.com) dan klik **Start your project** (Bisa login dengan akun GitHub).
 2. Di Dashboard Supabase, klik **New project**.
-3. Isi data proyek:
-   - **Name**: `mari-partner-fuel`
-   - **Database Password**: Buat password yang kuat (dan simpan di catatan aman).
-   - **Region**: Pilih **Singapore (`ap-southeast-1`)** *(Lokasi server terdekat dengan Indonesia agar respon secepat kilat)*.
-   - **Pricing Plan**: Pilih **Free Tier** ($0).
-4. Klik **Create new project** dan tunggu 1-2 menit hingga status database selesai dibuat.
+3. Isi data proyek sesuai tampilan formulir pembuatan proyek Supabase:
+   - **Organization**: Pilih organisasi Anda (misal: `Mari Partner FREE`).
+   - **GitHub (optional)**: Boleh dikosongkan.
+   - **Project name**: Masukkan `mari-partner-fuel`.
+   - **Database password**: Klik *Generate a password*, lalu **wajib klik Copy** dan simpan password tersebut di catatan aman Anda!
+   - **Region**: 
+     > [!TIP]
+     > Pada menu Region, klik **"Need a specific region?"** atau pilih dropdown: **Singapore (`ap-southeast-1`)**.
+     > Memilih server Singapore sangat disarankan dibandingkan opsi `Auto` agar lokasi server berada paling dekat dengan Indonesia (latensi super rendah ~15–30 ms) sehingga respon data di ponsel secepat kilat.
+   - **Security**:
+     - ✅ **Enable Data API** (Wajib dicentang, agar klien Android Supabase Kotlin SDK dapat berkomunikasi via RESTful API).
+     - ✅ **Automatically expose new tables** (Dicentang agar tabel yang dibuat otomatis terekspos ke Data API).
+     - 🔲 **Enable automatic RLS** (Boleh dicentang atau dibiarkan kosong, karena seluruh skrip migrasi SQL Mari Partner Fuel sudah menyertakan perintah `ENABLE ROW LEVEL SECURITY` secara eksplisit pada setiap tabel).
+   - **Advanced Configuration -> Postgres Type**:
+     - Tetap pilih **`Postgres (DEFAULT)`** *(Jangan pilih OrioleDB BETA agar stabil dan kompatibel penuh)*.
+4. Klik tombol hijau **Create new project** di kanan bawah dan tunggu 1–2 menit hingga pembuatan database selesai (status menjadi hijau/aktif).
 
 ---
 
