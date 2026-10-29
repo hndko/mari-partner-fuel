@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Mari Partner Fuel</string>
+    <string name="app_tagline">Pencatat Pengeluaran BBM Cerdas</string>
+
+    <!-- Navigation tabs -->
+    <string name="nav_dashboard">Beranda</string>
+    <string name="nav_transactions">Riwayat</string>
+    <string name="nav_analytics">Analitik</string>
+    <string name="nav_vehicles">Kendaraan</string>
+    <string name="nav_profile">Profil</string>
+
+    <!-- Common Actions & States -->
+    <string name="action_retry">Coba Lagi</string>
+    <string name="action_save">Simpan</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_confirm">Konfirmasi</string>
+    <string name="action_scan_receipt">Scan Struk</string>
+    <string name="action_manual_input">Input Manual</string>
+    <string name="state_loading">Memuat data…</string>
+    <string name="state_empty_transactions">Belum ada riwayat transaksi BBM.</string>
+    <string name="state_empty_vehicles">Belum ada kendaraan yang ditambahkan.</string>
+</resources>

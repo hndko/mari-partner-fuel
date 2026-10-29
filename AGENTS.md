@@ -1,203 +1,296 @@
-# AGENTS.md --- Mari Partner Fuel
+# 🤖 AGENTS.md — Panduan & Aturan Utama Pengembangan Proyek Mari Partner Fuel
 
-## 1. Misi
+Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertinggi bagi seluruh AI Coding Assistant dan pengembang yang bekerja pada repositori **Mari Partner Fuel**. Seluruh instruksi dalam dokumen ini bersifat mengikat dan wajib dipatuhi tanpa pengecualian. Jika aturan bertentangan, urutan prioritasnya adalah: **keamanan dan integritas data**, **instruksi pengguna saat ini**, **dokumen ini (AGENTS.md)**, **PRD (`docs/PRD.md`)**, lalu **pola kode lama**.
 
-Bangun Mari Partner Fuel sesuai `docs/PRD.md`: aplikasi Android Native
-Kotlin untuk pencatatan pengeluaran BBM dengan OCR hybrid, database
-Supabase online, autentikasi email/Google, dan langganan Pro yang
-pembayaran default-nya QRISpy.
+---
 
-## 2. Sumber Kebenaran
+## 📌 Metadata Proyek
 
--   `docs/PRD.md` adalah spesifikasi produk utama.
--   Dokumen arsitektur, database, keamanan, dan pembayaran tidak boleh
-    bertentangan dengan PRD.
--   Jika persyaratan bertentangan atau ada informasi provider yang belum
-    tersedia, jangan menebak. Dokumentasikan pertanyaan/risiko dan pilih
-    implementasi paling aman.
--   Jangan mengklaim integrasi aktif sebelum kredensial dan pengujian
-    nyata tersedia.
+- **Nama Aplikasi**: **Mari Partner Fuel** (AI-Powered Fuel Expense Tracker for Android)
+- **Versi Saat Ini**: `v1.0.0`
+- **Platform**: Android Native (Minimum SDK API 26 Android 8.0 Oreo, Target SDK API 35 Android 15)
+- **Bahasa & UI**: Kotlin 2.0.21, Jetpack Compose BOM 2024.10.00, Material 3
+- **Backend & Basis Data**: Supabase PostgreSQL 15+, Private Storage, Row Level Security (RLS), Edge Functions
+- **OCR & AI Strategy**: Google ML Kit Text Recognition (lokal) + Cloud AI Fallback via Edge Function
+- **Payment Gateway**: QRISpy (Default), Midtrans & Xendit (Adapter Alternatif)
+- **Dokumentasi Proyek**: [Portal Dokumentasi](docs/README.md) & [Buku Panduan Pengembang](docs/03-developer-guide.md)
+- **Histori Rilis**: `README.md`
+- **Sumber Versi Runtime**: `app/build.gradle.kts` (`versionName = "1.0.0"`, `versionCode = 1`)
 
-## 3. Keputusan Teknologi yang Dikunci
+---
 
--   App: Mari Partner Fuel.
--   Android Native, Kotlin, Jetpack Compose, Material 3.
--   Minimum SDK: API 26.
--   Arsitektur: MVVM + Repository, domain/use case untuk aturan bisnis
-    yang perlu diuji.
--   Backend: Supabase Auth, PostgreSQL, private Storage, RLS, Edge
-    Functions.
--   Login: email/password + Google Sign-In.
--   OCR: Google ML Kit lokal dahulu, AI cloud fallback.
--   Monetisasi: Free + subscription Pro bulanan/tahunan.
--   Payment gateway default: QRISpy; adapter alternatif Midtrans dan
-    Xendit.
--   Tidak memerlukan VPS terkelola sendiri untuk MVP.
+## 📋 Daftar Isi
 
-## 4. Workflow Sebelum Coding
+1. [🏛️ 10 Pilar Aturan Wajib AI Assistant & Pengembang](#-10-pilar-aturan-wajib-ai-assistant--pengembang)
+   - [🎯 1. Peran & Prinsip Kerja Utama (Role & Prime Directives)](#-1-peran--prinsip-kerja-utama-role--prime-directives)
+   - [🏗️ 2. Arsitektur Android MVVM + Repository & Clean Layering](#-2-arsitektur-android-mvvm--repository--clean-layering)
+   - [🎨 3. UI Murni Jetpack Compose & Material 3 (Zero DB Query in View)](#-3-ui-murni-jetpack-compose--material-3-zero-db-query-in-view)
+   - [🏢 4. Isolasi Kepemilikan Data & PostgreSQL RLS (Scoped Ownership)](#-4-isolasi-kepemilikan-data--postgresql-rls-scoped-ownership)
+   - [⚡ 5. Strategi OCR Hybrid & Batasan Cloud AI (Local First)](#-5-strategi-ocr-hybrid--batasan-cloud-ai-local-first)
+   - [💳 6. Standar Pembayaran QRISpy, Webhook & Idempotensi Langganan](#-6-standar-pembayaran-qrispy-webhook--idempotensi-langganan)
+   - [🔒 7. Standar Keamanan OWASP, Private Storage & Zero-Secret](#-7-standar-keamanan-owasp-private-storage--zero-secret)
+   - [🧪 8. Standar Pengujian Mutu (Quality Gates) & Definition of Done](#-8-standar-pengujian-mutu-quality-gates--definition-of-done)
+   - [📦 9. Aturan Git Commit & Push Otomatis & SemVer (Conventional Commits)](#-9-aturan-git-commit--push-otomatis--semver-conventional-commits)
+   - [🔄 10. Kewajiban Pengkinian Dokumen (Mandatory Sync)](#-10-kewajiban-pengkinian-dokumen-mandatory-sync)
+2. [📁 Konsep Tata Letak Direktori (Folder-Foldering Hierarchy)](#-konsep-tata-letak-direktori-folder-foldering-hierarchy)
+   - [🌳 Diagram Pohon Direktori](#-diagram-pohon-direktori)
+   - [🧩 Penjelasan Modul Direktori Proyek](#-penjelasan-modul-direktori-proyek)
+3. [🛡️ Standar Wajib Audit Kualitas & Kesiapan Produksi (Quality Gate)](#-standar-wajib-audit-kualitas--kesiapan-produksi-quality-gate)
 
-1.  Periksa semua file repository dan status Git sebelum mengubah apa
-    pun.
-2.  Baca PRD dan dokumentasi yang relevan.
-3.  Buat checklist persyaratan dan petakan file/modul yang terpengaruh.
-4.  Periksa versi Gradle/Kotlin/dependency dan kompatibilitas API 26.
-5.  Cari implementasi yang sudah ada sebelum membuat duplikasi.
-6.  Untuk perubahan database, buat migration baru; jangan mengedit
-    migration yang sudah diterapkan di lingkungan bersama tanpa rencana
-    migrasi yang aman.
-7.  Gunakan hasil test/build untuk memandu perbaikan, bukan asumsi.
+---
 
-## 5. Aturan Kode Android
+## 🏛️ 10 Pilar Aturan Wajib AI Assistant & Pengembang
 
--   Ikuti Kotlin idioms dan struktur package konsisten.
--   UI Compose tidak boleh memuat logika bisnis berat atau akses
-    jaringan langsung.
--   Gunakan ViewModel, immutable UI state, dan event yang jelas.
--   Operasi asinkron memakai Coroutines/Flow sesuai kebutuhan.
--   Pisahkan model domain, DTO API, dan model UI jika diperlukan.
--   Sediakan loading, empty, error, retry, dan success states.
--   Jangan melakukan blocking I/O pada main thread.
--   Hindari N+1 requests dan pengambilan semua transaksi tanpa
-    pagination.
--   Tambahkan unit test untuk perhitungan dan validasi.
--   Hormati lifecycle, izin kamera/galeri/notifikasi, dan minimum API
-    26.
--   Jangan memasukkan fitur, tombol, atau halaman dummy sebagai fitur
-    selesai.
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│              10 PILAR ATURAN WAJIB PENGEMBANGAN MARI PARTNER FUEL                │
+├───────────────────┬───────────────────┬───────────────────┬──────────────────────┤
+│ 1. Prime Directive│ 2. Clean MVVM     │ 3. Compose M3 UDF │ 4. PostgreSQL RLS    │
+│ 5. Local OCR First│ 6. QRISpy Gateway │ 7. Zero Secret    │ 8. Strict Quality    │
+│ 9. SemVer AutoPush│ 10. Mandatory Sync│                   │                      │
+└───────────────────┴───────────────────┴───────────────────┴──────────────────────┘
+```
 
-## 6. Aturan OCR dan AI
+---
 
--   ML Kit berjalan terlebih dahulu untuk OCR lokal.
--   AI cloud hanya melalui Edge Function/backend; jangan memanggil
-    provider AI langsung dari APK dengan secret.
--   Buat interface seperti `ReceiptAiProvider` untuk mengisolasi
-    provider.
--   Validasi autentikasi, ukuran gambar, rate limit, dan kuota sebelum
-    panggilan AI.
--   Kirim data minimum yang dibutuhkan dan dokumentasikan pemrosesan
-    foto oleh pihak ketiga.
--   Parse output ke schema ketat; tolak output malformed.
--   Jangan langsung menyimpan hasil AI. Tampilkan review dan minta
-    konfirmasi pengguna.
--   Jangan menimpa nilai sumber secara diam-diam saat perhitungan tidak
-    cocok.
--   Jika AI gagal/kuota habis, berikan OCR lokal dan input manual
-    sebagai fallback.
--   Jangan mengklaim akurasi 100% atau AI gratis tanpa batas.
+### 🎯 1. Peran & Prinsip Kerja Utama (Role & Prime Directives)
 
-## 7. Aturan Supabase dan Database
+1. **Senior Engineering Mindset**: Bertindak sebagai Senior Android Engineer, Security Auditor, dan Tech Lead. Selalu utamakan solusi jangka panjang, arsitektur bersih, dan minim dependensi redundan.
+2. **Nol Asumsi & Non-Halusinasi**: Selalu baca berkas langsung di sistem file sebelum melakukan edit atau memberikan rekomendasi. Dilarang berasumsi nama fungsi, versi library, atau skema tabel ada tanpa verifikasi nyata.
+3. **Preservasi Invarian Domain**: Jangan merusak logika domain bisnis (perhitungan rata-rata tertimbang biaya per liter, konsumsi km/liter, validasi angka odometer, saldo kuota AI, dan status langganan Pro).
+4. **Verifikasi Fungsional Nyata**: Dilarang mengklaim modul fungsional hanya karena ViewModel atau Composable sudah dibuat. Verifikasi kompilasi Gradle, unit test, dan validasi data secara riil.
 
--   Semua schema changes harus berupa migration SQL yang tersimpan di
-    repository.
--   RLS harus diaktifkan untuk seluruh tabel yang dapat diakses client.
--   Gunakan `auth.uid()` untuk kebijakan kepemilikan.
--   Validasi kendaraan dan file terkait benar-benar dimiliki user yang
-    menyimpan transaksi.
--   Gunakan private Storage untuk struk dan signed URL berumur pendek.
--   Jangan pernah menaruh Supabase service-role key di aplikasi Android.
--   Jangan mempercayai `user_id`, role, harga plan, kuota AI, atau
-    status pembayaran yang dikirim client tanpa validasi server.
--   Buat index untuk pola query aktual dan gunakan pagination.
--   Sertakan constraint, foreign key, dan unique constraint yang
-    melindungi integritas.
--   Uji RLS dengan setidaknya dua akun berbeda.
--   Operasi privileged harus dilakukan melalui Edge Function atau
-    mekanisme server-side yang dibatasi haknya.
+---
 
-## 8. Aturan Pembayaran dan Subscription
+### 🏗️ 2. Arsitektur Android MVVM + Repository & Clean Layering
 
--   QRISpy adalah provider default; Midtrans dan Xendit harus mengikuti
-    interface provider yang sama.
--   Semua merchant token/API secret hanya di backend secret store.
--   Harga paket yang ditagihkan diambil dari konfigurasi server, bukan
-    nominal yang dipercaya dari client.
--   Return URL/redirect bukan bukti pembayaran.
--   Verifikasi webhook sesuai dokumentasi resmi provider; verifikasi
-    status dari API provider bila diperlukan.
--   Cocokkan provider reference, payment reference, nominal, mata uang,
-    dan status.
--   Implementasikan idempotency sehingga webhook replay tidak
-    menggandakan transaksi atau aktivasi.
--   Status `pending`, `expired`, `cancelled`, `failed`, atau nominal
-    mismatch tidak mengaktifkan Pro.
--   Simpan payment order dan subscription secara terpisah.
--   Pro hanya aktif setelah backend memverifikasi pembayaran yang sah.
--   Ketika Pro habis, jangan menghapus atau mengunci riwayat pengguna.
--   Jika dokumentasi webhook/signature provider belum tersedia, tandai
-    integrasi belum siap produksi; jangan membuat skema verifikasi
-    palsu.
--   Tinjau kebijakan pembayaran Google Play yang berlaku sebelum rilis.
+1. **Pemisahan Tiga Layer Bersih**:
+   - **UI Layer (`feature/*`, `core/designsystem/*`)**: Jetpack Compose Composable murni, ViewModel, UI State (`UiState`), UI Event (`UiEvent`).
+   - **Domain Layer (`domain/*`)**: Pure Kotlin Use Cases (kalkulasi konsumsi BBM, validasi scan struk, agregasi analitik) dan domain model bersih tanpa dependensi Android Framework.
+   - **Data Layer (`data/*`)**: Repository implementations, Supabase client data sources, ML Kit OCR Engine, Local Storage / Preferences.
+2. **Unidirectional Data Flow (UDF)**:
+   - UI mengobservasi `StateFlow<UiState<T>>` dari ViewModel secara immutable.
+   - UI memancarkan user intent/event ke ViewModel melalui fungsi event terstandar.
+3. **Dilarang Blocking I/O pada Main Thread**: Seluruh operasi jaringan (Supabase), disk I/O, dan pengolahan gambar ML Kit wajib berjalan pada background dispatcher (`Dispatchers.IO` / `Dispatchers.Default`).
 
-## 9. Keamanan dan Privasi
+---
 
--   Jangan commit `.env`, token, credential JSON, service-role key, atau
-    merchant secret.
--   Sediakan `.env.example` hanya dengan placeholder.
--   Validasi semua input di client dan backend.
--   Terapkan rate limit pada endpoint AI dan pembayaran.
--   Redaksi data sensitif dari log.
--   Jangan menyimpan URL bertanda tangan atau token ke log permanen.
--   Jangan mengirim nomor polisi/profil ke AI jika tidak diperlukan.
--   Sediakan alur penghapusan akun, data, dan file terkait.
--   Jangan mengklaim data terenkripsi end-to-end kecuali benar-benar
-    diimplementasikan.
--   Jangan mengklaim layanan cloud gratis tanpa batas.
+### 🎨 3. UI Murni Jetpack Compose & Material 3 (Zero DB Query in View)
 
-## 10. Testing dan Quality Gate
+1. **Presentation Layer Only**: Composable dilarang memuat query jaringan langsung, parsing database mentah, atau logika bisnis kalkulasi berat.
+2. **Standar Penanganan 5 Status UI Wajib**:
+   Setiap layar yang berinteraksi dengan data asinkron wajib menyediakan state:
+   - `Idle`: Keadaan awal sebelum proses berjalan.
+   - `Loading`: Menampilkan indikator loading / spinner yang jelas.
+   - `Success`: Menampilkan data riil pengguna.
+   - `Empty`: Tampilan ramah pengguna saat data kosong disertai tombol ajakan aksi (*call to action*).
+   - `Error`: Pesan kendala yang informatif dilengkapi tombol *Coba Lagi* (*retry*).
+3. **Pencegahan Double-Submit & Formatted Input**:
+   - Seluruh tombol simpan/aksi formulir wajib menampilkan *loading spinner* dan nonaktif (`disabled`) saat proses berjalan.
+   - Input nominal BBM wajib otomatis diformat dengan pemisah ribuan Rupiah (`Rp 50.000`) dan dinormalisasi menjadi `Long` sebelum disimpan.
+4. **Larangan Dialog Browser / Toast Liar**:
+   - Gunakan komponen Material 3 `SnackbarHost` atau dialog konfirmasi Compose kustom. Dilarang menggunakan alert blocking.
 
-Sebelum menyatakan tahap selesai: 1. Jalankan unit tests terkait. 2.
-Jalankan lint/static checks yang tersedia. 3. Build debug. 4. Jalankan
-build release pada milestone release. 5. Jalankan migration/database
-checks jika schema berubah. 6. Jalankan security tests untuk RLS,
-Storage, secret exposure, dan payment state. 7. Catat hasil test aktual;
-jangan mengarang hasil. 8. Perbaiki kegagalan yang terkait perubahan
-sebelum melanjutkan.
+---
 
-Kasus penting: - API 26 minimum. - OCR buram/ambigu. - AI provider
-timeout/kuota habis. - transaksi duplikat. - akses lintas akun. -
-private receipt URL. - payment pending/expired/replay/nominal
-mismatch. - Pro berakhir dan data tetap bisa diakses sesuai kebijakan
-Free.
+### 🏢 4. Isolasi Kepemilikan Data & PostgreSQL RLS (Scoped Ownership)
 
-## 11. Urutan Implementasi
+1. **Row Level Security (RLS) Wajib Aktif**: Seluruh tabel di Supabase (`public.*`) yang dapat diakses klien Android wajib memiliki RLS aktif berbasis `auth.uid() = user_id`.
+2. **Validasi Composite Foreign Key**: Relasi kepemilikan wajib menyertakan `user_id` (misal: `foreign key (vehicle_id, user_id) references vehicles(id, user_id)`) untuk mencegah referensi ID lintas akun (*BOLA/IDOR*).
+3. **Dilarang Percaya Client untuk Kolom Privileged**: Klien Android tidak memiliki hak untuk mengubah langsung status langganan (`subscriptions.status`), kuota AI, role administratif, atau mencatat transaksi pembayaran berhasil tanpa verifikasi server.
+4. **Pengujian Multi-Akun**: Setiap kebijakan RLS wajib diuji dengan minimal dua akun pengguna yang berbeda.
 
-Fase 1: audit repository, setup build, design system, navigation,
-compatibility API 26.\
-Fase 2: Supabase Auth email dan Google, migrations, RLS, private
-Storage.\
-Fase 3: kendaraan dan transaksi manual.\
-Fase 4: OCR lokal, review screen, AI provider adapter, Edge Function.\
-Fase 5: riwayat, dashboard, analitik, CSV, reminders.\
-Fase 6: plans, subscriptions, QRISpy, webhook/status verification,
-idempotency.\
-Fase 7: adapter Midtrans/Xendit bila kredensial tersedia, QA, security,
-release docs.
+---
 
-Jangan melewati tahap yang gagal. Jika ada dependency eksternal yang
-belum dapat diuji, buat adapter dan test mock yang jelas, lalu catat
-integrasi nyata sebagai blocker.
+### ⚡ 5. Strategi OCR Hybrid & Batasan Cloud AI (Local First)
 
-## 12. Dokumentasi Wajib
+1. **Google ML Kit Berjalan Pertama Kali**: Ekstraksi teks struk selalu diproses di perangkat lokal (*on-device*) terlebih dahulu tanpa membutuhkan kuota internet.
+2. **Fallback Cloud AI Hanya Melalui Backend**:
+   - Dilarang keras menaruh API key provider AI (Gemini/OpenAI) di dalam APK Android.
+   - Panggilan AI cloud wajib melalui Supabase Edge Function setelah memvalidasi JWT user, batas rate-limit, dan sisa kuota paket.
+3. **Konfirmasi Wajib Pengguna (Human-in-the-Loop)**:
+   - Hasil scan struk (tanggal, volume liter, total rupiah, SPBU, jenis BBM) **TIDAK PERNAH** disimpan secara otomatis ke database. Pengguna wajib memeriksa dan menyetujui pada layar review.
+4. **Graceful Fallback**: Jika kuota AI habis atau koneksi gagal, sistem tetap mengizinkan pengisian manual atau koreksi teks hasil OCR lokal tanpa memblokir pengguna.
+5. **Privasi Foto Struk**: Nomor polisi kendaraan dan identitas pribadi tidak pernah dikirim ke AI cloud provider.
 
-Pertahankan: - `README.md`: setup lokal, build, test, konfigurasi. -
-`docs/PRD.md`: persyaratan produk. - `docs/ARCHITECTURE.md`: komponen
-dan aliran data. - `docs/DATABASE.md`: tabel, relasi, index, RLS. -
-`docs/SECURITY.md`: secrets, Storage, auth, threat model. -
-`docs/PAYMENT_FLOWS.md`: order, webhook, status, idempotency. -
-`supabase/migrations/`: seluruh migration. - `.env.example`: nama
-konfigurasi tanpa secret asli.
+---
 
-## 13. Format Laporan Setiap Fase
+### 💳 6. Standar Pembayaran QRISpy, Webhook & Idempotensi Langganan
 
-Berikan laporan singkat berisi: - Yang diimplementasikan. - File penting
-yang dibuat/diubah. - Migration atau konfigurasi yang diperlukan. -
-Perintah test/build yang dijalankan dan hasil aktual. - Acceptance
-criteria yang lulus/gagal. - Blocker atau kredensial eksternal yang
-masih dibutuhkan. - Risiko dan langkah berikutnya.
+1. **QRISpy Provider Default**: Menggunakan endpoint resmi `https://api.qrispy.id`. Adapter Midtrans dan Xendit harus mengimplementasikan interface kontrak yang sama (`PaymentGatewayProvider`).
+2. **Server-Authoritative Pricing**: Nominal pembayaran diambil langsung dari konfigurasi server (`subscription_plans`), bukan dari angka yang dikirim klien.
+3. **Return URL Bukan Bukti Bayar**: Redirect URL atau kembali dari WebView hanya memicu polling status; aktivasi Pro hanya terjadi setelah status `paid` diverifikasi oleh backend.
+4. **Idempotensi Webhook Mutlak**: Event webhook pembayaran diverifikasi dan dicatat pada tabel `payment_webhook_events`. Event duplikat tidak akan memperpanjang atau menggandakan status Pro.
+5. **Graceful Expiry**: Ketika langganan Pro berakhir, riwayat pengeluaran BBM dan data kendaraan pengguna **TIDAK BOLEH** dikunci atau dihapus. Akun bertransisi kembali ke batas Free Tier secara aman.
 
-## 14. Definisi Selesai
+---
 
-Fitur selesai hanya jika implementasi nyata, acceptance criteria terkait
-lulus, dokumentasi diperbarui, dan tidak ada secret yang terekspos.
-Jangan menyatakan proyek siap produksi sebelum review keamanan,
-pembayaran, privasi, dan kebijakan Google Play selesai.
+### 🔒 7. Standar Keamanan OWASP, Private Storage & Zero-Secret
+
+1. **Zero Secret Policy**:
+   - Dilarang melakukan commit terhadap file `.env`, kredensial JSON Google Services, Supabase service-role key, ataupun merchant secret QRISpy/Midtrans.
+   - File konfigurasi lokal (`local.properties`, `.env`) wajib terdaftar di `.gitignore`.
+2. **Private Storage untuk Struk**:
+   - Foto struk disimpan dalam Supabase Storage private bucket (`receipts/{user_id}/{filename}`).
+   - Akses foto hanya menggunakan *signed URL* berumur pendek (15-30 menit).
+3. **Hak Hapus Akun & Data**:
+   - Sediakan alur penghapusan akun yang menghapus seluruh data relasional dan berkas struk terkait di Storage bucket.
+
+---
+
+### 🧪 8. Standar Pengujian Mutu (Quality Gates) & Definition of Done
+
+Sebuah fase atau fitur dinyatakan selesai (*Definition of Done*) jika dan hanya jika:
+- Seluruh unit test terkait lulus 100% tanpa kegagalan (`Zero Test Failure`);
+- Build debug berhasil dikompilasi (`assembleDebug`);
+- Desugaring API 26 terbukti aktif dan bebas crash;
+- Tidak ada secret atau token yang terekspos di kode sumber maupun manifest;
+- Dokumentasi terkait dimutakhirkan.
+
+**Perintah Verifikasi Wajib**:
+```powershell
+# Menjalankan unit tests
+.\gradlew.bat testDebugUnitTest
+
+# Membangun APK debug
+.\gradlew.bat assembleDebug
+```
+
+---
+
+### 📦 9. Aturan Git Commit & Push Otomatis & SemVer (Conventional Commits)
+
+1. **Format Pesan Commit Wajib**:
+   ```text
+   <type>(<scope>): <subject>
+   ```
+   - `feat`: Menambahkan fitur baru.
+   - `fix`: Memperbaiki bug atau kesalahan logika.
+   - `docs`: Mengubah atau memperbarui dokumentasi.
+   - `style`: Penyesuaian tampilan/formatting UI.
+   - `refactor`: Restrukturisasi kode tanpa mengubah fungsionalitas.
+   - `test`: Menambah atau memperbaiki automated tests.
+   - `chore`: Perawatan dependensi atau konfigurasi build.
+2. **Aturan Penulisan**:
+   - Gunakan kata kerja imperatif (`add`, `fix`, `update`, `refactor`).
+   - Judul subjek maksimal 100 karakter dan **tanpa tanda titik** di akhir.
+3. **Semantic Versioning (SemVer)**:
+   - Versi aplikasi dicatat serempak pada `app/build.gradle.kts` (`versionName`), `README.md`, dan `AGENTS.md`.
+
+---
+
+### 🔄 10. Kewajiban Pengkinian Dokumen (Mandatory Sync)
+
+1. **Pengkinian `AGENTS.md`**: Setiap ada aturan arsitektur baru atau penyesuaian aturan, langsung dicatat pada dokumen ini.
+2. **Pengkinian `README.md`**: Setiap fitur baru selesai, perbarui tabel fitur dan panduan build di `README.md`.
+3. **Pengkinian `docs/` Suite**: Jaga sinkronisasi antara `docs/README.md`, `01-daftar-command.md`, `02-buku-panduan-pengguna.md`, `03-developer-guide.md`, dan `04-panduan-deployment.md`.
+
+---
+
+## 📁 Konsep Tata Letak Direktori (Folder-Foldering Hierarchy)
+
+### 🌳 Diagram Pohon Direktori
+
+```text
+mari-partner-fuel/
+├── app/
+│   ├── build.gradle.kts
+│   ├── proguard-rules.pro
+│   └── src/
+│       ├── main/
+│       │   ├── AndroidManifest.xml
+│       │   ├── java/id/maripartner/fuel/
+│       │   │   ├── MariPartnerFuelApp.kt
+│       │   │   ├── MainActivity.kt
+│       │   │   ├── core/
+│       │   │   │   ├── common/
+│       │   │   │   │   ├── config/       # AppConfig (injeksi aman BuildConfig)
+│       │   │   │   │   ├── result/       # UiState, AppResult, AppException
+│       │   │   │   │   └── util/         # CurrencyFormatter, DateUtils
+│       │   │   │   ├── designsystem/
+│       │   │   │   │   ├── component/    # FuelButton, FuelStateView, FuelTopBar, FuelCard
+│       │   │   │   │   └── theme/        # Color, Type, Shape, Theme (Light & Dark)
+│       │   │   │   ├── navigation/       # NavRoute, BottomNavItem, AppBottomBar, AppNavHost
+│       │   │   │   └── security/         # TokenStorage, KeystoreManager
+│       │   │   ├── data/
+│       │   │   │   ├── local/            # DataStore, Preferences, Cache
+│       │   │   │   ├── ocr/              # Google ML Kit Text Recognition Engine
+│       │   │   │   ├── remote/           # Supabase Client Provider, Edge Function Callers
+│       │   │   │   └── repository/       # Repository Implementations
+│       │   │   ├── domain/
+│       │   │   │   ├── model/            # Vehicle, FuelTransaction, SubscriptionPlan, etc.
+│       │   │   │   ├── repository/       # Repository Interfaces
+│       │   │   │   └── usecase/          # Pure Business Rules & Calculations
+│       │   │   └── feature/
+│       │   │       ├── analytics/        # AnalyticsScreen, AnalyticsViewModel
+│       │   │       ├── auth/             # LoginScreen, RegisterScreen, AuthViewModel
+│       │   │       ├── dashboard/        # DashboardScreen, DashboardViewModel
+│       │   │       ├── profile/          # ProfileScreen, ProfileViewModel
+│       │   │       ├── receipt_scan/     # CameraScanScreen, ScanReviewScreen, OcrViewModel
+│       │   │       ├── splash/           # SplashScreen
+│       │   │       ├── subscription/     # ProPlansScreen, CheckoutScreen, QrisView
+│       │   │       ├── transactions/     # TransactionsScreen, TransactionFormScreen
+│       │   │       └── vehicles/         # VehiclesScreen, VehicleFormScreen
+│       │   └── res/
+│       │       ├── drawable/             # Vector icons & drawables
+│       │       ├── mipmap-anydpi-v26/    # Adaptive launcher icons
+│       │       └── values/               # strings.xml, themes.xml, colors.xml
+│       └── test/java/id/maripartner/fuel/
+│           └── core/                     # Unit test suites (Currency, Nav, State, Config)
+├── docs/
+│   ├── README.md                         # Documentation Hub
+│   ├── 01-daftar-command.md              # CLI Reference & Daily Operations
+│   ├── 02-buku-panduan-pengguna.md       # User Manual Book
+│   ├── 03-developer-guide.md             # Developer & Architecture Guide
+│   ├── 04-panduan-deployment.md          # Deployment & Store Release Guide
+│   ├── PRD.md                            # Product Requirement Document Baseline
+│   ├── ARCHITECTURE.md                   # Clean Architecture Specification
+│   ├── DATABASE.md                       # PostgreSQL Schema & RLS Policies
+│   ├── SECURITY.md                       # Threat Model & Secret Protection
+│   └── PAYMENT_FLOWS.md                  # QRISpy Payment & Webhook Lifecycle
+├── gradle/
+│   ├── libs.versions.toml                # Gradle Version Catalog
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── .env.example                          # Safe Environment Template
+├── .gitignore                            # Secret & Build Artifact Exclusions
+├── AGENTS.md                             # Acuan Hukum AI & Aturan Proyek
+├── build.gradle.kts                      # Root Gradle Script
+├── gradle.properties                     # JVM & Android Flags
+├── gradlew                               # Linux/macOS Wrapper
+├── gradlew.bat                           # Windows Wrapper
+├── README.md                             # Portal Utama Repositori
+└── settings.gradle.kts                   # Plugin & Dependency Repositories
+```
+
+---
+
+### 🧩 Penjelasan Modul Direktori Proyek
+
+- **`app/`**: Modul aplikasi Android tunggal yang memuat logika presentasi, domain, dan integrasi backend.
+- **`core/common/`**: Komponen lintas fitur seperti konfigurasi lingkungan aman, utilitas tanggal/waktu berbasis desugaring API 26, dan formatter nominal Rupiah.
+- **`core/designsystem/`**: Desain visual terpadu Material 3, tema warna BBM *Petrol Teal*, dan komponen reusable anti-flicker dengan loading states.
+- **`core/navigation/`**: Penanganan navigasi deklaratif menggunakan Jetpack Navigation Compose dengan rute bertipe aman.
+- **`data/`**: Abstraksi data sumber ganda (Supabase remote API + ML Kit on-device hardware OCR).
+- **`domain/`**: Inti logika bisnis murni tanpa dependensi framework luar agar mudah diuji dengan unit test secepat kilat.
+- **`feature/`**: Modul layar interaktif terpisah per domain fungsional (*Bounded Context*).
+- **`docs/`**: Suite dokumentasi menyeluruh untuk staf operasional, pengembang, dan auditor keamanan.
+
+---
+
+## 🛡️ Standar Wajib Audit Kualitas & Kesiapan Produksi (Quality Gate)
+
+Sebelum kode dinyatakan siap rilis (*production-ready*) atau beralih ke tahap berikutnya, AI Assistant wajib memverifikasi 9 pilar audit berikut:
+
+| No | Pilar Kualitas | Aspek yang Wajib Diverifikasi | Standar Wajib Mari Partner Fuel |
+|:--:|---|---|---|
+| **1** | **Concurrency & Race Condition** | Pembuatan order pembayaran, mutasi kuota AI, simpan transaksi struk | Idempotensi payment webhook, transaksi atomik PostgreSQL |
+| **2** | **UX & Usability Bottleneck** | Double submit form, review scan struk, empty state, keyboard resize | Tombol loading spinner `disabled`, layar review wajib sebelum simpan, `adjustResize` aktif |
+| **3** | **OWASP Security** | Secret leak, akses lintas akun (BOLA/IDOR), manipulasi nominal plan | Zero-secret di APK, RLS `auth.uid() = user_id`, server-authoritative pricing |
+| **4** | **Scalability & Resource** | Query transaksi riwayat, pembacaan foto struk resolusi tinggi | Pagination limit/offset, kompresi foto lokal sebelum unggah |
+| **5** | **Database & Indexing** | Pencarian SPBU, filter kendaraan & tanggal transaksi | Indeks komposit pada `(user_id, transaction_at desc)` & `(vehicle_id, transaction_at desc)` |
+| **6** | **Memory Leaks & Bloat** | Siklus hidup kamera, detektor ML Kit, coroutine scope | Coroutine terikat `viewModelScope`, pelepasan resource image analyzer |
+| **7** | **Timeout & External Fallback** | AI cloud failure, payment gateway offline, internet lambat | ML Kit lokal tetap jalan, input transaksi manual tetap tersedia saat offline/AI down |
+| **8** | **Observability & Error Log** | Log debug aplikasi, jejak audit webhook | Redaksi kunci otentikasi via `AppConfig.redactedKey`, zero-secret di log |
+| **9** | **Real-time Debounce** | Pencarian riwayat transaksi BBM, filter kendaraan | Debounce minimal 300ms pada seluruh input query pencarian |
