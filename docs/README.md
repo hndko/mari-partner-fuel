@@ -73,9 +73,16 @@ Supabase bertindak sebagai basis data online, autentikasi pengguna, dan penyimpa
 ---
 
 ### 2.2 Jalankan Migrasi Database SQL (Skema Tabel & Keamanan)
-Setelah database berstatus **Healthy**, langkah berikutnya adalah membuat tabel, aturan keamanan RLS, dan storage bucket dengan menjalankan 8 berkas SQL migrasi:
+Setelah database berstatus **Healthy**, langkah berikutnya adalah membuat tabel, aturan keamanan RLS, dan storage bucket dengan menjalankan 8 berkas SQL migrasi.
 
-1. Di bilah menu hitam sebelah kiri (sidebar), klik ikon ke-3 dari atas: **SQL Editor** (ikon tanda prompt terminal `>_`).
+Anda bisa memilih salah satu dari **dua metode** berikut (keduanya menghasilkan database yang sama persis):
+
+---
+
+#### 🟢 METODE 1 (Sangat Direkomendasikan & Paling Praktis): Lewat Web SQL Editor
+Metode ini **100% tanpa perlu install/login tool CLI** tambahan di terminal, langsung selesai di browser:
+
+1. Di bilah menu hitam sebelah kiri (sidebar), klik ikon ke-3 dari atas: **SQL Editor** (ikon tanda prompt terminal `>_` tepat di atas menu *Database*).
 2. Klik tombol **New query** (atau ikon tanda tambah `+`).
 3. Buka dan jalankan isi berkas SQL dari folder `supabase/migrations/` di proyek Anda secara berurutan:
    - **Query 1**: Buka file `supabase/migrations/20261029000001_initial_schema.sql`, salin seluruh isinya, tempel ke SQL Editor Supabase -> Tekan tombol hijau **Run** (atau `Ctrl + Enter`).
@@ -88,7 +95,31 @@ Setelah database berstatus **Healthy**, langkah berikutnya adalah membuat tabel,
    - **Query 8**: Buka file `supabase/migrations/20261029000008_security_hardening_and_integrity.sql` -> Tempel & Tekan **Run**.
 
 > [!NOTE]
-> Pastikan setiap query menampilkan pesan sukses `Success. No rows returned` sebelum berpindah ke query berikutnya. Seluruh skema database PostgreSQL dan private storage bucket `receipts` kini telah aktif 100%!
+> Pastikan setiap query menampilkan pesan sukses `Success. No rows returned` sebelum berpindah ke query berikutnya.
+
+---
+
+#### ⚡ METODE 2 (Otomatis Sekali Jalan): Lewat Supabase CLI di Terminal
+Jika Anda ingin mengeksekusi ke-8 file migrasi sekaligus secara otomatis dari terminal laptop:
+
+1. Buka terminal PowerShell di folder proyek ini.
+2. Login ke akun Supabase Anda:
+   ```powershell
+   supabase login
+   ```
+   *(Browser akan terbuka otomatis untuk mengonfirmasi login dan membuat access token)*.
+3. Hubungkan proyek lokal dengan proyek Supabase remote Anda:
+   ```powershell
+   supabase link --project-ref zcezyhgrblksfuxmszyz
+   ```
+   *(Masukkan Database Password yang Anda simpan saat membuat proyek)*.
+4. Dorong (*push*) seluruh 8 migrasi SQL yang sudah ada di folder `supabase/migrations/` sekaligus:
+   ```powershell
+   supabase db push
+   ```
+   *(Jangan jalankan perintah `supabase migration new` karena seluruh 8 berkas SQL migrasi sudah tersedia lengkap di repositori ini)*.
+
+---
 
 ---
 
