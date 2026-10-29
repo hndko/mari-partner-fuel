@@ -154,3 +154,24 @@ Untuk menjamin keandalan 100% pada Android 8.0 (API 26) hingga Android 15 (API 3
 2. **Klien Supabase:** Hanya menggunakan `SUPABASE_URL` dan `SUPABASE_ANON_KEY` publik. Semua mutasi data dilindungi oleh PostgreSQL Row Level Security (RLS) berbasis `auth.uid()`.
 3. **Injeksi Konfigurasi:** Nilai environment diinjeksikan saat build melalui `BuildConfig` yang bersumber dari `gradle.properties` / `local.properties` / environment variable CI/CD.
 4. **Template Aman:** Menyediakan file `.env.example` yang hanya berisi placeholder tanpa nilai nyata.
+
+---
+
+## 8. Arsitektur Autentikasi & Supabase Data Source
+
+1. **Supabase Client Provider (`SupabaseClientProvider.kt`):**
+   - Menginisialisasi plugin `Auth` (dengan session auto-refresh dan local storage recovery), `Postgrest`, `Storage`, dan `Functions`.
+   - Menggunakan Ktor OkHttp Engine yang stabil dan hemat memori pada Android.
+2. **Abstraksi Repository & Use Cases:**
+   - Layer domain tidak memiliki ketergantungan langsung ke SDK Supabase.
+   - `AuthRepository` diimplementasikan oleh `AuthRepositoryImpl` yang menerjemahkan model Supabase menjadi model domain bersih (`UserSession`, `UserProfile`).
+   - Use Case murni mengeksekusi aturan validasi input *Fail-Fast* (`ValidateAuthInputUseCase`) sebelum memicu request jaringan.
+3. **Siklus Pemulihan Sesi Otomatis (*Auto-Session Recovery*):**
+   - Saat aplikasi dibuka, `SplashScreen` memanggil `GetCurrentSessionUseCase()`.
+   - Jika sesi pengguna aktif dan valid, aplikasi langsung beralih ke `Dashboard`.
+   - Jika sesi kosong atau kedaluwarsa, aplikasi mengarahkan pengguna ke layar `Login`.
+4. **Pengelolaan Foto Struk Privat (`ReceiptStorageManager.kt`):**
+   - Validasi ketat di sisi klien: batas ukuran 5 MB dan tipe MIME (`image/jpeg`, `image/png`, `image/webp`).
+   - Penamaan berkas terisolasi per user ID: `receipts/{userId}/{UUID}.{ext}` untuk mencegah konflik nama berkas.
+   - Akses foto hanya melalui *Signed URL* berumur 20 menit yang dibuat secara dinamis.
+

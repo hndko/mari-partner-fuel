@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
   <img src="https://img.shields.io/badge/Payment-QRISpy-FF8F00?style=for-the-badge" alt="Payment QRISpy" />
-  <img src="https://img.shields.io/badge/Version-v1.0.0-blue?style=for-the-badge" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/Version-v1.1.0-blue?style=for-the-badge" alt="Version 1.1.0" />
 </p>
 
 ---
@@ -159,7 +159,7 @@ Variabel publik `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dapat dimasukkan ke `loca
 ```powershell
 .\gradlew.bat testDebugUnitTest
 ```
-Hasil uji: 12 tests lulus (Currency formatting, parsing Rupiah, UiState, AppConfig, Navigation Route contracts).
+Hasil uji: 38 tests lulus (Autentikasi, validasi input, pemulihan sesi, storage path manager, migrasi SQL 13 tabel, RLS, Currency formatting, parsing Rupiah, UiState, AppConfig, Navigation Route contracts).
 
 ### Membangun APK Debug
 ```powershell

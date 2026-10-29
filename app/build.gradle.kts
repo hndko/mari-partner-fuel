@@ -13,8 +13,8 @@ android {
         applicationId = "id.maripartner.fuel"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -28,9 +28,13 @@ android {
         val supabaseAnonKey = (project.findProperty("SUPABASE_ANON_KEY") as? String)
             ?: System.getenv("SUPABASE_ANON_KEY")
             ?: "placeholder-anon-key"
+        val googleWebClientId = (project.findProperty("GOOGLE_WEB_CLIENT_ID") as? String)
+            ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
+            ?: ""
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
     buildTypes {
@@ -97,6 +101,11 @@ dependencies {
 
     // Google ML Kit Text Recognition (Local OCR)
     implementation(libs.mlkit.text.recognition)
+
+    // Google Sign-In & Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     // Testing
     testImplementation(libs.junit)

@@ -13,11 +13,17 @@ object AppConfig {
     val supabaseAnonKey: String
         get() = BuildConfig.SUPABASE_ANON_KEY
 
+    val googleWebClientId: String
+        get() = BuildConfig.GOOGLE_WEB_CLIENT_ID
+
     val isConfigured: Boolean
         get() = supabaseUrl.isNotBlank() &&
                 !supabaseUrl.contains("placeholder") &&
                 supabaseAnonKey.isNotBlank() &&
                 !supabaseAnonKey.contains("placeholder")
+
+    val isGoogleAuthAvailable: Boolean
+        get() = googleWebClientId.isNotBlank()
 
     /**
      * Redaksi key agar aman saat di-print di debug log.

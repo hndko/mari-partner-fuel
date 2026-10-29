@@ -16,5 +16,6 @@ class AppConfigTest {
     fun appConfig_providesNonNullValues() {
         assertNotNull(AppConfig.supabaseUrl)
         assertNotNull(AppConfig.supabaseAnonKey)
+        assertNotNull(AppConfig.googleWebClientId)
     }
 }

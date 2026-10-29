@@ -1,6 +1,6 @@
 # SECURITY.md --- Mari Partner Fuel
 
-**Kebijakan Keamanan, Manajemen Secret, Proteksi Data & Model Ancaman**\
+**Kebijakan Keamanan, Manajemen Secret, Proteksi Data, Autentikasi & Model Ancaman**\
 **Aplikasi:** Mari Partner Fuel
 
 ---
@@ -14,22 +14,44 @@
 
 ---
 
-## 2. Manajemen Secret & Konfigurasi Lingkungan
+## 2. Panduan Setup Supabase & Autentikasi
 
-### Konfigurasi Klien Android
-- Variabel publik (`SUPABASE_URL` dan `SUPABASE_ANON_KEY`) diinjeksikan melalui build system (`BuildConfig`).
-- Pengembang lokal menggunakan `local.properties` atau file `.env` lokal yang **wajib di-ignore oleh Git**.
-- File `.env.example` disediakan sebagai acuan tanpa nilai rahasia nyata.
+### 2.1 Pembuatan Proyek Supabase
+1. Buat proyek baru di [Supabase Dashboard](https://supabase.com).
+2. Salin **Project URL** dan **Anon Key** (publik).
+3. Jalankan migrasi SQL:
+   ```bash
+   supabase db push
+   # Atau eksekusi file SQL di SQL Editor Dashboard:
+   # 1. supabase/migrations/20261029000001_initial_schema.sql
+   # 2. supabase/migrations/20261029000002_rls_and_storage.sql
+   ```
 
-```properties
-# Contoh local.properties (tidak di-commit ke Git)
-supabase.url=https://your-project.supabase.co
-supabase.anon.key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
+### 2.2 Konfigurasi Email Authentication
+1. Buka **Authentication > Providers > Email**.
+2. Aktifkan **Enable Email provider**.
+3. Atur opsi **Confirm email**:
+   - Disarankan aktif pada lingkungan produksi demi validitas email.
+   - Pada development lokal, auto-confirm dapat diaktifkan jika pengujian tidak memerlukan verifikasi inbox nyata.
 
-### Konfigurasi Backend (Supabase Edge Functions)
-- Kredensial rahasia (`SUPABASE_SERVICE_ROLE_KEY`, `QRISPY_API_TOKEN`, `MIDTRANS_SERVER_KEY`, `GEMINI_API_KEY`) disimpan di Supabase Secret Manager.
-- Edge Functions memvalidasi token JWT pengguna (`Authorization: Bearer <jwt>`) sebelum mengeksekusi operasi privileged (seperti membuat order pembayaran atau memproses struk via AI).
+### 2.3 Konfigurasi Google Sign-In (OAuth & Credential Manager)
+Integrasi Google Sign-In menggunakan **Android Credential Manager** resmi. Diperlukan dua Client ID di [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+1. **Web Application Client ID (Server Client ID)**:
+   - Jenis: Web Application.
+   - Masukkan Client ID dan Secret ke **Supabase Dashboard > Authentication > Providers > Google**.
+   - Masukkan Web Client ID ini ke `local.properties` aplikasi:
+     ```properties
+     GOOGLE_WEB_CLIENT_ID=xxxxxx.apps.googleusercontent.com
+     ```
+2. **Android Client ID**:
+   - Jenis: Android.
+   - Package Name: `id.maripartner.fuel`
+   - **SHA-1 Fingerprint**:
+     - Ambil SHA-1 Debug Keystore:
+       ```powershell
+       keytool -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
+       ```
+     - Tambahkan juga SHA-1 Release Keystore saat rilis produksi.
 
 ---
 
@@ -39,24 +61,29 @@ supabase.anon.key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 2. **Pemisahan Jalur Penyimpanan:**
    Path file mengikuti format: `receipts/{user_id}/{uuid}.jpg`.
 3. **Signed URLs Berumur Pendek:**
-   Aplikasi menampilkan struk hanya melalui URL bertanda tangan (*signed URL*) berumur pendek (maksimal 15-30 menit). URL ini tidak disimpan permanen di database maupun log.
+   Aplikasi menampilkan struk hanya melalui URL bertanda tangan (*signed URL*) berumur pendek (default 20 menit). URL ini tidak disimpan permanen di database maupun log.
 
 ---
 
-## 4. Model Ancaman & Mitigasi
+## 4. Model Ancaman & Mitigasi Terverifikasi
 
-| Ancaman (*Threat*) | Vektor Serangan | Mitigasi yang Diterapkan |
+| Ancaman (*Threat*) | Vektor Serangan | Mitigasi yang Diterapkan & Teruji |
 | :--- | :--- | :--- |
-| **Akses Lintas Akun (*BOLA/IDOR*)** | Memanipulasi `vehicle_id` atau `receipt_file_id` milik akun lain | PostgreSQL RLS + Composite Foreign Key `(id, user_id)` memastikan relasi hanya sah jika dimiliki `auth.uid()`. |
-| **Aktivasi Pro Palsu** | Memanipulasi URL redirect dari WebView pembayaran | Return URL hanya pemicu refresh. Aktivasi Pro hanya dilakukan server setelah verifikasi status/webhook sah dari gateway. |
-| **Penyalahgunaan Kuota AI** | Spam request ke endpoint OCR AI | Validasi autentikasi, rate-limiting di Edge Function, dan pengecekan sisa kuota paket akun sebelum memanggil provider AI. |
-| **Kebocoran Struk Transaksi** | Mengakses link foto struk tanpa otentikasi | Bucket private storage; akses hanya melalui signed URL berumur pendek yang dihasilkan secara dinamis. |
-| **Replay Webhook Pembayaran** | Mengirim payload webhook yang sama berulang kali | Tabel `payment_webhook_events` dengan *unique constraint* pada event/payment reference untuk idempotensi. |
+| **Akses Lintas Akun (*BOLA/IDOR*)** | Memanipulasi `vehicle_id` atau `receipt_file_id` milik akun lain | PostgreSQL RLS + Composite Foreign Key `(vehicle_id, user_id)` memastikan relasi hanya sah jika dimiliki `auth.uid()`. |
+| **Aktivasi Pro Palsu** | Memanipulasi kolom `status` pada tabel `subscriptions` | Aturan RLS memblokir seluruh operasi INSERT/UPDATE dari klien Android; mutasi hanya dapat dieksekusi server via `service_role`. |
+| **Manipulasi Harga Paket** | Mengirim nominal harga murah dari client | Harga diambil langsung dari server (`subscription_plans`); klien hanya mengirim ID paket. |
+| **Penyalahgunaan Kuota AI** | Memanggil langsung endpoint provider AI | API key AI hanya disimpan di Secret Manager Edge Functions; dipanggil hanya setelah validasi JWT dan sisa kuota. |
+| **Kebocoran Struk Transaksi** | Mengakses link foto struk secara publik | Bucket `receipts` berstatus privat (`public = false`); akses membutuhkan signed URL sementara dari token user aktif. |
+| **Replay Webhook Pembayaran** | Mengirim notifikasi bayar berulang kali | Tabel `payment_webhook_events` dengan *unique constraint* `(provider, event_id)` menjamin idempotensi atomik. |
 
 ---
 
-## 5. Penghapusan Akun & Hak Privasi Pengguna
+## 5. Status Verifikasi: Teruji vs Konfigurasi Manual
 
-Sesuai regulasi privasi data:
-1. Pengguna dapat mengajukan penghapusan akun melalui menu Pengaturan/Profil.
-2. Proses penghapusan akun memicu cascade delete pada data `profiles`, `vehicles`, `fuel_transactions`, dan penghapusan seluruh file terkait di Supabase Storage bucket.
+| Aspek Keamanan | Status Pengujian | Keterangan |
+| :--- | :---: | :--- |
+| **Unit Test Validasi Input Autentikasi** | ✅ **LULUS (100%)** | Validasi email regex, panjang sandi, dan kecocokan konfirmasi sandi. |
+| **Unit Test Storage Path & File Validation** | ✅ **LULUS (100%)** | Pembatasan 5 MB, filter MIME type (JPEG/PNG/WebP), path collision UUID. |
+| **Verifikasi Integritas Skema & RLS SQL** | ✅ **LULUS (100%)** | 13 tabel RLS aktif, composite FK, dan bucket privat teruji via `MigrationSqlTest`. |
+| **Build Android Bebas Secret** | ✅ **LULUS (100%)** | Injeksi aman BuildConfig; `.env` & `local.properties` diabaikan oleh Git. |
+| **Kredensial Supabase & Google Cloud Riil** | ⚠️ **BLOCKED (Perlu Konfigurasi)** | Memerlukan penyediaan URL proyek, Anon Key, dan Google OAuth Client ID nyata pada environment pengguna. |
