@@ -123,11 +123,23 @@ Jika Anda ingin mengeksekusi ke-8 file migrasi sekaligus secara otomatis dari te
 
 ---
 
-### 2.3 Ambil Kunci URL & Anon Key Supabase
+### 2.3 Matikan Verifikasi Email (Sangat Disarankan untuk Kemudahan Login)
+Secara bawaan, Supabase mewajibkan pengguna mengklik tautan verifikasi email sebelum bisa login. Pada paket gratis (*Free Tier*), Supabase memiliki kuota batas kirim email yang sangat terbatas (3-4 email per jam).
+
+Agar Anda dan pengguna dapat langsung mendaftar dan login seketika di aplikasi Android tanpa hambatan:
+1. Di bilah menu sebelah kiri, klik ikon **Authentication** (ikon dua orang / pengguna).
+2. Di submenu Authentication, klik **Providers**.
+3. Klik pada opsi **Email** untuk membuka pengaturannya.
+4. Matikan toggle **"Confirm email"** (geser menjadi nonaktif/abu-abu).
+5. Klik tombol **Save** di bagian bawah.
+
+---
+
+### 2.4 Ambil Kunci URL & Anon Key Supabase
 Anda memerlukan 2 nilai dari Supabase untuk dimasukkan ke konfigurasi Android:
 
 1. **Project URL**:
-   - Dapat disalin langsung dari halaman **Home** dashboard (di bawah tulisan nama project Anda `mari-partner-fuel`, terdapat URL `https://<id-projek>.supabase.co` dengan tombol **Copy**).
+   - Dapat disalin langsung dari halaman **Home** / **Project Overview** dashboard (di bawah tulisan nama project Anda `mari-partner-fuel`, terdapat URL `https://<id-projek>.supabase.co` dengan tombol **Copy**).
 2. **Anon Public Key**:
    - Di bilah menu kiri paling bawah, klik ikon **Project Settings (Gerigi ⚙️)**.
    - Di menu Settings, klik **API** (atau **Data API**).
