@@ -8,7 +8,6 @@ import id.maripartner.fuel.domain.model.MaintenanceReminder
 import id.maripartner.fuel.domain.repository.MaintenanceReminderRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +30,17 @@ class MaintenanceReminderRepositoryImpl(
         return getAuth().currentUserOrNull()?.id
     }
 
+    private fun sanitizeError(e: Exception, fallbackMsg: String): String {
+        val raw = e.message ?: return fallbackMsg
+        if (raw.contains("Bearer", ignoreCase = true) || 
+            raw.contains("apikey", ignoreCase = true) || 
+            raw.contains("http://", ignoreCase = true) || 
+            raw.contains("https://", ignoreCase = true)) {
+            return fallbackMsg
+        }
+        return "$fallbackMsg: $raw"
+    }
+
     override suspend fun getReminders(
         vehicleId: String?,
         isCompleted: Boolean?
@@ -39,9 +49,7 @@ class MaintenanceReminderRepositoryImpl(
             ?: return@withContext AppResult.Error(AppException.Authentication("Pengguna belum login."))
 
         try {
-            val response = getPostgrest().from("maintenance_reminders").select(
-                Columns.raw("*, vehicles(*)")
-            ) {
+            val response = getPostgrest().from("maintenance_reminders").select {
                 filter {
                     eq("user_id", userId)
                     vehicleId?.takeIf { it.isNotBlank() }?.let { eq("vehicle_id", it) }
@@ -54,7 +62,7 @@ class MaintenanceReminderRepositoryImpl(
             val domainList = response.map { it.toDomain() }
             AppResult.Success(domainList)
         } catch (e: Exception) {
-            AppResult.Error(AppException.Network("Gagal memuat pengingat perawatan: ${e.message}", e))
+            AppResult.Error(AppException.Network(sanitizeError(e, "Gagal memuat pengingat perawatan"), e))
         }
     }
 
@@ -63,9 +71,7 @@ class MaintenanceReminderRepositoryImpl(
             ?: return@withContext AppResult.Error(AppException.Authentication("Pengguna belum login."))
 
         try {
-            val dto = getPostgrest().from("maintenance_reminders").select(
-                Columns.raw("*, vehicles(*)")
-            ) {
+            val dto = getPostgrest().from("maintenance_reminders").select {
                 filter {
                     eq("id", id)
                     eq("user_id", userId)
@@ -78,7 +84,7 @@ class MaintenanceReminderRepositoryImpl(
                 AppResult.Error(AppException.Validation("Pengingat tidak ditemukan."))
             }
         } catch (e: Exception) {
-            AppResult.Error(AppException.Network("Gagal memuat detail pengingat: ${e.message}", e))
+            AppResult.Error(AppException.Network(sanitizeError(e, "Gagal memuat detail pengingat"), e))
         }
     }
 
@@ -89,12 +95,12 @@ class MaintenanceReminderRepositoryImpl(
         try {
             val dto = MaintenanceReminderDto.fromDomain(reminder, userId)
             val createdDto = getPostgrest().from("maintenance_reminders").insert(dto) {
-                select(Columns.raw("*, vehicles(*)"))
+                select()
             }.decodeSingle<MaintenanceReminderDto>()
 
             AppResult.Success(createdDto.toDomain())
         } catch (e: Exception) {
-            AppResult.Error(AppException.Network("Gagal menyimpan pengingat: ${e.message}", e))
+            AppResult.Error(AppException.Network(sanitizeError(e, "Gagal menyimpan pengingat"), e))
         }
     }
 
@@ -109,12 +115,12 @@ class MaintenanceReminderRepositoryImpl(
                     eq("id", reminder.id)
                     eq("user_id", userId)
                 }
-                select(Columns.raw("*, vehicles(*)"))
+                select()
             }.decodeSingle<MaintenanceReminderDto>()
 
             AppResult.Success(updatedDto.toDomain())
         } catch (e: Exception) {
-            AppResult.Error(AppException.Network("Gagal memperbarui pengingat: ${e.message}", e))
+            AppResult.Error(AppException.Network(sanitizeError(e, "Gagal memperbarui pengingat"), e))
         }
     }
 
@@ -132,12 +138,12 @@ class MaintenanceReminderRepositoryImpl(
                     eq("id", id)
                     eq("user_id", userId)
                 }
-                select(Columns.raw("*, vehicles(*)"))
+                select()
             }.decodeSingle<MaintenanceReminderDto>()
 
             AppResult.Success(updatedDto.toDomain())
         } catch (e: Exception) {
-            AppResult.Error(AppException.Network("Gagal memperbarui status selesai: ${e.message}", e))
+            AppResult.Error(AppException.Network(sanitizeError(e, "Gagal memperbarui status selesai"), e))
         }
     }
 
@@ -154,7 +160,7 @@ class MaintenanceReminderRepositoryImpl(
             }
             AppResult.Success(Unit)
         } catch (e: Exception) {
-            AppResult.Error(AppException.Network("Gagal menghapus pengingat: ${e.message}", e))
+            AppResult.Error(AppException.Network(sanitizeError(e, "Gagal menghapus pengingat"), e))
         }
     }
 }

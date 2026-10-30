@@ -9,26 +9,38 @@ import java.time.LocalDate
 
 enum class ReminderTab(val label: String) {
     ACTIVE("Aktif & Jatuh Tempo"),
-    COMPLETED("Selesai")
+    COMPLETED("Riwayat Selesai")
+}
+
+enum class ReminderFilterStatus(val label: String) {
+    ALL("Semua Status"),
+    DUE_SOON("Segera Datang"),
+    OVERDUE("Lewat Jatuh Tempo")
 }
 
 data class RemindersUiState(
     val remindersState: UiState<List<MaintenanceReminder>> = UiState.Loading,
     val selectedTab: ReminderTab = ReminderTab.ACTIVE,
+    val selectedFilterStatus: ReminderFilterStatus = ReminderFilterStatus.ALL,
+    val searchQuery: String = "",
     val allReminders: List<MaintenanceReminder> = emptyList(),
     val dueStatusMap: Map<String, ReminderDueStatus> = emptyMap(),
     val vehiclesMap: Map<String, Vehicle> = emptyMap(),
     val isRefreshing: Boolean = false,
     val actionLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val actionSuccessMessage: String? = null
 )
 
 sealed interface RemindersUiEvent {
     data class SelectTab(val tab: ReminderTab) : RemindersUiEvent
+    data class SelectFilterStatus(val status: ReminderFilterStatus) : RemindersUiEvent
+    data class SearchQueryChanged(val query: String) : RemindersUiEvent
     data class ToggleComplete(val reminderId: String, val completed: Boolean) : RemindersUiEvent
     data class DeleteReminder(val reminderId: String) : RemindersUiEvent
     data object Refresh : RemindersUiEvent
     data object ClearError : RemindersUiEvent
+    data object ClearSuccessMessage : RemindersUiEvent
 }
 
 data class ReminderFormUiState(
@@ -42,6 +54,7 @@ data class ReminderFormUiState(
     val availableVehicles: List<Vehicle> = emptyList(),
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
+    val showSuccessDialog: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -53,5 +66,6 @@ sealed interface ReminderFormUiEvent {
     data class TargetDateChanged(val date: LocalDate?) : ReminderFormUiEvent
     data class NotesChanged(val notes: String) : ReminderFormUiEvent
     data object SaveReminder : ReminderFormUiEvent
+    data object DismissSuccessDialog : ReminderFormUiEvent
     data object ClearError : ReminderFormUiEvent
 }

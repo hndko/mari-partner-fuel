@@ -48,10 +48,13 @@ class RemindersViewModel @JvmOverloads constructor(
     fun onEvent(event: RemindersUiEvent) {
         when (event) {
             is RemindersUiEvent.SelectTab -> _uiState.update { it.copy(selectedTab = event.tab) }
+            is RemindersUiEvent.SelectFilterStatus -> _uiState.update { it.copy(selectedFilterStatus = event.status) }
+            is RemindersUiEvent.SearchQueryChanged -> _uiState.update { it.copy(searchQuery = event.query) }
             is RemindersUiEvent.ToggleComplete -> toggleComplete(event.reminderId, event.completed)
             is RemindersUiEvent.DeleteReminder -> deleteReminder(event.reminderId)
             is RemindersUiEvent.Refresh -> loadVehiclesAndReminders(isRefresh = true)
             is RemindersUiEvent.ClearError -> _uiState.update { it.copy(errorMessage = null) }
+            is RemindersUiEvent.ClearSuccessMessage -> _uiState.update { it.copy(actionSuccessMessage = null) }
         }
     }
 
@@ -64,6 +67,7 @@ class RemindersViewModel @JvmOverloads constructor(
             is ReminderFormUiEvent.TargetDateChanged -> _formState.update { it.copy(targetDate = event.date) }
             is ReminderFormUiEvent.NotesChanged -> _formState.update { it.copy(notes = event.notes) }
             is ReminderFormUiEvent.SaveReminder -> saveReminder()
+            is ReminderFormUiEvent.DismissSuccessDialog -> _formState.update { it.copy(showSuccessDialog = false) }
             is ReminderFormUiEvent.ClearError -> _formState.update { it.copy(errorMessage = null) }
         }
     }
@@ -175,6 +179,11 @@ class RemindersViewModel @JvmOverloads constructor(
                     } else {
                         notificationScheduler.scheduleReminder(updated)
                     }
+                    _uiState.update { 
+                        it.copy(
+                            actionSuccessMessage = if (completed) "Pengingat ditandai selesai." else "Pengingat diaktifkan kembali."
+                        )
+                    }
                     loadVehiclesAndReminders()
                 }
                 is AppResult.Error -> {
@@ -189,7 +198,10 @@ class RemindersViewModel @JvmOverloads constructor(
             _uiState.update { it.copy(actionLoading = true) }
             notificationScheduler.cancelReminder(reminderId)
             when (val result = reminderRepository.deleteReminder(reminderId)) {
-                is AppResult.Success -> loadVehiclesAndReminders()
+                is AppResult.Success -> {
+                    _uiState.update { it.copy(actionSuccessMessage = "Pengingat berhasil dihapus.") }
+                    loadVehiclesAndReminders()
+                }
                 is AppResult.Error -> _uiState.update { it.copy(actionLoading = false, errorMessage = result.exception.message) }
             }
         }
@@ -230,7 +242,7 @@ class RemindersViewModel @JvmOverloads constructor(
                 is AppResult.Success -> {
                     val saved = result.data
                     notificationScheduler.scheduleReminder(saved)
-                    _formState.update { it.copy(isLoading = false, isSaved = true) }
+                    _formState.update { it.copy(isLoading = false, isSaved = true, showSuccessDialog = true) }
                     loadVehiclesAndReminders()
                 }
                 is AppResult.Error -> {
