@@ -28,9 +28,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Warning
@@ -89,6 +91,7 @@ import java.util.Calendar
 fun TransactionFormScreen(
     transactionId: String? = null,
     onNavigateBack: () -> Unit,
+    onNavigateToAddVehicle: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TransactionFormViewModel = viewModel()
 ) {
@@ -288,28 +291,36 @@ fun TransactionFormScreen(
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
 
+                            val vehicleDisplayText = when {
+                                selectedVehicle != null -> "${selectedVehicle.name} (${selectedVehicle.licensePlate ?: "-"})"
+                                state.availableVehicles.isEmpty() -> "Kendaraan belum tersedia"
+                                else -> "Pilih kendaraan"
+                            }
+
                             ExposedDropdownMenuBox(
                                 expanded = vehicleDropdownExpanded,
                                 onExpandedChange = { vehicleDropdownExpanded = !vehicleDropdownExpanded }
                             ) {
                                 OutlinedTextField(
-                                    value = selectedVehicle?.let { "${it.name} (${it.licensePlate})" } ?: "Pilih kendaraan",
+                                    value = vehicleDisplayText,
                                     onValueChange = {},
                                     readOnly = true,
                                     leadingIcon = {
                                         Icon(
                                             imageVector = Icons.Default.DirectionsCar,
                                             contentDescription = null,
-                                            tint = MariPrimaryBlue
+                                            tint = if (state.availableVehicles.isEmpty()) MariMutedLight else MariPrimaryBlue
                                         )
                                     },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = vehicleDropdownExpanded) },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MariPrimaryBlue,
+                                        focusedBorderColor = if (state.availableVehicles.isEmpty()) Color(0xFFFFD166) else MariPrimaryBlue,
                                         unfocusedBorderColor = MariBorderLight,
                                         focusedContainerColor = Color.White,
-                                        unfocusedContainerColor = Color.White
+                                        unfocusedContainerColor = Color.White,
+                                        focusedTextColor = if (state.availableVehicles.isEmpty()) MariMutedLight else MariTextLight,
+                                        unfocusedTextColor = if (state.availableVehicles.isEmpty()) MariMutedLight else MariTextLight
                                     ),
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -320,29 +331,108 @@ fun TransactionFormScreen(
                                     expanded = vehicleDropdownExpanded,
                                     onDismissRequest = { vehicleDropdownExpanded = false }
                                 ) {
-                                    state.availableVehicles.forEach { vehicle ->
+                                    if (state.availableVehicles.isEmpty()) {
                                         DropdownMenuItem(
                                             text = {
-                                                Column {
+                                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
                                                     Text(
-                                                        text = vehicle.name,
-                                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                                        text = "Kendaraan belum tersedia",
+                                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                                        color = MariTextLight
                                                     )
                                                     Text(
-                                                        text = "${vehicle.licensePlate ?: ""} • ${vehicle.vehicleType.displayName}",
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MariMutedLight
+                                                        text = "Belum ada kendaraan di garasi. Tap untuk menambah.",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MariPrimaryBlue
                                                     )
                                                 }
                                             },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = Icons.Default.Add,
+                                                    contentDescription = null,
+                                                    tint = MariPrimaryBlue
+                                                )
+                                            },
                                             onClick = {
-                                                viewModel.onEvent(TransactionFormEvent.VehicleSelected(vehicle.id))
                                                 vehicleDropdownExpanded = false
+                                                onNavigateToAddVehicle()
                                             }
                                         )
+                                    } else {
+                                        state.availableVehicles.forEach { vehicle ->
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Column {
+                                                        Text(
+                                                            text = vehicle.name,
+                                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                                        )
+                                                        Text(
+                                                            text = "${vehicle.licensePlate ?: ""} • ${vehicle.vehicleType.displayName}",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MariMutedLight
+                                                        )
+                                                    }
+                                                },
+                                                onClick = {
+                                                    viewModel.onEvent(TransactionFormEvent.VehicleSelected(vehicle.id))
+                                                    vehicleDropdownExpanded = false
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
+
+                            // Banner informatif jika kendaraan belum ada sama sekali
+                            if (state.availableVehicles.isEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Color(0xFFFFF8E6))
+                                        .border(1.dp, Color(0xFFFFE082), RoundedCornerShape(10.dp))
+                                        .clickable { onNavigateToAddVehicle() }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = null,
+                                            tint = Color(0xFFC9871C),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "Kendaraan belum tersedia",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = Color(0xFF8A5A00)
+                                            )
+                                            Text(
+                                                text = "Tambahkan kendaraan terlebih dahulu di Garasi untuk mencatat BBM.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color(0xFF6B4800)
+                                            )
+                                        }
+                                    }
+
+                                    Text(
+                                        text = "+ Tambah",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MariPrimaryBlue,
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    )
+                                }
+                            }
+
                             if (state.vehicleError != null) {
                                 Text(
                                     text = state.vehicleError.orEmpty(),

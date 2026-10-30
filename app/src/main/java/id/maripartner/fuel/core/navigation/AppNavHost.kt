@@ -231,7 +231,10 @@ fun AppNavHost(
                 val transactionId = backStackEntry.arguments?.getString("id")
                 TransactionFormScreen(
                     transactionId = transactionId,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAddVehicle = {
+                        navController.navigate(NavRoute.VehicleForm.createRoute())
+                    }
                 )
             }
 

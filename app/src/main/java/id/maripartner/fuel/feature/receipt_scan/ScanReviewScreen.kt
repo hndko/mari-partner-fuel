@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
@@ -95,7 +96,7 @@ fun ScanReviewScreen(
     }
 
     val selectedVehicleName = state.availableVehicles.firstOrNull { it.id == state.selectedVehicleId }?.name
-        ?: if (state.availableVehicles.isEmpty()) "Memuat kendaraan..." else "Pilih Kendaraan"
+        ?: if (state.availableVehicles.isEmpty()) "Kendaraan belum tersedia" else "Pilih Kendaraan"
 
     Scaffold(
         topBar = {
@@ -228,14 +229,21 @@ fun ScanReviewScreen(
                     expanded = vehicleDropdownExpanded,
                     onDismissRequest = { vehicleDropdownExpanded = false }
                 ) {
-                    state.availableVehicles.forEach { vehicle ->
+                    if (state.availableVehicles.isEmpty()) {
                         DropdownMenuItem(
-                            text = { Text("${vehicle.name} (${vehicle.displaySubtitle})") },
-                            onClick = {
-                                viewModel.onEvent(ReceiptScanUiEvent.VehicleSelected(vehicle.id))
-                                vehicleDropdownExpanded = false
-                            }
+                            text = { Text("Kendaraan belum tersedia", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
+                            onClick = { vehicleDropdownExpanded = false }
                         )
+                    } else {
+                        state.availableVehicles.forEach { vehicle ->
+                            DropdownMenuItem(
+                                text = { Text("${vehicle.name} (${vehicle.displaySubtitle})") },
+                                onClick = {
+                                    viewModel.onEvent(ReceiptScanUiEvent.VehicleSelected(vehicle.id))
+                                    vehicleDropdownExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }

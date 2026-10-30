@@ -93,8 +93,11 @@ fun ReminderFormScreen(
                     expanded = vehicleDropdownExpanded,
                     onExpandedChange = { vehicleDropdownExpanded = !vehicleDropdownExpanded }
                 ) {
+                    val vehicleDisplayName = selectedVehicle?.name
+                        ?: if (formState.availableVehicles.isEmpty()) "Kendaraan belum tersedia" else "Pilih Kendaraan"
+
                     OutlinedTextField(
-                        value = selectedVehicle?.name ?: "Pilih Kendaraan",
+                        value = vehicleDisplayName,
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = vehicleDropdownExpanded) },
@@ -107,14 +110,21 @@ fun ReminderFormScreen(
                         expanded = vehicleDropdownExpanded,
                         onDismissRequest = { vehicleDropdownExpanded = false }
                     ) {
-                        formState.availableVehicles.forEach { v ->
+                        if (formState.availableVehicles.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("${v.name} (${v.licensePlate ?: "-"})") },
-                                onClick = {
-                                    viewModel.onFormEvent(ReminderFormUiEvent.VehicleSelected(v.id))
-                                    vehicleDropdownExpanded = false
-                                }
+                                text = { Text("Kendaraan belum tersedia", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
+                                onClick = { vehicleDropdownExpanded = false }
                             )
+                        } else {
+                            formState.availableVehicles.forEach { v ->
+                                DropdownMenuItem(
+                                    text = { Text("${v.name} (${v.licensePlate ?: "-"})") },
+                                    onClick = {
+                                        viewModel.onFormEvent(ReminderFormUiEvent.VehicleSelected(v.id))
+                                        vehicleDropdownExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
