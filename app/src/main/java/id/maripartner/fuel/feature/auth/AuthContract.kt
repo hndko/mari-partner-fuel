@@ -10,6 +10,9 @@ data class AuthUiState(
     val userSession: UserSession? = null,
     val errorMessage: String? = null,
     val successMessage: String? = null,
+    val isRegistrationSuccess: Boolean = false,
+    val registeredEmail: String? = null,
+    val isDuplicateEmailError: Boolean = false,
     val isPasswordResetSent: Boolean = false,
     val isGoogleSignInEnabled: Boolean = false
 )
@@ -25,4 +28,5 @@ sealed interface AuthUiEvent {
     data object SignOut : AuthUiEvent
     data object DismissError : AuthUiEvent
     data object ClearSuccessMessage : AuthUiEvent
+    data object ResetRegistrationState : AuthUiEvent
 }

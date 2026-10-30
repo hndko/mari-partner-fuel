@@ -43,8 +43,17 @@ class AuthViewModel(
             is AuthUiEvent.SignInWithGoogle -> handleSignInWithGoogle(event.idToken)
             is AuthUiEvent.SendPasswordReset -> handlePasswordReset(event.email)
             is AuthUiEvent.SignOut -> handleSignOut()
-            is AuthUiEvent.DismissError -> _uiState.update { it.copy(errorMessage = null) }
+            is AuthUiEvent.DismissError -> _uiState.update { it.copy(errorMessage = null, isDuplicateEmailError = false) }
             is AuthUiEvent.ClearSuccessMessage -> _uiState.update { it.copy(successMessage = null) }
+            is AuthUiEvent.ResetRegistrationState -> _uiState.update {
+                it.copy(
+                    isRegistrationSuccess = false,
+                    registeredEmail = null,
+                    isDuplicateEmailError = false,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
         }
     }
 
@@ -75,23 +84,31 @@ class AuthViewModel(
 
     private fun handleSignUp(name: String, email: String, pass: String, confirm: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, isDuplicateEmailError = false) }
             when (val result = signUpWithEmailUseCase(name, email, pass, confirm)) {
                 is AppResult.Success -> {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            userSession = result.data,
-                            successMessage = "Pendaftaran berhasil! Silakan periksa email Anda.",
-                            errorMessage = null
+                            userSession = null, // Jangan langsung set userSession agar tidak membypass LoginScreen
+                            isRegistrationSuccess = true,
+                            registeredEmail = email.trim(),
+                            successMessage = "Pendaftaran berhasil!",
+                            errorMessage = null,
+                            isDuplicateEmailError = false
                         )
                     }
                 }
                 is AppResult.Error -> {
+                    val msg = result.exception.message.orEmpty()
+                    val isDuplicate = msg.contains("sudah terdaftar", ignoreCase = true) ||
+                            msg.contains("already registered", ignoreCase = true) ||
+                            msg.contains("already exists", ignoreCase = true)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.exception.message
+                            errorMessage = msg,
+                            isDuplicateEmailError = isDuplicate
                         )
                     }
                 }

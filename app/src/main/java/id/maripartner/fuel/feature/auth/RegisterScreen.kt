@@ -1,5 +1,6 @@
 package id.maripartner.fuel.feature.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,20 +20,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,16 +37,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import id.maripartner.fuel.core.designsystem.component.FuelPasswordField
 import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
-import id.maripartner.fuel.core.designsystem.component.FuelTopBar
-import id.maripartner.fuel.core.designsystem.component.MariPartnerBrandHeader
+import id.maripartner.fuel.core.designsystem.component.FuelSweetAlertDialog
+import id.maripartner.fuel.core.designsystem.component.SweetAlertType
 import id.maripartner.fuel.core.designsystem.theme.MariElectricBlue
 
 @Composable
@@ -59,88 +55,63 @@ fun RegisterScreen(
     viewModel: AuthViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
+    // Toast untuk pesan error reguler
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { msg ->
+            if (!uiState.isDuplicateEmailError) {
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                viewModel.onEvent(AuthUiEvent.DismissError)
+            }
+        }
+    }
+
+    // 1. SweetAlert Modal Dialog untuk Sukses Pendaftaran
+    FuelSweetAlertDialog(
+        show = uiState.isRegistrationSuccess,
+        type = SweetAlertType.SUCCESS,
+        title = "Pendaftaran Berhasil!",
+        message = "Akun Anda (${uiState.registeredEmail ?: email}) telah berhasil dibuat dan aktif. Silakan masuk untuk mulai mengelola pengeluaran BBM Anda.",
+        confirmText = "Masuk Sekarang",
+        onConfirm = {
+            viewModel.onEvent(AuthUiEvent.ResetRegistrationState)
+            Toast.makeText(context, "Silakan masukkan kata sandi Anda", Toast.LENGTH_SHORT).show()
+            onNavigateBackToLogin()
+        }
+    )
+
+    // 2. SweetAlert Modal Dialog untuk Deteksi Email Sudah Terdaftar (Duplikat)
+    FuelSweetAlertDialog(
+        show = uiState.isDuplicateEmailError,
+        type = SweetAlertType.WARNING,
+        title = "Email Sudah Terdaftar",
+        message = "Alamat email '${email.trim()}' sudah terdaftar dalam sistem. Silakan langsung masuk menggunakan akun Anda.",
+        confirmText = "Buka Halaman Masuk",
+        dismissText = "Ganti Email",
+        onConfirm = {
+            viewModel.onEvent(AuthUiEvent.ResetRegistrationState)
+            onNavigateBackToLogin()
+        },
+        onDismiss = {
+            viewModel.onEvent(AuthUiEvent.DismissError)
+        }
+    )
+
     AuthResponsiveLayout(
         title = "Daftar Akun Baru",
         subtitle = "Daftar gratis untuk mencatat transaksi dan scan struk SPBU",
-        onNavigateBack = onNavigateBackToLogin,
+        onNavigateBack = {
+            viewModel.onEvent(AuthUiEvent.ResetRegistrationState)
+            onNavigateBackToLogin()
+        },
         modifier = modifier
     ) {
-        // Sukses Banner
-        if (uiState.successMessage != null) {
-            Card(
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                border = BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = uiState.successMessage ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(18.dp))
-        }
-
-        // Error Banner
-        if (uiState.errorMessage != null) {
-            Card(
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                ),
-                border = BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ErrorOutline,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = uiState.errorMessage ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(18.dp))
-        }
-
         // Input Nama Lengkap
         OutlinedTextField(
             value = name,
@@ -239,7 +210,12 @@ fun RegisterScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            TextButton(onClick = onNavigateBackToLogin) {
+            TextButton(
+                onClick = {
+                    viewModel.onEvent(AuthUiEvent.ResetRegistrationState)
+                    onNavigateBackToLogin()
+                }
+            ) {
                 Text(
                     text = "Masuk di Sini",
                     style = MaterialTheme.typography.bodyMedium.copy(

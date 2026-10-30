@@ -47,10 +47,16 @@ class AuthRepositoryImpl(
             val user = auth.currentUserOrNull()
 
             if (user != null) {
+                // Di Supabase, saat email confirmations aktif atau akun duplikat terdeteksi, identities dikembalikan kosong
+                if (user.identities != null && user.identities?.isEmpty() == true) {
+                    return@withContext AppResult.Error(
+                        AppException.Validation("Alamat email '${email.trim()}' sudah terdaftar. Silakan gunakan menu Masuk.")
+                    )
+                }
                 AppResult.Success(mapToUserSession(user, session))
             } else {
                 AppResult.Error(
-                    AppException.Authentication("Pendaftaran berhasil. Silakan periksa email Anda untuk verifikasi.")
+                    AppException.Authentication("Pendaftaran berhasil diproses.")
                 )
             }
         } catch (e: Exception) {
@@ -200,7 +206,9 @@ class AuthRepositoryImpl(
         return when {
             msg.contains("Invalid login credentials", ignoreCase = true) ->
                 AppException.Authentication("Email atau kata sandi tidak cocok. Silakan periksa kembali.")
-            msg.contains("User already registered", ignoreCase = true) ->
+            msg.contains("User already registered", ignoreCase = true) ||
+            msg.contains("already exists", ignoreCase = true) ||
+            msg.contains("already registered", ignoreCase = true) ->
                 AppException.Validation("Alamat email sudah terdaftar. Silakan gunakan menu Masuk.")
             msg.contains("Password should be at least", ignoreCase = true) ->
                 AppException.Validation("Kata sandi harus terdiri dari minimal 6 karakter.")
