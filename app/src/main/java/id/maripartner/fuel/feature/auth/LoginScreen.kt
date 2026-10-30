@@ -41,6 +41,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import id.maripartner.fuel.core.designsystem.component.FuelPasswordField
 import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
 import id.maripartner.fuel.core.designsystem.component.FuelSecondaryButton
 
@@ -144,14 +145,10 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
+            FuelPasswordField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Kata Sandi") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                label = "Kata Sandi",
                 modifier = Modifier.fillMaxWidth()
             )
 
