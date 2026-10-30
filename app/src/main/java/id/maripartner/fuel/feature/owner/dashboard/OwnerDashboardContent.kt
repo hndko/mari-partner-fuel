@@ -1,5 +1,6 @@
 package id.maripartner.fuel.feature.owner.dashboard
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Group
@@ -51,6 +53,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
@@ -484,73 +487,188 @@ private fun KpiMetricTile(
 
 @Composable
 private fun ExecutiveQuickActions(onNavigateToTab: (OwnerTab) -> Unit) {
-    Column {
-        Text(
-            text = "Pintasan Aksi Konsol",
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            QuickActionPill(
-                icon = Icons.Default.PriceChange,
-                label = "Atur Paket",
-                onClick = { onNavigateToTab(OwnerTab.PLANS) },
-                modifier = Modifier.weight(1f)
-            )
-            QuickActionPill(
-                icon = Icons.Default.Group,
-                label = "Akses Pro",
-                onClick = { onNavigateToTab(OwnerTab.USERS) },
-                modifier = Modifier.weight(1f)
-            )
-            QuickActionPill(
-                icon = Icons.Default.Payments,
-                label = "Audit Transaksi",
-                onClick = { onNavigateToTab(OwnerTab.TRANSACTIONS) },
-                modifier = Modifier.weight(1f)
-            )
+            Column {
+                Text(
+                    text = "KONTROL CEPAT SAAS",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.2.sp,
+                        fontSize = 11.sp
+                    ),
+                    color = MariPrimaryBlue
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Pintasan Aksi Konsol",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ) {
+                Text(
+                    text = "3 Pintasan",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
         }
+
+        // Action 1: Atur Paket & Harga
+        ExecutiveActionCard(
+            title = "Atur Paket & Harga",
+            subtitle = "Katalog harga langganan, kuota AI & armada",
+            badgeText = "Katalog SaaS",
+            badgeBgColor = MariPrimaryBlue.copy(alpha = 0.12f),
+            badgeTextColor = MariPrimaryBlue,
+            icon = Icons.Default.PriceChange,
+            iconBgColor = MariPrimaryBlue.copy(alpha = 0.12f),
+            iconTintColor = MariPrimaryBlue,
+            onClick = { onNavigateToTab(OwnerTab.PLANS) }
+        )
+
+        // Action 2: Pengguna & Akses Pro
+        ExecutiveActionCard(
+            title = "Pengguna & Akses Pro",
+            subtitle = "Cari pengguna & berikan akses Pro manual",
+            badgeText = "Manajemen Akun",
+            badgeBgColor = Color(0xFFFEF3C7),
+            badgeTextColor = Color(0xFFB45309),
+            icon = Icons.Default.WorkspacePremium,
+            iconBgColor = Color(0xFFFEF3C7),
+            iconTintColor = Color(0xFFD97706),
+            onClick = { onNavigateToTab(OwnerTab.USERS) }
+        )
+
+        // Action 3: Audit Transaksi Masuk
+        ExecutiveActionCard(
+            title = "Audit Mutasi Pembayaran",
+            subtitle = "Log transaksi masuk, QRIS & status bayar",
+            badgeText = "Audit Finansial",
+            badgeBgColor = Color(0xFFDCFCE7),
+            badgeTextColor = Color(0xFF15803D),
+            icon = Icons.Default.Payments,
+            iconBgColor = Color(0xFFDCFCE7),
+            iconTintColor = Color(0xFF16A34A),
+            onClick = { onNavigateToTab(OwnerTab.TRANSACTIONS) }
+        )
     }
 }
 
 @Composable
-private fun QuickActionPill(
+private fun ExecutiveActionCard(
+    title: String,
+    subtitle: String,
+    badgeText: String,
+    badgeBgColor: Color,
+    badgeTextColor: Color,
     icon: ImageVector,
-    label: String,
+    iconBgColor: Color,
+    iconTintColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick)
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 1.dp,
+            pressedElevation = 3.dp
+        )
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Container Icon Squircle
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = iconBgColor,
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTintColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Text Info
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = badgeBgColor
+                    ) {
+                        Text(
+                            text = badgeText,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 9.sp,
+                                color = badgeTextColor
+                            ),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             Icon(
-                imageVector = icon,
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MariPrimaryBlue,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
