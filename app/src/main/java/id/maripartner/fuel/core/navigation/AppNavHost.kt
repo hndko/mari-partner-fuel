@@ -171,7 +171,11 @@ fun AppNavHost(
             }
 
             composable(NavRoute.Analytics.route) {
-                AnalyticsScreen()
+                AnalyticsScreen(
+                    onNavigateToCreateTransaction = {
+                        navController.navigate(NavRoute.TransactionForm.createRoute())
+                    }
+                )
             }
 
             composable(NavRoute.Vehicles.route) {
