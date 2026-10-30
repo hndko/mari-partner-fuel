@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
@@ -31,11 +32,13 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TireRepair
 import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -56,6 +59,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -1253,49 +1259,226 @@ private fun RecentTransactionsOrStarterGuide(
 }
 
 /**
+ * Data Model Panduan Cerdas Efisiensi BBM
+ */
+private data class EcoDrivingTip(
+    val title: String,
+    val category: String,
+    val savingsPotential: String,
+    val description: String,
+    val icon: ImageVector,
+    val primaryColor: Color
+)
+
+private val ECO_DRIVING_TIPS = listOf(
+    EcoDrivingTip(
+        title = "Mengemudi Halus (Smooth Throttle)",
+        category = "Teknik Kemudi",
+        savingsPotential = "Hemat hingga 15%",
+        description = "Hindari akselerasi mendadak dan rem mendadak. Menjaga putaran mesin di rentang 2.000–2.500 RPM terbukti memangkas pemborosan BBM hingga 15%.",
+        icon = Icons.Default.Speed,
+        primaryColor = Color(0xFF00897B)
+    ),
+    EcoDrivingTip(
+        title = "Tekanan Angin Ban Sesuai Standar",
+        category = "Ban & Roda",
+        savingsPotential = "Hemat 3–5%",
+        description = "Ban kempes 20% meningkatkan hambatan gulir secara signifikan. Cek tekanan ban minimal 2 minggu sekali saat ban dalam kondisi dingin.",
+        icon = Icons.Default.TireRepair,
+        primaryColor = Color(0xFF0284C7)
+    ),
+    EcoDrivingTip(
+        title = "Rutin Ganti Oli & Filter Udara",
+        category = "Perawatan Mesin",
+        savingsPotential = "Hemat hingga 10%",
+        description = "Oli mesin yang sudah jenuh dan filter udara berdebu menghambat aliran oksigen dan pelumasan mesin, membuat konsumsi bensin lebih boros.",
+        icon = Icons.Default.Build,
+        primaryColor = Color(0xFF7C3AED)
+    ),
+    EcoDrivingTip(
+        title = "Kurangi Beban Muatan Berlebih",
+        category = "Beban Kendaraan",
+        savingsPotential = "Hemat hingga 8%",
+        description = "Setiap beban ekstra 45 kg menambah beban kerja mesin sebesar 1–2%. Bersihkan barang yang tidak terpakai dari bagasi mobil atau jok motor Anda.",
+        icon = Icons.Default.FitnessCenter,
+        primaryColor = Color(0xFFD97706)
+    ),
+    EcoDrivingTip(
+        title = "Aerodinamika & Kecepatan Stabil",
+        category = "Kecepatan Jalan",
+        savingsPotential = "Hemat 5–10%",
+        description = "Di jalan tol atau luar kota di atas 70 km/jam, tutup kaca jendela mobil untuk meminimalkan hambatan angin, dan jaga laju kendaraan tetap konstan.",
+        icon = Icons.Default.Air,
+        primaryColor = Color(0xFF059669)
+    )
+)
+
+/**
  * 6. Kartu Tips Cerdas Efisiensi BBM (Eco-Driving Insight)
+ * Interaktif, dinamis, visual premium dengan kategori & estimasi penghematan
  */
 @Composable
 private fun FuelEfficiencyTipCard() {
+    val initialIndex = remember { (LocalDate.now().dayOfYear) % ECO_DRIVING_TIPS.size }
+    var currentTipIndex by remember { mutableStateOf(initialIndex) }
+    val tip = ECO_DRIVING_TIPS[currentTipIndex]
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MariBorderLight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.Top
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFFE8F5E9)),
-                contentAlignment = Alignment.Center
+            // Header: Category Pill + Savings Pill + Shuffle Action
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = Color(0xFF2E7D32),
-                    modifier = Modifier.size(20.dp)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Category Badge
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = tip.primaryColor.copy(alpha = 0.1f)
+                    ) {
+                        Text(
+                            text = tip.category,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 10.sp
+                            ),
+                            color = tip.primaryColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+
+                    // Savings Potential Pill
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MariSuccessBg,
+                        border = BorderStroke(0.6.dp, MariSuccess.copy(alpha = 0.3f))
+                    ) {
+                        Text(
+                            text = tip.savingsPotential,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            ),
+                            color = MariSuccess,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                // Interactive "Ganti Tips" Button
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    border = BorderStroke(0.8.dp, MariBorderLight),
+                    modifier = Modifier.clickable {
+                        currentTipIndex = (currentTipIndex + 1) % ECO_DRIVING_TIPS.size
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Tips Selanjutnya",
+                            tint = MariPrimaryBlue,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Text(
+                            text = "Ganti Tips",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.5.sp
+                            ),
+                            color = MariPrimaryBlue
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            Column {
-                Text(
-                    text = "Tips Efisiensi BBM Hari Ini",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Pertahankan kecepatan kendaraan secara konstan dan hindari akselerasi mendadak. Mengemudi secara halus (eco-driving) terbukti mampu menghemat konsumsi BBM hingga 10-15%!",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            // Body Content: Squircle Icon + Title & Description
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = tip.primaryColor.copy(alpha = 0.12f),
+                    border = BorderStroke(1.dp, tip.primaryColor.copy(alpha = 0.2f)),
+                    modifier = Modifier.size(46.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = tip.icon,
+                            contentDescription = null,
+                            tint = tip.primaryColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = tip.title,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.5.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = tip.description,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            lineHeight = 18.sp,
+                            fontSize = 12.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Dot Indicators (Pagination dots)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ECO_DRIVING_TIPS.forEachIndexed { idx, _ ->
+                    val isSelected = idx == currentTipIndex
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .height(5.dp)
+                            .width(if (isSelected) 18.dp else 5.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(
+                                if (isSelected) tip.primaryColor else MariBorderLight
+                            )
+                            .clickable { currentTipIndex = idx }
+                    )
+                }
             }
         }
     }
