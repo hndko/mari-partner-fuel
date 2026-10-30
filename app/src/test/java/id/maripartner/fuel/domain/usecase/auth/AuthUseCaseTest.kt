@@ -73,6 +73,13 @@ class FakeAuthRepository : AuthRepository {
         val s = activeSession ?: return AppResult.Error(AppException.Authentication())
         return AppResult.Success(UserProfile(id = s.userId, displayName = displayName, themePreference = themePreference))
     }
+
+    override suspend fun linkGoogleAccount(idToken: String): AppResult<Unit> {
+        if (shouldFail) return AppResult.Error(AppException.Validation("Gagal menautkan akun Google"))
+        return AppResult.Success(Unit)
+    }
+
+    override fun isGoogleLinked(): Boolean = false
 }
 
 class AuthUseCaseTest {

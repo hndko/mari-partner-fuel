@@ -23,7 +23,13 @@ object AppConfig {
                 !supabaseAnonKey.contains("placeholder")
 
     val isGoogleAuthAvailable: Boolean
-        get() = googleWebClientId.isNotBlank()
+        get() = googleWebClientId.isNotBlank() && !googleWebClientId.contains("placeholder")
+
+    val isGoogleSignInConfigured: Boolean
+        get() = isGoogleAuthAvailable
+
+    val versionName: String
+        get() = BuildConfig.VERSION_NAME
 
     /**
      * Redaksi key agar aman saat di-print di debug log.

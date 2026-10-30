@@ -189,6 +189,30 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun linkGoogleAccount(idToken: String): AppResult<Unit> = withContext(dispatcher) {
+        try {
+            val currentEmail = auth.currentUserOrNull()?.email
+            auth.signInWith(IDToken) {
+                this.idToken = idToken
+                provider = Google
+            }
+            val newEmail = auth.currentUserOrNull()?.email
+            if (currentEmail != null && newEmail != null && !currentEmail.equals(newEmail, ignoreCase = true)) {
+                return@withContext AppResult.Error(
+                    AppException.Validation("Email Google ($newEmail) berbeda dengan email akun Anda ($currentEmail).")
+                )
+            }
+            AppResult.Success(Unit)
+        } catch (e: Exception) {
+            AppResult.Error(mapAuthException(e))
+        }
+    }
+
+    override fun isGoogleLinked(): Boolean {
+        val identities = auth.currentIdentitiesOrNull() ?: auth.currentUserOrNull()?.identities ?: return false
+        return identities.any { it.provider.equals("google", ignoreCase = true) }
+    }
+
     private fun mapToUserSession(user: UserInfo, session: SupabaseUserSession?): UserSession {
         val fullName = user.userMetadata?.get("full_name")?.toString()?.replace("\"", "")
         return UserSession(

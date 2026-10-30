@@ -41,4 +41,10 @@ interface AuthRepository {
         displayName: String,
         themePreference: String
     ): AppResult<UserProfile>
+
+    suspend fun linkGoogleAccount(
+        idToken: String
+    ): AppResult<Unit>
+
+    fun isGoogleLinked(): Boolean
 }
