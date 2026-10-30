@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +39,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,6 +48,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -59,6 +63,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -94,6 +99,7 @@ fun DashboardScreen(
     onNavigateToProPlans: () -> Unit,
     onNavigateToReminders: () -> Unit = {},
     onNavigateToTransactions: () -> Unit = {},
+    onNavigateToTransactionDetail: (String) -> Unit = {},
     onNavigateToVehicles: () -> Unit = {},
     onNavigateToAnalytics: () -> Unit = {},
     viewModel: DashboardViewModel = viewModel(),
@@ -205,11 +211,14 @@ fun DashboardScreen(
                     onManageVehicles = onNavigateToVehicles
                 )
 
-                // 5. Transaksi Terbaru atau Panduan Langkah Cepat Memulai
+                // 5. Transaksi Terbaru & Pencatatan Pengisian Terkini
                 RecentTransactionsOrStarterGuide(
                     transactions = uiState.summary.recentTransactions,
+                    primaryVehicle = uiState.primaryVehicle,
                     onViewAll = onNavigateToTransactions,
-                    onStartScan = onNavigateToScan
+                    onStartScan = onNavigateToScan,
+                    onManualInput = onNavigateToManualInput,
+                    onTransactionClick = onNavigateToTransactionDetail
                 )
 
                 // 6. Tips Cerdas Efisiensi BBM (Eco-Driving Insight)
@@ -866,211 +875,379 @@ private fun PrimaryVehicleOverviewSection(
 }
 
 /**
- * 5. Bagian Transaksi Terbaru atau Panduan Langkah Cepat Memulai
+ * 5. Bagian Transaksi Terbaru & Pencatatan Pengisian Terkini di Beranda
  */
 @Composable
 private fun RecentTransactionsOrStarterGuide(
     transactions: List<FuelTransaction>,
+    primaryVehicle: Vehicle?,
     onViewAll: () -> Unit,
-    onStartScan: () -> Unit
+    onStartScan: () -> Unit,
+    onManualInput: () -> Unit,
+    onTransactionClick: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Section Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Transaksi Terbaru",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            if (transactions.isNotEmpty()) {
+            Column {
                 Text(
-                    text = "Lihat Riwayat",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable { onViewAll() }
+                    text = "TRANSAKSI TERBARU",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.4.sp,
+                        fontSize = 11.sp
+                    ),
+                    color = MariPrimaryBlue
                 )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Aktivitas Pengisian BBM",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
+            if (transactions.isNotEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MariPrimaryBlue.copy(alpha = 0.08f),
+                    border = BorderStroke(0.8.dp, MariPrimaryBlue.copy(alpha = 0.25f)),
+                    modifier = Modifier.clickable { onViewAll() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Lihat Semua",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            ),
+                            color = MariPrimaryBlue
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = MariPrimaryBlue,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
             }
         }
 
         if (transactions.isNotEmpty()) {
+            // Daftar Transaksi Terkini
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(1.dp, MariBorderLight),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(vertical = 4.dp)) {
                     transactions.take(4).forEachIndexed { index, tx ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                                .clickable { onTransactionClick(tx.id) }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
-                                contentAlignment = Alignment.Center
+                            // Icon Squircle
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MariPrimaryBlue.copy(alpha = 0.08f),
+                                modifier = Modifier.size(42.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = if (tx.scanStatus == "ocr_confirmed" || tx.scanStatus == "ai_confirmed") {
+                                            Icons.Default.DocumentScanner
+                                        } else {
+                                            Icons.Default.LocalGasStation
+                                        },
+                                        contentDescription = null,
+                                        tint = MariPrimaryBlue,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
 
                             Spacer(modifier = Modifier.width(12.dp))
 
+                            // Data Stasiun & Subtitle
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = tx.stationName ?: "SPBU",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "${tx.vehicleName ?: "Kendaraan"} • ${DateUtils.formatDateTime(tx.transactionAt)}",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = tx.stationName?.takeIf { it.isNotBlank() } ?: "SPBU",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+
+                                    if (!tx.fuelType.isNullOrBlank()) {
+                                        val fuelBadgeColor = when {
+                                            tx.fuelType.contains("Pertalite", ignoreCase = true) -> Color(0xFF00897B)
+                                            tx.fuelType.contains("Solar", ignoreCase = true) -> Color(0xFFC05621)
+                                            else -> MariPrimaryBlue
+                                        }
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = fuelBadgeColor.copy(alpha = 0.1f)
+                                        ) {
+                                            Text(
+                                                text = tx.fuelType,
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 9.sp
+                                                ),
+                                                color = fuelBadgeColor,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = tx.vehicleName ?: "Kendaraan",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "•",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                    Text(
+                                        text = DateUtils.formatDateTime(tx.transactionAt),
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                    )
+                                }
                             }
 
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            // Nominal & Volume
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
                                     text = CurrencyFormatter.formatIdr(tx.totalAmountIdr),
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MariPrimaryBlue
                                 )
                                 if (tx.volumeLiters != null && tx.volumeLiters > 0) {
                                     Text(
                                         text = CurrencyFormatter.formatLiters(tx.volumeLiters),
-                                        style = MaterialTheme.typography.labelSmall,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                                modifier = Modifier.size(13.dp)
+                            )
                         }
 
                         if (index < transactions.take(4).size - 1) {
                             HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                                modifier = Modifier.padding(vertical = 4.dp)
+                                color = MariBorderLight.copy(alpha = 0.6f),
+                                modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
+                    }
+
+                    // Footer Link
+                    HorizontalDivider(color = MariBorderLight)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onViewAll() }
+                            .padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Buka Riwayat Lengkap (${transactions.size} transaksi)",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MariPrimaryBlue
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = MariPrimaryBlue,
+                            modifier = Modifier.size(13.dp)
+                        )
                     }
                 }
             }
         } else {
-            // Panduan Langkah Cepat Memulai (Bukan hanya tampilan kosong!)
+            // Tampilan Bersih & Interaktif saat Belum Ada Transaksi
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(1.dp, MariBorderLight),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = MariPrimaryBlue.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.15f)),
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                                contentDescription = null,
+                                tint = MariPrimaryBlue,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
                     Text(
-                        text = "Cara Mudah Memulai Pencatatan",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        text = "Belum Ada Catatan Transaksi",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
 
-                    StarterStepItem(
-                        stepNumber = "1",
-                        title = "Daftarkan Kendaraan",
-                        description = "Tambahkan motor atau mobil Anda untuk mencatat konsumsi bahan bakar."
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                    StarterStepItem(
-                        stepNumber = "2",
-                        title = "Scan Struk SPBU",
-                        description = "Cukup foto struk saat mengisi bensin, Google ML Kit on-device membaca data otomatis."
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    StarterStepItem(
-                        stepNumber = "3",
-                        title = "Pantau Efisiensi & Biaya",
-                        description = "Lihat analitik rata-rata konsumsi km/liter dan kendalikan anggaran bulanan Anda."
+                    Text(
+                        text = "Mulai pantau biaya dan konsumsi km/liter dengan mencatat pengisian BBM pertama Anda.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onStartScan() },
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                    if (primaryVehicle != null) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            border = BorderStroke(0.8.dp, MariBorderLight)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.DocumentScanner,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Scan Struk Pertama Anda",
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = when (primaryVehicle.vehicleType) {
+                                        VehicleType.MOTORCYCLE -> Icons.Default.TwoWheeler
+                                        else -> Icons.Default.DirectionsCar
+                                    },
+                                    contentDescription = null,
+                                    tint = MariPrimaryBlue,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Text(
+                                    text = "Kendaraan aktif: ${primaryVehicle.name}",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = onStartScan,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MariPrimaryBlue),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DocumentScanner,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Scan Struk AI",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = onManualInput,
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.2.dp, MariPrimaryBlue),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MariPrimaryBlue),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalGasStation,
+                                    contentDescription = null,
+                                    tint = MariPrimaryBlue,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Catat Manual",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MariPrimaryBlue
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun StarterStepItem(
-    stepNumber: String,
-    title: String,
-    description: String
-) {
-    Row(verticalAlignment = Alignment.Top) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = stepNumber,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        Spacer(modifier = Modifier.width(10.dp))
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

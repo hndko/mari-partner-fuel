@@ -151,6 +151,9 @@ fun AppNavHost(
                     onNavigateToTransactions = {
                         navController.navigate(NavRoute.Transactions.route)
                     },
+                    onNavigateToTransactionDetail = { id ->
+                        navController.navigate(NavRoute.TransactionDetail.createRoute(id))
+                    },
                     onNavigateToVehicles = {
                         navController.navigate(NavRoute.Vehicles.route)
                     },
