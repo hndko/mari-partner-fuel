@@ -95,6 +95,16 @@ Metode ini **100% tanpa perlu install/login tool CLI** tambahan di terminal, lan
    - **Query 7**: Buka file `supabase/migrations/20261029000007_payment_integration_and_activation.sql` -> Tempel & Tekan **Run**.
    - **Query 8**: Buka file `supabase/migrations/20261029000008_security_hardening_and_integrity.sql` -> Tempel & Tekan **Run**.
    - **Query 9**: Buka file `supabase/migrations/20261030000001_ephemeral_receipt_storage_policy.sql` -> Tempel & Tekan **Run**. *(Kebijakan retensi struk ephemeral: transaksi BBM disimpan murni berbasis string/angka di database tanpa menyimpan file foto struk permanen di cloud storage)*.
+   - **Query 10**: Buka file `supabase/migrations/20261030000002_saas_admin_owner_dashboard.sql` -> Tempel & Tekan **Run**. *(Fungsi otoritatif analitik SaaS Owner, kolom role di tabel profiles, grafik pendaftar & mutasi status Pro manual)*.
+
+> [!TIP]
+> **Mengangkat Akun Pemilik (SaaS Owner)**:
+> Migration 10 secara otomatis menetapkan akun pertama yang terdaftar di database Anda sebagai `owner`. Jika Anda ingin mengangkat akun email spesifik Anda sebagai Owner secara langsung, jalankan perintah SQL berikut di SQL Editor:
+> ```sql
+> update public.profiles
+> set role = 'owner'
+> where id in (select id from auth.users where email = 'email_anda@gmail.com');
+> ```
 
 > [!NOTE]
 > Pastikan setiap query menampilkan pesan sukses `Success. No rows returned` sebelum berpindah ke query berikutnya.

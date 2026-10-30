@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import id.maripartner.fuel.data.repository.AuthRepositoryImpl
+import id.maripartner.fuel.feature.admin.SaasAdminDashboardScreen
 import id.maripartner.fuel.feature.analytics.AnalyticsScreen
 import id.maripartner.fuel.feature.auth.AuthUiEvent
 import id.maripartner.fuel.feature.auth.AuthViewModel
@@ -201,6 +202,9 @@ fun AppNavHost(
                     onNavigateToEditProfile = {
                         navController.navigate(NavRoute.EditProfile.route)
                     },
+                    onNavigateToSaasAdmin = {
+                        navController.navigate(NavRoute.SaasAdminDashboard.route)
+                    },
                     onLogout = {
                         authViewModel.onEvent(AuthUiEvent.SignOut)
                         navController.navigate(NavRoute.Login.route) {
@@ -368,6 +372,13 @@ fun AppNavHost(
                             popUpTo(NavRoute.Dashboard.route) { inclusive = true }
                         }
                     }
+                )
+            }
+
+            // Panel Pemilik SaaS (SaaS Owner Dashboard)
+            composable(NavRoute.SaasAdminDashboard.route) {
+                SaasAdminDashboardScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }

@@ -16,8 +16,13 @@ data class UserProfile(
     val timezone: String = "Asia/Jakarta",
     @SerialName("theme_preference")
     val themePreference: String = "system",
+    @SerialName("role")
+    val role: String = "user",
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")
     val updatedAt: String? = null
-)
+) {
+    val isOwnerOrAdmin: Boolean
+        get() = role.equals("owner", ignoreCase = true) || role.equals("admin", ignoreCase = true)
+}

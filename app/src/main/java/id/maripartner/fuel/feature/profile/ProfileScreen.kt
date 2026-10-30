@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.HelpOutline
@@ -28,6 +29,8 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -90,6 +93,7 @@ import kotlinx.coroutines.launch
 fun ProfileScreen(
     onNavigateToProPlans: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
+    onNavigateToSaasAdmin: () -> Unit = {},
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = viewModel()
@@ -241,6 +245,92 @@ fun ProfileScreen(
                             leadingIcon = Icons.Default.Edit,
                             modifier = Modifier.fillMaxWidth()
                         )
+                    }
+                }
+
+                // 1b. Kartu Eksklusif Pemilik SaaS (Hanya Tampil untuk Owner / Admin)
+                if (uiState.isOwnerOrAdmin) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFF0F172A) // Dark Slate 900
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(18.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFEAB308).copy(alpha = 0.2f))
+                                ) {
+                                    Text(text = "👑", fontSize = 22.sp)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Panel Pemilik SaaS",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFEAB308)
+                                        ) {
+                                            Text(
+                                                text = "VIP OWNER",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    fontSize = 9.sp,
+                                                    color = Color.Black
+                                                ),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Pantau pendaftaran, omset langganan & kelola Pro",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = Color(0xFF94A3B8)
+                                        )
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = onNavigateToSaasAdmin,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF0284C7)
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Dashboard,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Buka Panel Pemilik",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
                 }
 

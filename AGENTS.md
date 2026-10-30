@@ -7,7 +7,7 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 ## 📌 Metadata Proyek
 
 - **Nama Aplikasi**: **Mari Partner Fuel** (AI-Powered Fuel Expense Tracker for Android)
-- **Versi Saat Ini**: `v1.7.0`
+- **Versi Saat Ini**: `v1.8.0`
 - **Platform**: Android Native (Minimum SDK API 26 Android 8.0 Oreo, Target SDK API 35 Android 15)
 - **Bahasa & UI**: Kotlin 2.0.21, Jetpack Compose BOM 2024.10.00, Material 3
 - **Backend & Basis Data**: Supabase PostgreSQL 15+, Private Storage, Row Level Security (RLS), Edge Functions
@@ -15,7 +15,7 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 - **Payment Gateway**: Dual-Track (Google Play Billing v7.1.1 untuk Play Store, QRISpy/Midtrans untuk Direct/Web)
 - **Dokumentasi Proyek**: [Panduan Setup Lengkap](docs/README.md)
 - **Histori Rilis**: `README.md`
-- **Sumber Versi Runtime**: `app/build.gradle.kts` (`versionName = "1.7.0"`, `versionCode = 8`)
+- **Sumber Versi Runtime**: `app/build.gradle.kts` (`versionName = "1.8.0"`, `versionCode = 9`)
 
 ---
 

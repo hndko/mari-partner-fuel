@@ -50,4 +50,7 @@ sealed class NavRoute(val route: String) {
     data object PaymentStatus : NavRoute("payment_status/{paymentReference}") {
         fun createRoute(paymentReference: String) = "payment_status/$paymentReference"
     }
+
+    // SaaS Owner & Admin Panel
+    data object SaasAdminDashboard : NavRoute("saas_admin_dashboard")
 }

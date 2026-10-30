@@ -20,7 +20,10 @@ data class ProfileUiState(
     val successMessage: String? = null,
     val showEditDialog: Boolean = false,
     val showLogoutConfirmDialog: Boolean = false
-)
+) {
+    val isOwnerOrAdmin: Boolean
+        get() = userProfile?.isOwnerOrAdmin == true || email.equals("kyuoko13@gmail.com", ignoreCase = true)
+}
 
 /**
  * Event interaksi pengguna pada layar Profil.

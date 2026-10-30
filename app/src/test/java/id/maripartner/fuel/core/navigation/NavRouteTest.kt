@@ -16,6 +16,7 @@ class NavRouteTest {
         assertEquals("vehicles", NavRoute.Vehicles.route)
         assertEquals("profile", NavRoute.Profile.route)
         assertEquals("reminders", NavRoute.Reminders.route)
+        assertEquals("saas_admin_dashboard", NavRoute.SaasAdminDashboard.route)
     }
 
     @Test

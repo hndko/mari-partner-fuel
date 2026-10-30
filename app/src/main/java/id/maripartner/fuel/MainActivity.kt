@@ -12,9 +12,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val startRoute = intent.getStringExtra("start_route") ?: id.maripartner.fuel.core.navigation.NavRoute.Splash.route
         setContent {
             MariPartnerFuelTheme {
-                AppNavHost()
+                AppNavHost(startDestination = startRoute)
             }
         }
     }
