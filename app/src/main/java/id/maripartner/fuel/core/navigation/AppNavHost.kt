@@ -149,6 +149,12 @@ fun AppNavHost(
                     },
                     onNavigateToTransactions = {
                         navController.navigate(NavRoute.Transactions.route)
+                    },
+                    onNavigateToVehicles = {
+                        navController.navigate(NavRoute.Vehicles.route)
+                    },
+                    onNavigateToAnalytics = {
+                        navController.navigate(NavRoute.Analytics.route)
                     }
                 )
             }

@@ -19,6 +19,11 @@ object DateUtils {
     private val shortDateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", indonesianLocale)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm", indonesianLocale)
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", indonesianLocale)
+    private val monthYearFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", indonesianLocale)
+
+    fun formatMonthYear(date: LocalDate): String {
+        return date.format(monthYearFormatter)
+    }
 
     fun formatFullDate(instant: Instant, zoneId: ZoneId = ZONE_JAKARTA): String {
         return instant.atZone(zoneId).format(fullDateFormatter)

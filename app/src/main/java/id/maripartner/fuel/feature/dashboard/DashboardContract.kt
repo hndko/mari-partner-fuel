@@ -1,13 +1,19 @@
 package id.maripartner.fuel.feature.dashboard
 
-import id.maripartner.fuel.core.common.result.UiState
 import id.maripartner.fuel.domain.model.DashboardSummary
+import id.maripartner.fuel.domain.model.Vehicle
 
 /**
- * State untuk layar Dashboard.
+ * State untuk layar Dashboard Mari Partner Fuel yang kaya informasi & interaktif.
  */
 data class DashboardUiState(
-    val summaryState: UiState<DashboardSummary> = UiState.Loading,
+    val summary: DashboardSummary = DashboardSummary(),
+    val primaryVehicle: Vehicle? = null,
+    val totalVehiclesCount: Int = 0,
+    val pendingRemindersCount: Int = 0,
+    val userName: String = "Pengemudi",
+    val isProUser: Boolean = false,
+    val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null
 )
