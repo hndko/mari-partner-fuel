@@ -129,6 +129,67 @@ class OwnerConsoleModelAndContractTest {
     }
 
     @Test
+    fun ownerPaymentTx_statusAndAmountAggregationCalculation() {
+        val txList = listOf(
+            OwnerPaymentTx(
+                id = "tx-1",
+                userId = "u-1",
+                userDisplayName = "Handoko",
+                provider = "qrispy",
+                paymentReference = "QRIS-001",
+                amountIdr = 29000L,
+                status = "paid",
+                planName = "Paket Pro Bulanan"
+            ),
+            OwnerPaymentTx(
+                id = "tx-2",
+                userId = "u-2",
+                userDisplayName = "Budi Hartono",
+                provider = "qrispy",
+                paymentReference = "QRIS-002",
+                amountIdr = 290000L,
+                status = "paid",
+                planName = "Paket Pro Tahunan"
+            ),
+            OwnerPaymentTx(
+                id = "tx-3",
+                userId = "u-3",
+                userDisplayName = "Siti Aisyah",
+                provider = "midtrans",
+                paymentReference = "MID-003",
+                amountIdr = 29000L,
+                status = "pending",
+                planName = "Paket Pro Bulanan"
+            )
+        )
+
+        val totalPaidAmount = txList.filter { it.status.equals("paid", ignoreCase = true) }.sumOf { it.amountIdr }
+        val totalPendingAmount = txList.filter { it.status.equals("pending", ignoreCase = true) }.sumOf { it.amountIdr }
+        val paidCount = txList.count { it.status.equals("paid", ignoreCase = true) }
+        val pendingCount = txList.count { it.status.equals("pending", ignoreCase = true) }
+        val successRate = (paidCount.toDouble() / txList.size.toDouble()) * 100.0
+
+        assertEquals(319000L, totalPaidAmount)
+        assertEquals(29000L, totalPendingAmount)
+        assertEquals(2, paidCount)
+        assertEquals(1, pendingCount)
+        assertEquals(66.67, successRate, 0.01)
+
+        // Filter status "paid"
+        val paidOnly = txList.filter { it.status.equals("paid", ignoreCase = true) }
+        assertEquals(2, paidOnly.size)
+
+        // Filter status "pending"
+        val pendingOnly = txList.filter { it.status.equals("pending", ignoreCase = true) }
+        assertEquals(1, pendingOnly.size)
+
+        // Search query "budi"
+        val queryBudi = txList.filter { it.userDisplayName.contains("budi", ignoreCase = true) }
+        assertEquals(1, queryBudi.size)
+        assertEquals("Budi Hartono", queryBudi.first().userDisplayName)
+    }
+
+    @Test
     fun saasKpiAndMetrics_modelCalculations() {
         val kpi = SaasKpi(
             totalRevenueIdr = 580000L,
