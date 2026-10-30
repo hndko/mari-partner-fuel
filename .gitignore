@@ -28,6 +28,9 @@ Thumbs.db
 # Log files
 *.log
 
+# VS Code
+.vscode/
+
 # Supabase CLI local cache & branches
 supabase/.temp/
 supabase/.branches/
