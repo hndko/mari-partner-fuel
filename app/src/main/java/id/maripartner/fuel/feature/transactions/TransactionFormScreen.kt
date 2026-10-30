@@ -76,6 +76,7 @@ import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
 import id.maripartner.fuel.core.designsystem.component.FuelSecondaryButton
 import id.maripartner.fuel.core.designsystem.component.FuelTextField
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
+import id.maripartner.fuel.core.designsystem.component.ThousandSeparatorVisualTransformation
 import id.maripartner.fuel.core.designsystem.theme.MariBorderLight
 import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
 import id.maripartner.fuel.core.designsystem.theme.MariDanger
@@ -482,16 +483,20 @@ fun TransactionFormScreen(
                             }
                         }
 
-                        // C. Total Pembayaran (Rp)
+                        // C. Total Pembayaran (Rp) (Format otomatis pemisah ribuan)
                         val formattedDisplay = state.totalAmountRaw.toLongOrNull()?.let {
                             CurrencyFormatter.formatIdr(it)
                         } ?: "Rp 0"
 
                         FuelTextField(
                             value = state.totalAmountRaw,
-                            onValueChange = { viewModel.onEvent(TransactionFormEvent.TotalAmountChanged(it)) },
+                            onValueChange = { input ->
+                                val cleanDigits = input.filter { it.isDigit() }
+                                viewModel.onEvent(TransactionFormEvent.TotalAmountChanged(cleanDigits))
+                            },
                             label = "TOTAL PEMBAYARAN (RP) *",
-                            placeholder = "Contoh: 250000",
+                            placeholder = "Contoh: 25.000",
+                            visualTransformation = ThousandSeparatorVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             errorMessage = state.totalError,
                             modifier = Modifier.fillMaxWidth()
@@ -499,7 +504,7 @@ fun TransactionFormScreen(
                         if (state.totalAmountRaw.isNotBlank() && state.totalError == null) {
                             Text(
                                 text = "Terbaca: $formattedDisplay",
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                 color = MariPrimaryBlue,
                                 modifier = Modifier.padding(start = 4.dp, top = 2.dp)
                             )
@@ -604,9 +609,13 @@ fun TransactionFormScreen(
                         // H. Odometer Kendaraan (km)
                         FuelTextField(
                             value = state.odometerKmRaw,
-                            onValueChange = { viewModel.onEvent(TransactionFormEvent.OdometerChanged(it)) },
+                            onValueChange = { input ->
+                                val cleanDigits = input.filter { it.isDigit() }
+                                viewModel.onEvent(TransactionFormEvent.OdometerChanged(cleanDigits))
+                            },
                             label = "ODOMETER SAAT PENGISIAN (KM)",
-                            placeholder = "Contoh: 24850",
+                            placeholder = "Contoh: 24.850",
+                            visualTransformation = ThousandSeparatorVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             leadingIcon = Icons.Default.Speed,
                             modifier = Modifier.fillMaxWidth()

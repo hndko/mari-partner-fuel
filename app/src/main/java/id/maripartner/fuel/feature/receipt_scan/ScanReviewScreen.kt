@@ -61,7 +61,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
+import id.maripartner.fuel.core.designsystem.component.FuelTextField
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
+import id.maripartner.fuel.core.designsystem.component.ThousandSeparatorVisualTransformation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -248,25 +250,31 @@ fun ScanReviewScreen(
                 }
             }
 
-            // 5. Total Pembayaran (Rp) (Format otomatis Rupiah)
+            // 5. Total Pembayaran (Rp) (Format otomatis pemisah ribuan)
             val formattedDisplay = state.totalAmountRaw.toLongOrNull()?.let {
                 CurrencyFormatter.formatIdr(it)
             } ?: "Rp 0"
 
-            OutlinedTextField(
+            FuelTextField(
                 value = state.totalAmountRaw,
-                onValueChange = { viewModel.onEvent(ReceiptScanUiEvent.TotalAmountChanged(it)) },
-                label = { Text("Total Pembayaran (Rp) *") },
-                placeholder = { Text("misal: 50000") },
-                supportingText = {
-                    if (state.totalAmountRaw.isNotBlank()) {
-                        Text("Terformat: $formattedDisplay")
-                    }
+                onValueChange = { input ->
+                    val clean = input.filter { it.isDigit() }
+                    viewModel.onEvent(ReceiptScanUiEvent.TotalAmountChanged(clean))
                 },
+                label = "TOTAL PEMBAYARAN (RP) *",
+                placeholder = "misal: 50.000",
+                visualTransformation = ThousandSeparatorVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
+            if (state.totalAmountRaw.isNotBlank()) {
+                Text(
+                    text = "Terbaca: $formattedDisplay",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                )
+            }
 
             // 6. Volume Liter & Harga per Liter
             Row(
@@ -349,16 +357,17 @@ fun ScanReviewScreen(
             }
 
             // 8. Odometer
-            OutlinedTextField(
+            FuelTextField(
                 value = state.odometerKmRaw,
-                onValueChange = { viewModel.onEvent(ReceiptScanUiEvent.OdometerChanged(it)) },
-                label = { Text("Odometer Kendaraan (km)") },
-                placeholder = { Text("misal: 15420") },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Default.Speed, contentDescription = null)
+                onValueChange = { input ->
+                    val clean = input.filter { it.isDigit() }
+                    viewModel.onEvent(ReceiptScanUiEvent.OdometerChanged(clean))
                 },
+                label = "ODOMETER KENDARAAN (KM)",
+                placeholder = "misal: 15.420",
+                leadingIcon = Icons.Default.Speed,
+                visualTransformation = ThousandSeparatorVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 

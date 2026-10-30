@@ -45,7 +45,7 @@ class VehicleFormViewModel(
                             licensePlate = v.licensePlate.orEmpty(),
                             defaultFuelType = v.defaultFuelType.orEmpty(),
                             tankCapacityLiters = v.tankCapacityLiters?.toString().orEmpty(),
-                            lastOdometerKm = v.lastOdometerKm?.toString().orEmpty(),
+                            lastOdometerKm = v.lastOdometerKm?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }.orEmpty(),
                             notes = v.notes.orEmpty(),
                             isArchived = v.isArchived,
                             isLoadingData = false

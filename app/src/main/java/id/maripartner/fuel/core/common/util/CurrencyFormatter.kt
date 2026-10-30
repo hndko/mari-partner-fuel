@@ -26,6 +26,33 @@ object CurrencyFormatter {
     }
 
     /**
+     * Memformat angka ke pemisah ribuan titik tanpa prefix 'Rp '.
+     * Contoh: 25000L -> "25.000", 1500000L -> "1.500.000"
+     */
+    fun formatThousands(amount: Long): String {
+        return rupiahFormat.format(amount)
+    }
+
+    /**
+     * Memformat string digit mentah menjadi string berformat pemisah ribuan.
+     * Contoh: "25000" -> "25.000", "500" -> "500", "" -> ""
+     */
+    fun formatThousands(rawDigits: String): String {
+        val clean = rawDigits.filter { it.isDigit() }
+        if (clean.isEmpty()) return ""
+        val num = clean.toLongOrNull() ?: return clean
+        return rupiahFormat.format(num)
+    }
+
+    /**
+     * Mengambil digit angka murni dari string berformat untuk penyimpanan normal ke database.
+     * Contoh: "25.000" -> "25000", "Rp 50.000" -> "50000"
+     */
+    fun cleanDigits(formattedText: String): String {
+        return formattedText.filter { it.isDigit() }
+    }
+
+    /**
      * Memformat volume ke format liter, misal: `25,450 L`
      */
     fun formatLiters(liters: Double, compact: Boolean = false): String {

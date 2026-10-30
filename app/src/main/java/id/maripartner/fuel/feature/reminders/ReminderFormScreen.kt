@@ -36,6 +36,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -63,6 +64,7 @@ import id.maripartner.fuel.core.designsystem.component.FuelSweetAlertDialog
 import id.maripartner.fuel.core.designsystem.component.FuelTextField
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
 import id.maripartner.fuel.core.designsystem.component.SweetAlertType
+import id.maripartner.fuel.core.designsystem.component.ThousandSeparatorVisualTransformation
 import id.maripartner.fuel.core.designsystem.theme.MariBorderLight
 import id.maripartner.fuel.core.designsystem.theme.MariDanger
 import id.maripartner.fuel.core.designsystem.theme.MariDangerBg
@@ -218,7 +220,7 @@ fun ReminderFormScreen(
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .menuAnchor()
+                                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 )
 
                                 ExposedDropdownMenu(
@@ -446,11 +448,14 @@ fun ReminderFormScreen(
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 FuelTextField(
                                     value = formState.targetOdometerStr,
-                                    onValueChange = { viewModel.onFormEvent(ReminderFormUiEvent.TargetOdometerChanged(it)) },
+                                    onValueChange = { input ->
+                                        viewModel.onFormEvent(ReminderFormUiEvent.TargetOdometerChanged(input.filter { it.isDigit() }))
+                                    },
                                     label = "TARGET ODOMETER KILOMETER *",
-                                    placeholder = "misal: 25000",
+                                    placeholder = "misal: 25.000",
                                     leadingIcon = Icons.Default.Speed,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    visualTransformation = ThousandSeparatorVisualTransformation(),
                                     modifier = Modifier.fillMaxWidth()
                                 )
 

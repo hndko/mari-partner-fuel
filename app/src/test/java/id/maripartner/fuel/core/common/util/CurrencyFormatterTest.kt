@@ -14,6 +14,22 @@ class CurrencyFormatterTest {
     }
 
     @Test
+    fun formatThousands_formatsCorrectly() {
+        assertEquals("25.000", CurrencyFormatter.formatThousands(25_000L))
+        assertEquals("25.000", CurrencyFormatter.formatThousands("25000"))
+        assertEquals("1.500.000", CurrencyFormatter.formatThousands("1500000"))
+        assertEquals("500", CurrencyFormatter.formatThousands("500"))
+        assertEquals("", CurrencyFormatter.formatThousands(""))
+    }
+
+    @Test
+    fun cleanDigits_extractsPureDigits() {
+        assertEquals("25000", CurrencyFormatter.cleanDigits("25.000"))
+        assertEquals("25000", CurrencyFormatter.cleanDigits("Rp 25.000"))
+        assertEquals("1500000", CurrencyFormatter.cleanDigits("1.500.000"))
+    }
+
+    @Test
     fun parseIdr_handlesVariousRawFormats() {
         assertEquals(50000L, CurrencyFormatter.parseIdr("Rp 50.000"))
         assertEquals(50000L, CurrencyFormatter.parseIdr("Rp 50.000,00"))

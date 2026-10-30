@@ -59,6 +59,7 @@ import id.maripartner.fuel.core.designsystem.component.FuelSweetAlertDialog
 import id.maripartner.fuel.core.designsystem.component.FuelTextField
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
 import id.maripartner.fuel.core.designsystem.component.SweetAlertType
+import id.maripartner.fuel.core.designsystem.component.ThousandSeparatorVisualTransformation
 import id.maripartner.fuel.core.designsystem.theme.MariAccentCyan
 import id.maripartner.fuel.core.designsystem.theme.MariBorderLight
 import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
@@ -357,11 +358,14 @@ fun VehicleFormScreen(
 
                                 FuelTextField(
                                     value = state.lastOdometerKm,
-                                    onValueChange = { viewModel.onEvent(VehicleFormEvent.OdometerChanged(it)) },
+                                    onValueChange = { input ->
+                                        viewModel.onEvent(VehicleFormEvent.OdometerChanged(input.filter { it.isDigit() }))
+                                    },
                                     label = "Odometer Terkini (km)",
-                                    placeholder = "Contoh: 24500",
+                                    placeholder = "Contoh: 24.500",
                                     leadingIcon = Icons.Default.Speed,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    visualTransformation = ThousandSeparatorVisualTransformation(),
                                     errorMessage = state.odometerError,
                                     modifier = Modifier.weight(1f)
                                 )
