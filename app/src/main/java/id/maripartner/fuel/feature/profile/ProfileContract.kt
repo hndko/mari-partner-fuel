@@ -29,7 +29,6 @@ sealed interface ProfileUiEvent {
     data object LoadProfile : ProfileUiEvent
     data class UpdateDisplayName(val newName: String) : ProfileUiEvent
     data class LinkGoogle(val idToken: String) : ProfileUiEvent
-    data class ChangeTheme(val theme: String) : ProfileUiEvent
     data class ToggleReminderNotification(val enabled: Boolean) : ProfileUiEvent
     data class SetEditDialogVisible(val visible: Boolean) : ProfileUiEvent
     data class SetLogoutDialogVisible(val visible: Boolean) : ProfileUiEvent

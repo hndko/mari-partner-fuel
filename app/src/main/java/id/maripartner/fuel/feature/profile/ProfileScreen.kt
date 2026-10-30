@@ -20,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.HelpOutline
@@ -32,14 +31,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -105,7 +100,6 @@ fun ProfileScreen(
 
     // Dialog State
     var editNameInput by remember { mutableStateOf("") }
-    var showThemeMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { msg ->
@@ -395,90 +389,6 @@ fun ProfileScreen(
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
-
-                    // Row: Pilihan Tema
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.DarkMode,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Tema Tampilan",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-                                )
-                                Text(
-                                    text = when (uiState.themePreference) {
-                                        "dark" -> "Mode Gelap"
-                                        "light" -> "Mode Terang"
-                                        else -> "Mengikuti Pengaturan Sistem"
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        ExposedDropdownMenuBox(
-                            expanded = showThemeMenu,
-                            onExpandedChange = { showThemeMenu = it }
-                        ) {
-                            OutlinedTextField(
-                                value = when (uiState.themePreference) {
-                                    "dark" -> "Gelap"
-                                    "light" -> "Terang"
-                                    else -> "Sistem"
-                                },
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showThemeMenu) },
-                                modifier = Modifier
-                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                    .width(115.dp)
-                                    .height(48.dp),
-                                textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            ExposedDropdownMenu(
-                                expanded = showThemeMenu,
-                                onDismissRequest = { showThemeMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Ikuti Sistem", style = MaterialTheme.typography.bodySmall) },
-                                    onClick = {
-                                        viewModel.onEvent(ProfileUiEvent.ChangeTheme("system"))
-                                        showThemeMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Terang", style = MaterialTheme.typography.bodySmall) },
-                                    onClick = {
-                                        viewModel.onEvent(ProfileUiEvent.ChangeTheme("light"))
-                                        showThemeMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Gelap", style = MaterialTheme.typography.bodySmall) },
-                                    onClick = {
-                                        viewModel.onEvent(ProfileUiEvent.ChangeTheme("dark"))
-                                        showThemeMenu = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                     // Row: Notifikasi Pengingat Servis
                     Row(

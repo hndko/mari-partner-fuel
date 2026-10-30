@@ -35,7 +35,6 @@ class ProfileViewModel(
             is ProfileUiEvent.LoadProfile -> loadProfile()
             is ProfileUiEvent.UpdateDisplayName -> updateDisplayName(event.newName)
             is ProfileUiEvent.LinkGoogle -> linkGoogle(event.idToken)
-            is ProfileUiEvent.ChangeTheme -> changeTheme(event.theme)
             is ProfileUiEvent.ToggleReminderNotification -> toggleReminder(event.enabled)
             is ProfileUiEvent.SetEditDialogVisible -> _uiState.update { it.copy(showEditDialog = event.visible) }
             is ProfileUiEvent.SetLogoutDialogVisible -> _uiState.update { it.copy(showLogoutConfirmDialog = event.visible) }
@@ -149,13 +148,6 @@ class ProfileViewModel(
                     }
                 }
             }
-        }
-    }
-
-    private fun changeTheme(theme: String) {
-        _uiState.update { it.copy(themePreference = theme) }
-        viewModelScope.launch {
-            authRepository.updateUserProfile(_uiState.value.displayName, theme)
         }
     }
 

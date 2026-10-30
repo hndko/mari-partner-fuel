@@ -75,18 +75,9 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun MariPartnerFuelTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Tetap prioritaskan identitas warna resmi Mari Partner
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = LightColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -94,8 +85,8 @@ fun MariPartnerFuelTheme(
             val window = (view.context as? Activity)?.window
             if (window != null) {
                 val windowInsetsController = WindowCompat.getInsetsController(window, view)
-                windowInsetsController.isAppearanceLightStatusBars = !darkTheme
-                windowInsetsController.isAppearanceLightNavigationBars = !darkTheme
+                windowInsetsController.isAppearanceLightStatusBars = true
+                windowInsetsController.isAppearanceLightNavigationBars = true
             }
         }
     }
