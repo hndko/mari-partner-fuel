@@ -1,8 +1,48 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+
+// Loader konfigurasi lingkungan otomatis dari .env & local.properties
+val envProperties = Properties()
+
+// 1. Baca dari local.properties di root jika tersedia
+val rootLocalPropsFile = rootProject.file("local.properties")
+if (rootLocalPropsFile.exists()) {
+    val lp = Properties()
+    rootLocalPropsFile.inputStream().use { lp.load(it) }
+    lp.forEach { (k, v) ->
+        val str = v.toString().trim()
+        if (str.isNotBlank()) {
+            envProperties.setProperty(k.toString(), str)
+        }
+    }
+}
+
+// 2. Baca dari berkas .env di root jika tersedia (prioritas utama developer)
+val rootEnvFile = rootProject.file(".env")
+if (rootEnvFile.exists()) {
+    rootEnvFile.forEachLine { line ->
+        val trimmed = line.trim()
+        if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
+            val key = trimmed.substringBefore("=").trim()
+            val value = trimmed.substringAfter("=").trim().removeSurrounding("\"").removeSurrounding("'")
+            if (value.isNotBlank()) {
+                envProperties.setProperty(key, value)
+            }
+        }
+    }
+}
+
+fun getEnvOrProp(key: String, default: String = ""): String {
+    return envProperties.getProperty(key)?.takeIf { it.isNotBlank() }
+        ?: (project.findProperty(key) as? String)?.takeIf { it.isNotBlank() }
+        ?: System.getenv(key)?.takeIf { it.isNotBlank() }
+        ?: default
 }
 
 android {
@@ -21,16 +61,10 @@ android {
             useSupportLibrary = true
         }
 
-        // Environment values injected safely via Gradle properties / environment
-        val supabaseUrl = (project.findProperty("SUPABASE_URL") as? String)
-            ?: System.getenv("SUPABASE_URL")
-            ?: "https://placeholder-project.supabase.co"
-        val supabaseAnonKey = (project.findProperty("SUPABASE_ANON_KEY") as? String)
-            ?: System.getenv("SUPABASE_ANON_KEY")
-            ?: "placeholder-anon-key"
-        val googleWebClientId = (project.findProperty("GOOGLE_WEB_CLIENT_ID") as? String)
-            ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
-            ?: ""
+        // Environment values injected safely via .env, local.properties, or environment variables
+        val supabaseUrl = getEnvOrProp("SUPABASE_URL", "https://placeholder-project.supabase.co")
+        val supabaseAnonKey = getEnvOrProp("SUPABASE_ANON_KEY", "placeholder-anon-key")
+        val googleWebClientId = getEnvOrProp("GOOGLE_WEB_CLIENT_ID", "")
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
@@ -39,16 +73,12 @@ android {
 
     signingConfigs {
         create("release") {
-            val storeFilePath = (project.findProperty("RELEASE_STORE_FILE") as? String)
-                ?: System.getenv("RELEASE_STORE_FILE")
-            if (storeFilePath != null && file(storeFilePath).exists()) {
+            val storeFilePath = getEnvOrProp("RELEASE_STORE_FILE")
+            if (storeFilePath.isNotBlank() && file(storeFilePath).exists()) {
                 storeFile = file(storeFilePath)
-                storePassword = (project.findProperty("RELEASE_STORE_PASSWORD") as? String)
-                    ?: System.getenv("RELEASE_STORE_PASSWORD")
-                keyAlias = (project.findProperty("RELEASE_KEY_ALIAS") as? String)
-                    ?: System.getenv("RELEASE_KEY_ALIAS")
-                keyPassword = (project.findProperty("RELEASE_KEY_PASSWORD") as? String)
-                    ?: System.getenv("RELEASE_KEY_PASSWORD")
+                storePassword = getEnvOrProp("RELEASE_STORE_PASSWORD")
+                keyAlias = getEnvOrProp("RELEASE_KEY_ALIAS")
+                keyPassword = getEnvOrProp("RELEASE_KEY_PASSWORD")
             } else {
                 // Fallback aman ke debug keystore untuk pengujian Release Candidate lokal/CI
                 val debugKeystore = getByName("debug")
