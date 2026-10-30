@@ -40,21 +40,31 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import id.maripartner.fuel.core.common.config.AppConfig
 import id.maripartner.fuel.core.designsystem.component.FuelPasswordField
 import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
 import id.maripartner.fuel.core.designsystem.component.FuelSecondaryButton
 import id.maripartner.fuel.core.designsystem.component.MariPartnerBrandHeader
 import id.maripartner.fuel.core.designsystem.theme.MariElectricBlue
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -68,6 +78,8 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.userSession) {
@@ -217,7 +229,41 @@ fun LoginScreen(
         FuelSecondaryButton(
             text = if (uiState.isGoogleSignInEnabled) "Masuk dengan Akun Google" else "Masuk dengan Google (Perlu Konfigurasi)",
             onClick = {
-                // Google sign-in handler
+                if (!uiState.isGoogleSignInEnabled || uiState.isLoading) return@FuelSecondaryButton
+                coroutineScope.launch {
+                    try {
+                        val credentialManager = CredentialManager.create(context)
+                        val googleIdOption = GetGoogleIdOption.Builder()
+                            .setFilterByAuthorizedAccounts(false)
+                            .setServerClientId(AppConfig.googleWebClientId)
+                            .setAutoSelectEnabled(false)
+                            .build()
+
+                        val request = GetCredentialRequest.Builder()
+                            .addCredentialOption(googleIdOption)
+                            .build()
+
+                        val result = credentialManager.getCredential(
+                            request = request,
+                            context = context
+                        )
+
+                        val credential = result.credential
+                        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            viewModel.onEvent(AuthUiEvent.SignInWithGoogle(googleIdTokenCredential.idToken))
+                        } else {
+                            snackbarHostState.showSnackbar("Format kredensial Google tidak dikenali.")
+                        }
+                    } catch (e: GetCredentialException) {
+                        val msg = e.localizedMessage ?: "Dibatalkan"
+                        if (!msg.contains("cancel", ignoreCase = true)) {
+                            snackbarHostState.showSnackbar("Gagal login dengan Google: $msg")
+                        }
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar("Kendala: ${e.localizedMessage}")
+                    }
+                }
             },
             enabled = uiState.isGoogleSignInEnabled && !uiState.isLoading
         )
