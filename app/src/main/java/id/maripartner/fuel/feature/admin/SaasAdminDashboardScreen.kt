@@ -58,6 +58,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -91,6 +92,7 @@ fun SaasAdminDashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val focusManager = LocalFocusManager.current
 
     // Feedback pesan notifikasi
     LaunchedEffect(uiState.errorMessage, uiState.successMessage) {
@@ -326,6 +328,7 @@ fun SaasAdminDashboardScreen(
                         AdminUserCard(
                             user = user,
                             onGrantProClicked = {
+                                focusManager.clearFocus()
                                 viewModel.onEvent(SaasAdminUiEvent.OpenGrantProDialog(user))
                             }
                         )
