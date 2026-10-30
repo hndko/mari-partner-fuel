@@ -17,7 +17,8 @@ Aplikasi ini menggunakan:
 
 1. [🛠️ Langkah 1: Prasyarat Sistem & Alat](#️-langkah-1-prasyarat-sistem--alat)
 2. [🗄️ Langkah 2: Setup Backend Supabase (Gratis)](#️-langkah-2-setup-backend-supabase-gratis)
-3. [⚙️ Langkah 3: Konfigurasi Kunci di Proyek Android](#️-langkah-3-konfigurasi-kunci-di-proyek-android)
+3. [⚙️ Langkah 3: Konfigurasi Kunci di Proyek Android (.env / local.properties)](#️-langkah-3-konfigurasi-kunci-di-proyek-android-env--localproperties)
+   - [3.1 Cara Konfigurasi "Masuk dengan Google" (Google Sign-In OAuth)](#31-cara-konfigurasi-masuk-dengan-google-google-sign-in-oauth)
 4. [🚀 Langkah 4: Menjalankan Aplikasi (Paling Ringan & Praktis)](#-langkah-4-menjalankan-aplikasi-paling-ringan--praktis)
 5. [📱 Langkah 5: Uji Coba Fitur Aplikasi](#-langkah-5-uji-coba-fitur-aplikasi)
 6. [🌟 Langkah 6 (Opsional): Pengaturan AI Cloud & Pembayaran](#-langkah-6-opsional-pengaturan-ai-cloud--pembayaran)
@@ -148,25 +149,60 @@ Anda memerlukan 2 nilai dari Supabase untuk dimasukkan ke konfigurasi Android:
 
 ---
 
-## ⚙️ Langkah 3: Konfigurasi Kunci di Proyek Android
+## ⚙️ Langkah 3: Konfigurasi Kunci di Proyek Android (.env / local.properties)
 
-Buka folder proyek ini di komputer Anda, lalu buat atau buka berkas `local.properties`:
+Proyek ini telah dikonfigurasi untuk **secara otomatis membaca berkas `.env`** di root repositori (atau `local.properties`):
 
-1. Buka berkas `local.properties` (atau duplikasi dari `.env.example`).
-2. Masukkan URL dan Anon Key Supabase yang Anda salin pada Langkah 2.3:
+1. Buka berkas `.env` (atau duplikasi dari `.env.example`).
+2. Masukkan URL dan Anon Key Supabase yang Anda peroleh pada Langkah 2.4:
 
 ```properties
 ## Konfigurasi Supabase Mari Partner Fuel
-SUPABASE_URL=https://xyzprojectid.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.salin_anon_key_anda_disini
+SUPABASE_URL=https://zcezyhgrblksfuxmszyz.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-## Opsional: Google Sign-In Client ID (bisa dikosongkan jika pakai login email)
+## Opsional: Google OAuth Web Client ID (Jika ingin mengaktifkan tombol Masuk dengan Google)
 GOOGLE_WEB_CLIENT_ID=
 ```
 
-3. Simpan berkas `local.properties`.
+3. Simpan berkas `.env`.
 
-> 🔒 **Aman**: Berkas `local.properties` otomatis terdaftar di `.gitignore` dan tidak akan pernah ter-upload ke publik.
+> 🔒 **Aman**: Berkas `.env` dan `local.properties` otomatis terdaftar di `.gitignore` dan tidak akan pernah ter-upload ke publik.
+
+---
+
+### 3.1 Cara Konfigurasi "Masuk dengan Google" (Google Sign-In OAuth)
+Pada layar autentikasi, tombol Google secara cerdas berstatus *"Masuk dengan Google (Perlu Konfigurasi)"* hingga Anda mengaktifkan Google OAuth. Ikuti panduan 5 menit berikut untuk mengaktifkannya:
+
+#### 1. Buat Proyek & OAuth Client ID di Google Cloud Console
+1. Buka situs [Google Cloud Console](https://console.cloud.google.com/) dan login dengan akun Google Anda.
+2. Buat proyek baru (misalnya bernama: `Mari Partner Fuel`) atau pilih proyek yang sudah ada.
+3. Di bilah pencarian atas atau menu navigasi kiri, buka **APIs & Services** ➡️ **Credentials**.
+4. Klik tombol **+ CREATE CREDENTIALS** di bagian atas, lalu pilih **OAuth client ID**.
+5. Pada kolom **Application type**, pilih **Web application** *(⚠️ Wajib pilih 'Web application', bukan Android, karena Supabase Auth memerlukan Web Client ID untuk memverifikasi Google ID Token)*.
+6. Pada bagian **Authorized redirect URIs**, klik **+ ADD URI**, lalu masukkan URI callback Supabase proyek Anda:
+   ```text
+   https://<id-projek-anda>.supabase.co/auth/v1/callback
+   ```
+   *(Contoh: `https://zcezyhgrblksfuxmszyz.supabase.co/auth/v1/callback`)*.
+7. Klik tombol **CREATE**. Jendela pop-up akan menampilkan **Client ID** (berakhiran `.apps.googleusercontent.com`) dan **Client Secret**. Salin kedua nilai tersebut.
+
+#### 2. Aktifkan Google Provider di Dashboard Supabase
+1. Buka Dashboard Supabase Anda, lalu klik menu **Authentication** di sidebar kiri (ikon dua orang 👥).
+2. Di submenu, klik **Providers** ➡️ pilih baris **Google**.
+3. Geser tombol toggle menjadi **Enable** (Aktif / Hijau).
+4. Masukkan **Client ID** dan **Client Secret** yang Anda peroleh dari Google Cloud Console pada langkah sebelumnya.
+5. Klik tombol **Save** di bagian bawah.
+
+#### 3. Masukkan Client ID ke `.env` Proyek Anda
+Buka berkas `.env` (atau `local.properties`) di root proyek ini, lalu tempel Client ID Anda:
+```properties
+GOOGLE_WEB_CLIENT_ID=client_id_anda_dari_google_cloud.apps.googleusercontent.com
+```
+Simpan berkas (`Ctrl + S`).
+
+#### 4. Selesai!
+Jalankan kembali aplikasi (`.\run-app.bat`). Tombol pada layar masuk akan otomatis aktif menjadi **"Masuk dengan Akun Google"** dengan alur login satu ketukan (*one-tap sign-in*) resmi Google Credential Manager!
 
 ---
 
