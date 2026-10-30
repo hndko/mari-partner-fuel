@@ -16,6 +16,7 @@ sealed class NavRoute(val route: String) {
     data object Analytics : NavRoute("analytics")
     data object Vehicles : NavRoute("vehicles")
     data object Profile : NavRoute("profile")
+    data object EditProfile : NavRoute("edit_profile")
 
     // Vehicle Flows
     data object VehicleForm : NavRoute("vehicle_form?id={id}") {

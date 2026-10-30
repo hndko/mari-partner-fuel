@@ -39,8 +39,13 @@ interface AuthRepository {
 
     suspend fun updateUserProfile(
         displayName: String,
-        themePreference: String
+        themePreference: String = "system",
+        timezone: String = "Asia/Jakarta"
     ): AppResult<UserProfile>
+
+    suspend fun updatePassword(
+        newPassword: String
+    ): AppResult<Unit>
 
     suspend fun linkGoogleAccount(
         idToken: String

@@ -226,7 +226,7 @@ mari-partner-fuel/
 │       │   │       ├── analytics/        # AnalyticsScreen, AnalyticsViewModel
 │       │   │       ├── auth/             # LoginScreen, RegisterScreen, AuthViewModel
 │       │   │       ├── dashboard/        # DashboardScreen, DashboardViewModel
-│       │   │       ├── profile/          # ProfileScreen, ProfileViewModel
+│       │   │       ├── profile/          # ProfileScreen, EditProfileScreen, ProfileViewModel
 │       │   │       ├── receipt_scan/     # CameraScanScreen, ScanReviewScreen, OcrViewModel
 │       │   │       ├── splash/           # SplashScreen
 │       │   │       ├── subscription/     # ProPlansScreen, CheckoutScreen, QrisView

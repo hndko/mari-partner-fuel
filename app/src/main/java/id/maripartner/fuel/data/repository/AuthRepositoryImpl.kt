@@ -167,17 +167,31 @@ class AuthRepositoryImpl(
 
     override suspend fun updateUserProfile(
         displayName: String,
-        themePreference: String
+        themePreference: String,
+        timezone: String
     ): AppResult<UserProfile> = withContext(dispatcher) {
         val userId = auth.currentUserOrNull()?.id
             ?: return@withContext AppResult.Error(AppException.Authentication("Pengguna belum login"))
 
         try {
+            val trimmedName = displayName.trim()
+            val trimmedTz = timezone.trim().ifBlank { "Asia/Jakarta" }
+
+            runCatching {
+                auth.updateUser {
+                    data {
+                        put("full_name", trimmedName)
+                    }
+                }
+            }
+
             val updated = SupabaseClientProvider.postgrest["profiles"]
                 .update({
-                    set("display_name", displayName.trim())
+                    set("display_name", trimmedName)
                     set("theme_preference", themePreference)
+                    set("timezone", trimmedTz)
                 }) {
+                    select()
                     filter {
                         eq("id", userId)
                     }
@@ -186,6 +200,17 @@ class AuthRepositoryImpl(
             AppResult.Success(updated)
         } catch (e: Exception) {
             AppResult.Error(AppException.Network("Gagal memperbarui profil: ${e.message}", e))
+        }
+    }
+
+    override suspend fun updatePassword(newPassword: String): AppResult<Unit> = withContext(dispatcher) {
+        try {
+            auth.updateUser {
+                password = newPassword
+            }
+            AppResult.Success(Unit)
+        } catch (e: Exception) {
+            AppResult.Error(mapAuthException(e))
         }
     }
 

@@ -23,6 +23,7 @@ import id.maripartner.fuel.feature.auth.LoginScreen
 import id.maripartner.fuel.feature.auth.RegisterScreen
 import id.maripartner.fuel.feature.dashboard.DashboardScreen
 import id.maripartner.fuel.feature.profile.ProfileScreen
+import id.maripartner.fuel.feature.profile.edit.EditProfileScreen
 import id.maripartner.fuel.feature.receipt_scan.ReceiptScanScreen
 import id.maripartner.fuel.feature.receipt_scan.ReceiptScanViewModel
 import id.maripartner.fuel.feature.receipt_scan.ScanReviewScreen
@@ -194,12 +195,21 @@ fun AppNavHost(
                     onNavigateToProPlans = {
                         navController.navigate(NavRoute.ProPlans.route)
                     },
+                    onNavigateToEditProfile = {
+                        navController.navigate(NavRoute.EditProfile.route)
+                    },
                     onLogout = {
                         authViewModel.onEvent(AuthUiEvent.SignOut)
                         navController.navigate(NavRoute.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
                     }
+                )
+            }
+
+            composable(NavRoute.EditProfile.route) {
+                EditProfileScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 

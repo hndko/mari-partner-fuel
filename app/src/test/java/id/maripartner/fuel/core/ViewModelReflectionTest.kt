@@ -4,6 +4,8 @@ import android.app.Application
 import id.maripartner.fuel.feature.analytics.AnalyticsViewModel
 import id.maripartner.fuel.feature.auth.AuthViewModel
 import id.maripartner.fuel.feature.dashboard.DashboardViewModel
+import id.maripartner.fuel.feature.profile.ProfileViewModel
+import id.maripartner.fuel.feature.profile.edit.EditProfileViewModel
 import id.maripartner.fuel.feature.receipt_scan.ReceiptScanViewModel
 import id.maripartner.fuel.feature.reminders.RemindersViewModel
 import id.maripartner.fuel.feature.subscription.SubscriptionViewModel
@@ -41,5 +43,7 @@ class ViewModelReflectionTest {
         assertNotNull(TransactionsViewModel::class.java.getConstructor())
         assertNotNull(VehicleFormViewModel::class.java.getConstructor())
         assertNotNull(VehiclesViewModel::class.java.getConstructor())
+        assertNotNull(ProfileViewModel::class.java.getConstructor())
+        assertNotNull(EditProfileViewModel::class.java.getConstructor())
     }
 }

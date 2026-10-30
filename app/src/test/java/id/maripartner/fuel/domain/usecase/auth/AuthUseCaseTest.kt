@@ -69,9 +69,14 @@ class FakeAuthRepository : AuthRepository {
         return AppResult.Success(UserProfile(id = s.userId, displayName = s.displayName))
     }
 
-    override suspend fun updateUserProfile(displayName: String, themePreference: String): AppResult<UserProfile> {
+    override suspend fun updateUserProfile(displayName: String, themePreference: String, timezone: String): AppResult<UserProfile> {
         val s = activeSession ?: return AppResult.Error(AppException.Authentication())
-        return AppResult.Success(UserProfile(id = s.userId, displayName = displayName, themePreference = themePreference))
+        return AppResult.Success(UserProfile(id = s.userId, displayName = displayName, themePreference = themePreference, timezone = timezone))
+    }
+
+    override suspend fun updatePassword(newPassword: String): AppResult<Unit> {
+        if (shouldFail) return AppResult.Error(AppException.Validation("Gagal mengubah kata sandi"))
+        return AppResult.Success(Unit)
     }
 
     override suspend fun linkGoogleAccount(idToken: String): AppResult<Unit> {

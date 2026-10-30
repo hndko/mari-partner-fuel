@@ -89,6 +89,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProfileScreen(
     onNavigateToProPlans: () -> Unit,
+    onNavigateToEditProfile: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = viewModel()
@@ -98,8 +99,9 @@ fun ProfileScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Dialog State
-    var editNameInput by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(ProfileUiEvent.LoadProfile)
+    }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { msg ->
@@ -234,11 +236,8 @@ fun ProfileScreen(
 
                         // Tombol Ubah / Edit Profil
                         FuelSecondaryButton(
-                            text = "Ubah Nama Profil",
-                            onClick = {
-                                editNameInput = uiState.displayName
-                                viewModel.onEvent(ProfileUiEvent.SetEditDialogVisible(true))
-                            },
+                            text = "Ubah Profil Akun",
+                            onClick = onNavigateToEditProfile,
                             leadingIcon = Icons.Default.Edit,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -511,55 +510,6 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
-    }
-
-    // Modal Dialog: Ubah Nama Lengkap
-    if (uiState.showEditDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                if (!uiState.isUpdating) {
-                    viewModel.onEvent(ProfileUiEvent.SetEditDialogVisible(false))
-                }
-            },
-            title = {
-                Text(
-                    text = "Ubah Nama Profil",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            },
-            text = {
-                Column {
-                    Text(
-                        text = "Masukkan nama lengkap atau panggilan Anda:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    FuelTextField(
-                        value = editNameInput,
-                        onValueChange = { editNameInput = it },
-                        label = "Nama Lengkap",
-                        placeholder = "Contoh: Handoko"
-                    )
-                }
-            },
-            confirmButton = {
-                FuelPrimaryButton(
-                    text = "Simpan",
-                    onClick = { viewModel.onEvent(ProfileUiEvent.UpdateDisplayName(editNameInput)) },
-                    isLoading = uiState.isUpdating,
-                    modifier = Modifier.widthIn(max = 130.dp)
-                )
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { viewModel.onEvent(ProfileUiEvent.SetEditDialogVisible(false)) },
-                    enabled = !uiState.isUpdating
-                ) {
-                    Text("Batal")
-                }
-            }
-        )
     }
 
     // Modal Dialog: Konfirmasi Keluar Akun (SweetAlert style)
