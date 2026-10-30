@@ -10,20 +10,19 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = PetrolTealLight,
-    onPrimary = OnPetrolTealLight,
-    primaryContainer = PetrolTealContainerLight,
-    onPrimaryContainer = OnPetrolTealContainerLight,
-    secondary = FuelAmberLight,
-    onSecondary = OnFuelAmberLight,
-    secondaryContainer = FuelAmberContainerLight,
-    onSecondaryContainer = OnFuelAmberContainerLight,
+    primary = MariPrimaryLight,
+    onPrimary = OnMariPrimaryLight,
+    primaryContainer = MariPrimaryContainerLight,
+    onPrimaryContainer = OnMariPrimaryContainerLight,
+    secondary = MariSecondaryLight,
+    onSecondary = OnMariSecondaryLight,
+    secondaryContainer = MariSecondaryContainerLight,
+    onSecondaryContainer = OnMariSecondaryContainerLight,
     background = BackgroundLight,
     onBackground = OnBackgroundLight,
     surface = SurfaceLight,
@@ -31,18 +30,19 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = SurfaceVariantLight,
     onSurfaceVariant = OnSurfaceVariantLight,
     outline = OutlineLight,
+    outlineVariant = OutlineVariantLight,
     error = ErrorRedLight
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PetrolTealDark,
-    onPrimary = OnPetrolTealDark,
-    primaryContainer = PetrolTealContainerDark,
-    onPrimaryContainer = OnPetrolTealContainerDark,
-    secondary = FuelAmberDark,
-    onSecondary = OnFuelAmberDark,
-    secondaryContainer = FuelAmberContainerDark,
-    onSecondaryContainer = OnFuelAmberContainerDark,
+    primary = MariPrimaryDark,
+    onPrimary = OnMariPrimaryDark,
+    primaryContainer = MariPrimaryContainerDark,
+    onPrimaryContainer = OnMariPrimaryContainerDark,
+    secondary = MariSecondaryDark,
+    onSecondary = OnMariSecondaryDark,
+    secondaryContainer = MariSecondaryContainerDark,
+    onSecondaryContainer = OnMariSecondaryContainerDark,
     background = BackgroundDark,
     onBackground = OnBackgroundDark,
     surface = SurfaceDark,
@@ -50,13 +50,14 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = OnSurfaceVariantDark,
     outline = OutlineDark,
+    outlineVariant = OutlineVariantDark,
     error = ErrorRedDark
 )
 
 @Composable
 fun MariPartnerFuelTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Tetap gunakan identitas warna resmi Mari Partner
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
