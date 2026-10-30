@@ -22,15 +22,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PriceChange
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -95,7 +98,12 @@ fun OwnerDashboardContent(
 
         // 3. Hero Revenue Card (Omset Finansial Utama)
         item {
-            HeroRevenueCard(totalRevenue = metrics.kpi.totalRevenueIdr)
+            HeroRevenueCard(
+                totalRevenue = metrics.kpi.totalRevenueIdr,
+                kpi = metrics.kpi,
+                conversionStats = metrics.conversionStats,
+                selectedTimeframe = selectedTimeframe
+            )
         }
 
         // 4. Grid 3 KPI Penting (Pengguna, Pro Aktif, Armada)
@@ -248,88 +256,291 @@ private fun TimeframeChip(
 }
 
 @Composable
-private fun HeroRevenueCard(totalRevenue: Long) {
+private fun HeroRevenueCard(
+    totalRevenue: Long,
+    kpi: SaasKpi,
+    conversionStats: PlanConversionStats,
+    selectedTimeframe: String
+) {
+    val estimatedMrr = if (conversionStats.proMonthlyUsers > 0L || conversionStats.proYearlyUsers > 0L) {
+        (conversionStats.proMonthlyUsers * 29_000L) + (conversionStats.proYearlyUsers * 24_167L)
+    } else if (kpi.activeProUsers > 0L) {
+        kpi.activeProUsers * 29_000L
+    } else {
+        0L
+    }
+
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.35f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.horizontalGradient(
+                    Brush.linearGradient(
                         colors = listOf(
-                            MariPrimaryBlue.copy(alpha = 0.08f),
-                            Color(0xFF0D9488).copy(alpha = 0.08f)
+                            Color(0xFF091E3A), // Midnight Navy VIP
+                            Color(0xFF0A2E46), // Deep Petrol Blue
+                            Color(0xFF063B2F)  // Rich Emerald Treasury
                         )
                     )
                 )
-                .padding(18.dp)
+                .padding(20.dp)
         ) {
             Column {
+                // Header Bar: Squircle Icon + Title & Live Badge
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MariPrimaryBlue.copy(alpha = 0.15f))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF10B981).copy(alpha = 0.18f),
+                            border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f)),
+                            modifier = Modifier.size(44.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Payments,
-                                contentDescription = null,
-                                tint = MariPrimaryBlue,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Payments,
+                                    contentDescription = null,
+                                    tint = Color(0xFF34D399),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+
                         Column {
                             Text(
                                 text = "TOTAL OMSET PENDAPATAN",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.8.sp
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 1.2.sp,
+                                    fontSize = 11.sp
                                 ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = Color(0xFFA7F3D0)
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Akumulasi Pembayaran Langganan",
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                text = "Arus Kas & Langganan SaaS Masuk",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF94A3B8)
+                                )
                             )
                         }
                     }
 
-                    FuelStatusChip(
-                        text = "TERVERIFIKASI",
-                        type = FuelChipType.Success
+                    // Pulsing Verified Badge
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFF10B981).copy(alpha = 0.16f),
+                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.35f))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF10B981))
+                            )
+                            Text(
+                                text = "TERVERIFIKASI",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp,
+                                    fontSize = 10.sp
+                                ),
+                                color = Color(0xFF34D399)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Hero Big Amount Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = CurrencyFormatter.formatIdr(totalRevenue),
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 32.sp,
+                            letterSpacing = (-0.5).sp
+                        ),
+                        color = Color.White
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.White.copy(alpha = 0.12f),
+                        border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            text = when (selectedTimeframe) {
+                                "7d" -> "7 HARI"
+                                "all" -> "SEMUA WAKTU"
+                                else -> "30 HARI"
+                            },
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            ),
+                            color = Color.White.copy(alpha = 0.9f),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Explanatory Caption
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = if (totalRevenue > 0) Icons.Default.CheckCircle else Icons.Default.Info,
+                        contentDescription = null,
+                        tint = if (totalRevenue > 0) Color(0xFF34D399) else Color(0xFF94A3B8),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = if (totalRevenue > 0) {
+                            "Akumulasi omset dari seluruh transaksi paket Pro yang lunas tercatat di basis data."
+                        } else {
+                            "Belum ada pembayaran lunas pada filter ini. Transaksi mutasi otomatis terintegrasi."
+                        },
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.5.sp,
+                            color = Color(0xFFCBD5E1)
+                        ),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
+                Spacer(modifier = Modifier.height(18.dp))
+                HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
                 Spacer(modifier = Modifier.height(14.dp))
 
-                Text(
-                    text = CurrencyFormatter.formatIdr(totalRevenue),
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                // Bottom 3 Executive Metric Tiles
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Tile 1: Pelanggan Pro
+                    RevenueStatSubTile(
+                        icon = Icons.Default.WorkspacePremium,
+                        iconTint = Color(0xFFFBBF24),
+                        label = "PRO AKTIF",
+                        value = "${kpi.activeProUsers} Akun",
+                        subtext = "${conversionStats.conversionRatePercent}% Rasio",
+                        modifier = Modifier.weight(1f)
                     )
-                )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                    // Tile 2: Estimasi MRR
+                    RevenueStatSubTile(
+                        icon = Icons.AutoMirrored.Filled.TrendingUp,
+                        iconTint = Color(0xFF34D399),
+                        label = "ESTIMASI MRR",
+                        value = CurrencyFormatter.formatIdr(estimatedMrr),
+                        subtext = "Run-rate / bln",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Tile 3: Metode Bayar
+                    RevenueStatSubTile(
+                        icon = Icons.Default.CreditCard,
+                        iconTint = Color(0xFF38BDF8),
+                        label = "GATEWAY",
+                        value = "QRIS & PG",
+                        subtext = "Otomatis Lunas",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RevenueStatSubTile(
+    icon: ImageVector,
+    iconTint: Color,
+    label: String,
+    value: String,
+    subtext: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White.copy(alpha = 0.07f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(13.dp)
+                )
                 Text(
-                    text = "Berdasarkan seluruh transaksi paket Pro bulanan dan tahunan yang lunas tercatat di basis data.",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp,
+                        letterSpacing = 0.5.sp
+                    ),
+                    color = Color(0xFFCBD5E1),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 13.5.sp
+                ),
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtext,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 10.sp,
+                    color = Color(0xFF94A3B8)
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
