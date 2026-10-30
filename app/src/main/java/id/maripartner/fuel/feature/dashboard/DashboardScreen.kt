@@ -59,12 +59,23 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
+import id.maripartner.fuel.core.designsystem.theme.MariAiTag
+import id.maripartner.fuel.core.designsystem.theme.MariAiTagBg
+import id.maripartner.fuel.core.designsystem.theme.MariBorderLight
+import id.maripartner.fuel.core.designsystem.theme.MariDanger
+import id.maripartner.fuel.core.designsystem.theme.MariDangerBg
+import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
+import id.maripartner.fuel.core.designsystem.theme.MariSuccess
+import id.maripartner.fuel.core.designsystem.theme.MariSuccessBg
+import id.maripartner.fuel.core.designsystem.theme.MariWarning
+import id.maripartner.fuel.core.designsystem.theme.MariWarningBg
 import id.maripartner.fuel.domain.model.DashboardSummary
 import id.maripartner.fuel.domain.model.FuelTransaction
 import id.maripartner.fuel.domain.model.Vehicle
@@ -436,7 +447,7 @@ private fun HeroMetricTile(
 }
 
 /**
- * 3. Bagian Action Hub: 4 Kartu Aksi Modern
+ * 3. Bagian Action Hub: 4 Kartu Aksi & Pintasan Modern
  */
 @Composable
 private fun QuickActionHubSection(
@@ -447,11 +458,44 @@ private fun QuickActionHubSection(
     onNavigateToAnalytics: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = "Menu Cepat",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "MENU CEPAT",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.4.sp,
+                        fontSize = 11.sp
+                    ),
+                    color = MariPrimaryBlue
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Aksi & Pintasan Utama",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ) {
+                Text(
+                    text = "4 Pintasan",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -459,8 +503,13 @@ private fun QuickActionHubSection(
         ) {
             ActionCardItem(
                 title = "Scan Struk SPBU",
-                subtitle = "OCR Lokal & AI",
+                subtitle = "OCR Kamera & AI Cerdas",
                 icon = Icons.Default.DocumentScanner,
+                iconBgColor = MariPrimaryBlue,
+                iconTintColor = Color.White,
+                badgeText = "Smart AI",
+                badgeBgColor = MariAiTagBg,
+                badgeTextColor = MariAiTag,
                 isPrimary = true,
                 onClick = onNavigateToScan,
                 modifier = Modifier.weight(1f)
@@ -468,8 +517,13 @@ private fun QuickActionHubSection(
 
             ActionCardItem(
                 title = "Catat Manual",
-                subtitle = "Input tanpa foto",
-                icon = Icons.Default.Add,
+                subtitle = "Entri pengisian tanpa foto",
+                icon = Icons.Default.LocalGasStation,
+                iconBgColor = MariSuccessBg,
+                iconTintColor = MariSuccess,
+                badgeText = "Entri Cepat",
+                badgeBgColor = MariSuccessBg,
+                badgeTextColor = MariSuccess,
                 isPrimary = false,
                 onClick = onNavigateToManualInput,
                 modifier = Modifier.weight(1f)
@@ -480,20 +534,30 @@ private fun QuickActionHubSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            val hasPending = pendingRemindersCount > 0
             ActionCardItem(
                 title = "Servis & Oli",
-                subtitle = if (pendingRemindersCount > 0) "$pendingRemindersCount Perlu Dicek" else "Jadwal Servis Berkala",
-                badgeCount = pendingRemindersCount,
+                subtitle = if (hasPending) "$pendingRemindersCount jadwal perlu dicek" else "Jadwal & riwayat servis",
                 icon = Icons.Default.Build,
+                iconBgColor = if (hasPending) MariDangerBg else MariWarningBg,
+                iconTintColor = if (hasPending) MariDanger else MariWarning,
+                badgeText = if (hasPending) "$pendingRemindersCount Perhatian" else "Perawatan",
+                badgeBgColor = if (hasPending) MariDangerBg else MariWarningBg,
+                badgeTextColor = if (hasPending) MariDanger else MariWarning,
                 isPrimary = false,
                 onClick = onNavigateToReminders,
                 modifier = Modifier.weight(1f)
             )
 
             ActionCardItem(
-                title = "Analitik Konsumsi",
-                subtitle = "Tren km/l & Biaya",
+                title = "Analitik BBM",
+                subtitle = "Tren efisiensi km/l & biaya",
                 icon = Icons.Default.BarChart,
+                iconBgColor = Color(0xFFF3E8FF),
+                iconTintColor = Color(0xFF7C3AED),
+                badgeText = "Statistik",
+                badgeBgColor = Color(0xFFF3E8FF),
+                badgeTextColor = Color(0xFF7C3AED),
                 isPrimary = false,
                 onClick = onNavigateToAnalytics,
                 modifier = Modifier.weight(1f)
@@ -507,81 +571,122 @@ private fun ActionCardItem(
     title: String,
     subtitle: String,
     icon: ImageVector,
+    iconBgColor: Color,
+    iconTintColor: Color,
     isPrimary: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    badgeCount: Int = 0
+    badgeText: String? = null,
+    badgeBgColor: Color = Color.Transparent,
+    badgeTextColor: Color = Color.Unspecified
 ) {
     Card(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() },
+        onClick = onClick,
+        modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isPrimary) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+            containerColor = if (isPrimary) Color(0xFFF8FAFD) else MaterialTheme.colorScheme.surface
         ),
         border = BorderStroke(
-            width = 1.dp,
-            color = if (isPrimary) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-            } else {
-                MaterialTheme.colorScheme.outlineVariant
-            }
+            width = if (isPrimary) 1.5.dp else 1.dp,
+            color = if (isPrimary) MariPrimaryBlue.copy(alpha = 0.45f) else MariBorderLight
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isPrimary) 2.dp else 1.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isPrimary) 2.dp else 1.dp,
+            pressedElevation = 4.dp
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        if (isPrimary) {
-                            MaterialTheme.colorScheme.primary
-                        } else if (badgeCount > 0) {
-                            Color(0xFFFFF3CD)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerHighest
-                        }
-                    ),
-                contentAlignment = Alignment.Center
+            // Container Icon Squircle
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = iconBgColor,
+                modifier = Modifier.size(46.dp)
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = if (isPrimary) {
-                        Color.White
-                    } else if (badgeCount > 0) {
-                        Color(0xFFE5A100)
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    modifier = Modifier.size(22.dp)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTintColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
+            // Kolom Teks Judul & Subtitle
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+
+                    if (badgeText != null) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = badgeBgColor
+                        ) {
+                            Text(
+                                text = badgeText,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 9.sp
+                                ),
+                                color = badgeTextColor,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = if (badgeCount > 0) Color(0xFFC07000) else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Trailing Chevron Circle Button
+            Surface(
+                shape = CircleShape,
+                color = if (isPrimary) {
+                    MariPrimaryBlue.copy(alpha = 0.12f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = if (isPrimary) MariPrimaryBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
             }
         }
     }
