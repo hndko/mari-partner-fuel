@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -116,6 +117,13 @@ fun TransactionFormScreen(
         state.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(TransactionFormEvent.ClearError)
+        }
+    }
+
+    LaunchedEffect(state.actionMessage) {
+        state.actionMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onEvent(TransactionFormEvent.DismissMessage)
         }
     }
 
@@ -326,132 +334,69 @@ fun TransactionFormScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 7. Lampiran Foto Struk (Opsional via PhotoPicker)
+            // 7. Bantu Isi Otomatis via Foto Struk (Opsional via PhotoPicker)
             Text(
-                text = "Lampiran Foto Struk (Opsional)",
+                text = "Bantu Isi via Foto Struk (Opsional)",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            val newBitmap = remember(state.receiptBytes) {
-                state.receiptBytes?.let { bytes ->
-                    try {
-                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                    } catch (_: Exception) {
-                        null
-                    }
-                }
-            }
-
-            if (newBitmap != null) {
-                // Pratinjau Foto Baru yang Dipilih
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            bitmap = newBitmap.asImageBitmap(),
-                            contentDescription = "Foto Struk Baru",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Foto Struk Terpilih",
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                text = "Ukuran: ${(state.receiptBytes?.size ?: 0) / 1024} KB",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        IconButton(onClick = { viewModel.onEvent(TransactionFormEvent.RemoveReceipt) }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Hapus Struk",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-            } else if (!state.existingStoragePath.isNullOrBlank() && !state.removeReceipt) {
-                // Indikator Foto Lama yang Sudah Tersimpan
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AttachFile,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Foto Struk Tersimpan",
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                text = "Lampiran struk privat aman di server",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        IconButton(onClick = { viewModel.onEvent(TransactionFormEvent.RemoveReceipt) }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Hapus Lampiran",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-            } else {
-                // Kotak Tombol Pemilihan Foto Struk
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(88.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .clickable {
+            // Kotak Tombol Pemilihan Foto Struk
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(88.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .clickable {
+                        if (!state.isScanningOcr && !state.isSubmitting) {
                             photoPickerLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                if (state.isScanningOcr) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Mengekstrak data struk on-device...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.AddPhotoAlternate,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Pilih Foto Struk dari Galeri",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Pilih Foto Struk dari Galeri",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Hanya membaca teks di perangkat, foto tidak disimpan di server",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

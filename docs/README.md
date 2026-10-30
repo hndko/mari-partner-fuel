@@ -94,6 +94,7 @@ Metode ini **100% tanpa perlu install/login tool CLI** tambahan di terminal, lan
    - **Query 6**: Buka file `supabase/migrations/20261029000006_subscription_entitlements_and_quota.sql` -> Tempel & Tekan **Run**.
    - **Query 7**: Buka file `supabase/migrations/20261029000007_payment_integration_and_activation.sql` -> Tempel & Tekan **Run**.
    - **Query 8**: Buka file `supabase/migrations/20261029000008_security_hardening_and_integrity.sql` -> Tempel & Tekan **Run**.
+   - **Query 9**: Buka file `supabase/migrations/20261030000001_ephemeral_receipt_storage_policy.sql` -> Tempel & Tekan **Run**. *(Kebijakan retensi struk ephemeral: transaksi BBM disimpan murni berbasis string/angka di database tanpa menyimpan file foto struk permanen di cloud storage)*.
 
 > [!NOTE]
 > Pastikan setiap query menampilkan pesan sukses `Success. No rows returned` sebelum berpindah ke query berikutnya.

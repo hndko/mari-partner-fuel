@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
@@ -271,7 +272,7 @@ fun TransactionDetailScreen(
                         }
                     }
 
-                    // Card 4: Lampiran Struk
+                    // Card 4: Metode Pencatatan & Struk
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -288,7 +289,7 @@ fun TransactionDetailScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Bukti Struk",
+                                    text = "Metode Pencatatan & Struk",
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -296,36 +297,32 @@ fun TransactionDetailScreen(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            if (tx.hasReceipt) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .padding(12.dp)
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = "Foto struk tersimpan privat di server.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        if (!uiState.signedReceiptUrl.isNullOrBlank()) {
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Akses signed URL valid berumur pendek aktif.",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
+                            val scanDescription = when (tx.scanStatus) {
+                                "ocr_review" -> "Dipindai via OCR ML Kit Lokal (On-Device)"
+                                "ai_review" -> "Divalidasi via Asisten AI"
+                                else -> "Dicatat Manual"
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .padding(12.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        text = scanDescription,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Data disimpan murni sebagai nilai angka & teks terstruktur di database. Berkas foto struk tidak disimpan permanen di server demi menjaga privasi dan efisiensi ruang penyimpanan.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
-                            } else {
-                                Text(
-                                    text = "Tidak ada foto struk yang dilampirkan pada transaksi ini.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                             }
                         }
                     }

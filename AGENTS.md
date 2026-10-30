@@ -112,6 +112,7 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
    - Hasil scan struk (tanggal, volume liter, total rupiah, SPBU, jenis BBM) **TIDAK PERNAH** disimpan secara otomatis ke database. Pengguna wajib memeriksa dan menyetujui pada layar review.
 4. **Graceful Fallback**: Jika kuota AI habis atau koneksi gagal, sistem tetap mengizinkan pengisian manual atau koreksi teks hasil OCR lokal tanpa memblokir pengguna.
 5. **Privasi Foto Struk**: Nomor polisi kendaraan dan identitas pribadi tidak pernah dikirim ke AI cloud provider.
+6. **Kebijakan Ephemeral Scan & Nol File Permanen**: Foto struk hanya digunakan sebagai input visual sementara untuk pembacaan teks otomatis (Google ML Kit on-device / Cloud AI fallback). Data transaksi historis di database Supabase disimpan murni sebagai atribut relasional teks & angka (nominal Rp, volume liter, SPBU, jenis BBM, odometer, tanggal). Aplikasi Android tidak mengunggah atau menyimpan berkas foto struk permanen di cloud storage server demi menjaga privasi pengguna dan menghemat kuota cloud storage secara maksimal.
 
 ---
 
@@ -130,9 +131,9 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 1. **Zero Secret Policy**:
    - Dilarang melakukan commit terhadap file `.env`, kredensial JSON Google Services, Supabase service-role key, ataupun merchant secret QRISpy/Midtrans.
    - File konfigurasi lokal (`local.properties`, `.env`) wajib terdaftar di `.gitignore`.
-2. **Private Storage untuk Struk**:
-   - Foto struk disimpan dalam Supabase Storage private bucket (`receipts/{user_id}/{filename}`).
-   - Akses foto hanya menggunakan *signed URL* berumur pendek (15-30 menit).
+2. **Ephemeral Storage untuk Struk**:
+   - Foto struk berstatus sementara (ephemeral) untuk pemrosesan teks. Server database hanya menyimpan data string/angka terstruktur.
+   - Jika terdapat file sementara yang pernah tersimpan di Storage bucket `receipts`, file tersebut berumur pendek dan dibersihkan otomatis via fungsi `cleanup_ephemeral_receipts`.
 3. **Hak Hapus Akun & Data**:
    - Sediakan alur penghapusan akun yang menghapus seluruh data relasional dan berkas struk terkait di Storage bucket.
 

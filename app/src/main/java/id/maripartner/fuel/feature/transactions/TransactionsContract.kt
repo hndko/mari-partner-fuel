@@ -31,6 +31,8 @@ data class TransactionFormState(
     val fuelType: String = "",
     val odometerKmRaw: String = "",
     val notes: String = "",
+    val scanStatus: String = "manual",
+    val isScanningOcr: Boolean = false,
     val receiptBytes: ByteArray? = null,
     val receiptMimeType: String? = null,
     val existingStoragePath: String? = null,
@@ -41,7 +43,8 @@ data class TransactionFormState(
     val isSuccess: Boolean = false,
     val vehicleError: String? = null,
     val totalError: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val actionMessage: String? = null
 ) {
     val isEditMode: Boolean
         get() = id.isNotBlank()
@@ -84,4 +87,5 @@ sealed interface TransactionFormEvent {
     data object RemoveReceipt : TransactionFormEvent
     data object Submit : TransactionFormEvent
     data object ClearError : TransactionFormEvent
+    data object DismissMessage : TransactionFormEvent
 }

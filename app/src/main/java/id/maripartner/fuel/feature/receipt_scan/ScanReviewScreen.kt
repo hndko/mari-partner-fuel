@@ -169,11 +169,11 @@ fun ScanReviewScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Foto Struk Terlampir",
+                                text = "Foto Struk (Pemindaian Sementara)",
                                 style = MaterialTheme.typography.labelMedium
                             )
                             Text(
-                                text = "Akan disimpan secara privat di server Supabase",
+                                text = "Hanya diproses untuk membaca data struk. Foto tidak disimpan permanen di server demi privasi & efisiensi penyimpanan.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

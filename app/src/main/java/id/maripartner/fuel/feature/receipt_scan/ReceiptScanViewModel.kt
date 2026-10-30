@@ -280,19 +280,24 @@ class ReceiptScanViewModel(
         _uiState.update { it.copy(isSubmittingTransaction = true, errorMessage = null) }
 
         viewModelScope.launch {
+            // Foto struk hanya bersifat ephemeral untuk pemindaian teks di perangkat.
+            // Transaksi disimpan murni berbasis nilai string & angka tanpa menyimpan file permanen di storage server.
             val result = saveTransactionUseCase(
                 transaction = transaction,
-                receiptBytes = s.imageBytes,
-                receiptMimeType = s.imageMimeType,
+                receiptBytes = null,
+                receiptMimeType = null,
                 removeReceipt = false
             )
 
             when (result) {
                 is AppResult.Success -> {
+                    s.selectedBitmap?.recycle()
                     _uiState.update {
                         it.copy(
                             isSubmittingTransaction = false,
-                            isSuccessSaved = true
+                            isSuccessSaved = true,
+                            selectedBitmap = null,
+                            imageBytes = null
                         )
                     }
                 }

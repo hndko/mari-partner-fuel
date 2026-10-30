@@ -1,24 +1,26 @@
 package id.maripartner.fuel.feature.transactions
 
+import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.maripartner.fuel.core.common.result.AppResult
-import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.data.remote.storage.ReceiptStorageManager
 import id.maripartner.fuel.data.repository.FuelTransactionRepositoryImpl
 import id.maripartner.fuel.data.repository.VehicleRepositoryImpl
 import id.maripartner.fuel.domain.model.FuelTransaction
 import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
+import id.maripartner.fuel.domain.usecase.ocr.ProcessReceiptOcrUseCase
 import id.maripartner.fuel.domain.usecase.transaction.EstimateFuelCalculationUseCase
 import id.maripartner.fuel.domain.usecase.transaction.SaveTransactionUseCase
-import id.maripartner.fuel.domain.usecase.transaction.ValidateTransactionInputUseCase
 import id.maripartner.fuel.domain.usecase.vehicle.GetVehiclesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalTime
+import java.time.ZoneId
 
 class TransactionFormViewModel(
     private val transactionRepository: FuelTransactionRepository = FuelTransactionRepositoryImpl(),
@@ -26,6 +28,7 @@ class TransactionFormViewModel(
     private val saveTransactionUseCase: SaveTransactionUseCase = SaveTransactionUseCase(transactionRepository),
     private val getVehiclesUseCase: GetVehiclesUseCase = GetVehiclesUseCase(vehicleRepository),
     private val calculator: EstimateFuelCalculationUseCase = EstimateFuelCalculationUseCase(),
+    private val processReceiptOcrUseCase: ProcessReceiptOcrUseCase = ProcessReceiptOcrUseCase(),
     private val storageManager: ReceiptStorageManager = ReceiptStorageManager()
 ) : ViewModel() {
 
@@ -81,6 +84,7 @@ class TransactionFormViewModel(
                             fuelType = tx.fuelType.orEmpty(),
                             odometerKmRaw = tx.odometerKm?.toString().orEmpty(),
                             notes = tx.notes.orEmpty(),
+                            scanStatus = tx.scanStatus,
                             existingStoragePath = tx.storagePath,
                             existingReceiptUrl = tx.signedReceiptUrl
                         )
@@ -140,12 +144,53 @@ class TransactionFormViewModel(
                 if (validation is AppResult.Error) {
                     _formState.update { it.copy(errorMessage = validation.exception.message) }
                 } else {
-                    _formState.update {
-                        it.copy(
-                            receiptBytes = event.bytes,
-                            receiptMimeType = event.mimeType,
-                            removeReceipt = false
-                        )
+                    _formState.update { it.copy(isScanningOcr = true, errorMessage = null) }
+                    viewModelScope.launch {
+                        try {
+                            val bitmap = BitmapFactory.decodeByteArray(event.bytes, 0, event.bytes.size)
+                            if (bitmap != null) {
+                                val ocrResult = processReceiptOcrUseCase(bitmap)
+                                bitmap.recycle()
+                                if (ocrResult is AppResult.Success) {
+                                    val candidate = ocrResult.data
+                                    val candidateInstant = candidate.transactionDate?.let { d ->
+                                        val t = candidate.transactionTime ?: LocalTime.now()
+                                        d.atTime(t).atZone(ZoneId.systemDefault()).toInstant()
+                                    }
+                                    _formState.update { current ->
+                                        current.copy(
+                                            isScanningOcr = false,
+                                            totalAmountRaw = candidate.totalAmountIdr?.toString() ?: current.totalAmountRaw,
+                                            volumeLitersRaw = candidate.volumeLiters?.toString() ?: current.volumeLitersRaw,
+                                            pricePerLiterRaw = candidate.pricePerLiterIdr?.let { p -> "%.2f".format(p) } ?: current.pricePerLiterRaw,
+                                            stationName = candidate.stationName ?: current.stationName,
+                                            fuelType = candidate.fuelType ?: current.fuelType,
+                                            transactionAt = candidateInstant ?: current.transactionAt,
+                                            scanStatus = "ocr_review",
+                                            receiptBytes = null, // Foto tidak disimpan untuk upload ke server
+                                            receiptMimeType = null,
+                                            actionMessage = "Data struk berhasil diekstrak otomatis on-device! (Foto tidak disimpan di server)"
+                                        )
+                                    }
+                                    verifyDiscrepancy()
+                                } else {
+                                    _formState.update {
+                                        it.copy(
+                                            isScanningOcr = false,
+                                            errorMessage = "Gagal membaca teks struk. Anda dapat mengisi nominal secara manual."
+                                        )
+                                    }
+                                }
+                            } else {
+                                _formState.update {
+                                    it.copy(isScanningOcr = false, errorMessage = "Gagal memproses gambar struk.")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            _formState.update {
+                                it.copy(isScanningOcr = false, errorMessage = "Terjadi kesalahan saat memproses struk: ${e.message}")
+                            }
+                        }
                     }
                 }
             }
@@ -163,6 +208,9 @@ class TransactionFormViewModel(
             }
             is TransactionFormEvent.ClearError -> {
                 _formState.update { it.copy(errorMessage = null) }
+            }
+            is TransactionFormEvent.DismissMessage -> {
+                _formState.update { it.copy(actionMessage = null, errorMessage = null) }
             }
         }
     }
@@ -213,17 +261,19 @@ class TransactionFormViewModel(
             fuelType = s.fuelType.trim().takeIf { it.isNotBlank() },
             odometerKm = odo,
             notes = s.notes.trim().takeIf { it.isNotBlank() },
-            receiptFileId = if (s.removeReceipt) null else null // repository handles receipt linkage
+            scanStatus = s.scanStatus,
+            receiptFileId = null // Data transaksi disimpan murni string/angka tanpa file permanen di server
         )
 
         _formState.update { it.copy(isSubmitting = true, errorMessage = null) }
 
         viewModelScope.launch {
+            // Foto struk hanya digunakan sementara untuk scan di HP, tidak diunggah ke storage server
             val result = saveTransactionUseCase(
                 transaction = transaction,
-                receiptBytes = s.receiptBytes,
-                receiptMimeType = s.receiptMimeType,
-                removeReceipt = s.removeReceipt
+                receiptBytes = null,
+                receiptMimeType = null,
+                removeReceipt = true
             )
 
             when (result) {
