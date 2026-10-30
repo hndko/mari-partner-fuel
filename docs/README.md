@@ -174,18 +174,36 @@ GOOGLE_WEB_CLIENT_ID=
 ### 3.1 Cara Konfigurasi "Masuk dengan Google" (Google Sign-In OAuth)
 Pada layar autentikasi, tombol Google secara cerdas berstatus *"Masuk dengan Google (Perlu Konfigurasi)"* hingga Anda mengaktifkan Google OAuth. Ikuti panduan 5 menit berikut untuk mengaktifkannya:
 
-#### 1. Buat Proyek & OAuth Client ID di Google Cloud Console
+#### 1. Buat Proyek & Konfigurasi di Google Cloud Console
 1. Buka situs [Google Cloud Console](https://console.cloud.google.com/) dan login dengan akun Google Anda.
-2. Buat proyek baru (misalnya bernama: `Mari Partner Fuel`) atau pilih proyek yang sudah ada.
-3. Di bilah pencarian atas atau menu navigasi kiri, buka **APIs & Services** ➡️ **Credentials**.
-4. Klik tombol **+ CREATE CREDENTIALS** di bagian atas, lalu pilih **OAuth client ID**.
-5. Pada kolom **Application type**, pilih **Web application** *(⚠️ Wajib pilih 'Web application', bukan Android, karena Supabase Auth memerlukan Web Client ID untuk memverifikasi Google ID Token)*.
-6. Pada bagian **Authorized redirect URIs**, klik **+ ADD URI**, lalu masukkan URI callback Supabase proyek Anda:
+2. Buat proyek baru bernama **`Mari Partner Fuel`** (atau pilih proyek yang sudah Anda buat di bilah navigasi atas).
+3. Di bilah pencarian atas atau menu sidebar kiri, buka **APIs & Services** ➡️ **Credentials**.
+
+##### A. Konfigurasi Layar Persetujuan (OAuth Consent Screen) — *Hanya Sekali di Awal*
+> [!NOTE]
+> Jika Anda melihat banner kuning bertuliskan *"Remember to configure OAuth consent screen with information about your application"*, Google Cloud mewajibkan pengaturan consent screen terlebih dahulu sebelum membuat Client ID.
+
+1. Klik tombol **Configure consent screen** pada banner kuning (atau klik menu **OAuth consent screen** di sidebar kiri).
+2. Pada pilihan **User Type**, pilih **External** (agar dapat digunakan oleh akun Google publik), lalu klik **CREATE**.
+3. Isi data dasar aplikasi:
+   - **App name**: `Mari Partner Fuel`
+   - **User support email**: Pilih email Google Anda dari menu dropdown.
+   - **Developer contact information**: Masukkan alamat email Anda.
+4. Klik tombol **SAVE AND CONTINUE** di bagian bawah.
+5. Pada langkah **Scopes** (Izin) dan **Test Users**, biarkan default (langsung klik **SAVE AND CONTINUE** hingga kembali ke ringkasan/dashboard).
+
+##### B. Buat OAuth Client ID (Tipe Web Application)
+1. Kembali ke menu **APIs & Services** ➡️ **Credentials**.
+2. Klik tombol **+ CREATE CREDENTIALS** di bagian atas, lalu pilih **OAuth client ID** (opsi nomor 2 di menu dropdown).
+3. Pada kolom **Application type**, pilih **Web application** *(⚠️ Wajib pilih 'Web application', bukan Android, karena Supabase Auth bekerja memverifikasi Google ID Token dari Web Client ID)*.
+4. Kolom **Name**: Boleh dibiarkan default (misal: `Web client 1`) atau beri nama `Mari Partner Web Client`.
+5. Pada bagian **Authorized redirect URIs**, klik **+ ADD URI**, lalu tempel URI callback Supabase proyek Anda:
    ```text
    https://<id-projek-anda>.supabase.co/auth/v1/callback
    ```
-   *(Contoh: `https://zcezyhgrblksfuxmszyz.supabase.co/auth/v1/callback`)*.
-7. Klik tombol **CREATE**. Jendela pop-up akan menampilkan **Client ID** (berakhiran `.apps.googleusercontent.com`) dan **Client Secret**. Salin kedua nilai tersebut.
+   *(Contoh untuk proyek Anda: `https://zcezyhgrblksfuxmszyz.supabase.co/auth/v1/callback`)*.
+6. Klik tombol **CREATE** di bagian bawah.
+7. Jendela pop-up akan menampilkan **Client ID** (string berakhiran `.apps.googleusercontent.com`) dan **Client Secret**. Salin kedua nilai tersebut.
 
 #### 2. Aktifkan Google Provider di Dashboard Supabase
 1. Buka Dashboard Supabase Anda, lalu klik menu **Authentication** di sidebar kiri (ikon dua orang 👥).
