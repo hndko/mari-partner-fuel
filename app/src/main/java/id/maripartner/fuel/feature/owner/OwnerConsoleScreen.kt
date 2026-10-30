@@ -133,7 +133,8 @@ fun OwnerConsoleScreen(
                         OwnerDashboardContent(
                             metrics = uiState.metrics,
                             selectedTimeframe = uiState.selectedTimeframe,
-                            onTimeframeChanged = { viewModel.onEvent(OwnerConsoleUiEvent.ChangeTimeframe(it)) }
+                            onTimeframeChanged = { viewModel.onEvent(OwnerConsoleUiEvent.ChangeTimeframe(it)) },
+                            onNavigateToTab = { viewModel.onEvent(OwnerConsoleUiEvent.SelectTab(it)) }
                         )
                     }
                     OwnerTab.PLANS -> {

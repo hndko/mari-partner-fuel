@@ -2,9 +2,11 @@ package id.maripartner.fuel.feature.owner.dashboard
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,18 +15,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PriceChange
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -44,93 +55,163 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.designsystem.component.FuelCard
+import id.maripartner.fuel.core.designsystem.component.FuelChipType
+import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
 import id.maripartner.fuel.domain.model.owner.DailyGrowthPoint
 import id.maripartner.fuel.domain.model.owner.PlanConversionStats
 import id.maripartner.fuel.domain.model.owner.SaasAdminMetrics
 import id.maripartner.fuel.domain.model.owner.SaasKpi
+import id.maripartner.fuel.feature.owner.navigation.OwnerTab
 
 @Composable
 fun OwnerDashboardContent(
     metrics: SaasAdminMetrics,
     selectedTimeframe: String,
     onTimeframeChanged: (String) -> Unit,
+    onNavigateToTab: (OwnerTab) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier.fillMaxWidth()
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. Header Banner & Filter Waktu
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFEAB308).copy(alpha = 0.15f),
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text(
-                        text = "👑 SUPER ADMIN",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFB45309),
-                            fontSize = 10.sp
-                        ),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
-                }
-                Text(
-                    text = "MONITORING PERTUMBUHAN",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.2.sp
-                    ),
-                    color = MariPrimaryBlue
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Ringkasan Eksekutif SaaS",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(10.dp))
+        // 1. Executive Welcome & Header
+        item {
+            ExecutiveHeaderBanner()
+        }
 
-            // Filter Chips Rentang Waktu
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+        // 2. Filter Rentang Waktu
+        item {
+            TimeframeFilterRow(
+                selectedTimeframe = selectedTimeframe,
+                onTimeframeChanged = onTimeframeChanged
+            )
+        }
+
+        // 3. Hero Revenue Card (Omset Finansial Utama)
+        item {
+            HeroRevenueCard(totalRevenue = metrics.kpi.totalRevenueIdr)
+        }
+
+        // 4. Grid 3 KPI Penting (Pengguna, Pro Aktif, Armada)
+        item {
+            OperationalKpiRow(
+                kpi = metrics.kpi,
+                conversionStats = metrics.conversionStats
+            )
+        }
+
+        // 5. Menu Pintasan Aksi Eksekutif (Quick Action Shortcuts)
+        item {
+            ExecutiveQuickActions(onNavigateToTab = onNavigateToTab)
+        }
+
+        // 6. Grafik Tren Pendaftaran Pengguna Harian (Canvas Chart)
+        item {
+            RegistrationGrowthChartCard(growthData = metrics.growthTrend)
+        }
+
+        // 7. Distribusi Paket Langganan & Konversi
+        item {
+            PlanConversionCard(
+                conversionStats = metrics.conversionStats,
+                totalUsers = metrics.kpi.totalUsers
+            )
+        }
+
+        // Bottom space for comfortable scroll above navigation bar
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun ExecutiveHeaderBanner() {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF0F172A), // Dark Slate 900 khas VIP Executive
+        tonalElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFEAB308).copy(alpha = 0.2f))
             ) {
-                TimeframeChip(
-                    label = "30 Hari Terakhir",
-                    isSelected = selectedTimeframe == "30d",
-                    onClick = { onTimeframeChanged("30d") }
-                )
-                TimeframeChip(
-                    label = "7 Hari Terakhir",
-                    isSelected = selectedTimeframe == "7d",
-                    onClick = { onTimeframeChanged("7d") }
-                )
-                TimeframeChip(
-                    label = "Semua Waktu",
-                    isSelected = selectedTimeframe == "all",
-                    onClick = { onTimeframeChanged("all") }
+                Text(text = "👑", fontSize = 24.sp)
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Ringkasan Eksekutif SaaS",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFFEAB308)
+                    ) {
+                        Text(
+                            text = "LIVE",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 9.sp,
+                                color = Color(0xFF0F172A)
+                            ),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Pemantauan performa bisnis, registrasi pengguna, dan omset real-time.",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Color(0xFF94A3B8),
+                        fontSize = 11.sp
+                    )
                 )
             }
         }
+    }
+}
 
-        // 2. Grid Hero KPI (4 Kartu Ringkasan)
-        KpiHeroGrid(kpi = metrics.kpi, conversionStats = metrics.conversionStats)
-
-        // 3. Grafik Tren Pendaftaran Pengguna (Native Compose Canvas)
-        RegistrationGrowthChartCard(growthData = metrics.growthTrend)
-
-        // 4. Distribusi Paket & Rasio Konversi
-        PlanConversionCard(
-            conversionStats = metrics.conversionStats,
-            totalUsers = metrics.kpi.totalUsers
+@Composable
+private fun TimeframeFilterRow(
+    selectedTimeframe: String,
+    onTimeframeChanged: (String) -> Unit
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        TimeframeChip(
+            label = "30 Hari",
+            isSelected = selectedTimeframe == "30d",
+            onClick = { onTimeframeChanged("30d") }
+        )
+        TimeframeChip(
+            label = "7 Hari",
+            isSelected = selectedTimeframe == "7d",
+            onClick = { onTimeframeChanged("7d") }
+        )
+        TimeframeChip(
+            label = "Semua Waktu",
+            isSelected = selectedTimeframe == "all",
+            onClick = { onTimeframeChanged("all") }
         )
     }
 }
@@ -149,20 +230,109 @@ private fun TimeframeChip(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                 )
             )
         },
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = MariPrimaryBlue,
-            selectedLabelColor = Color.White
+            selectedLabelColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         shape = RoundedCornerShape(20.dp)
     )
 }
 
 @Composable
-private fun KpiHeroGrid(
+private fun HeroRevenueCard(totalRevenue: Long) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            MariPrimaryBlue.copy(alpha = 0.08f),
+                            Color(0xFF0D9488).copy(alpha = 0.08f)
+                        )
+                    )
+                )
+                .padding(18.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MariPrimaryBlue.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Payments,
+                                contentDescription = null,
+                                tint = MariPrimaryBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "TOTAL OMSET PENDAPATAN",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.8.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "Akumulasi Pembayaran Langganan",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+
+                    FuelStatusChip(
+                        text = "TERVERIFIKASI",
+                        type = FuelChipType.Success
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = CurrencyFormatter.formatIdr(totalRevenue),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Berdasarkan seluruh transaksi paket Pro bulanan dan tahunan yang lunas tercatat di basis data.",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OperationalKpiRow(
     kpi: SaasKpi,
     conversionStats: PlanConversionStats
 ) {
@@ -171,68 +341,98 @@ private fun KpiHeroGrid(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            KpiMetricCard(
-                title = "Total Omset IDR",
-                value = CurrencyFormatter.formatIdr(kpi.totalRevenueIdr),
-                subtitle = "Dari transaksi paket berbayar",
-                icon = Icons.Default.AttachMoney,
-                iconTint = Color(0xFF0D9488),
-                containerColor = Color(0xFFF0FDFA),
+            // Card 1: Total Pengguna
+            KpiMetricTile(
+                title = "Total Pengguna",
+                value = "${kpi.totalUsers}",
+                subtitle = "${kpi.freeUsers} Free • ${kpi.activeProUsers} Pro",
+                icon = Icons.Default.People,
+                accentColor = MariPrimaryBlue,
                 modifier = Modifier.weight(1f)
             )
 
-            KpiMetricCard(
-                title = "Total Pengguna",
-                value = "${kpi.totalUsers} User",
-                subtitle = "${kpi.freeUsers} Free • ${kpi.activeProUsers} Pro",
-                icon = Icons.Default.People,
-                iconTint = MariPrimaryBlue,
-                containerColor = Color(0xFFF0F9FF),
+            // Card 2: Pelanggan Pro
+            KpiMetricTile(
+                title = "Pelanggan Pro",
+                value = "${kpi.activeProUsers}",
+                subtitle = "${conversionStats.conversionRatePercent}% Rasio Konversi",
+                icon = Icons.Default.WorkspacePremium,
+                accentColor = Color(0xFFD97706),
                 modifier = Modifier.weight(1f)
             )
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        // Card 3: Operasional BBM & Armada (Full Width Tile)
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            KpiMetricCard(
-                title = "Pelanggan Pro Aktif",
-                value = "${kpi.activeProUsers} Akun",
-                subtitle = "${conversionStats.conversionRatePercent}% Rasio Konversi",
-                icon = Icons.Default.WorkspacePremium,
-                iconTint = Color(0xFFD97706),
-                containerColor = Color(0xFFFFFBEB),
-                modifier = Modifier.weight(1f)
-            )
-
-            KpiMetricCard(
-                title = "Catatan BBM & Armada",
-                value = "${kpi.totalTransactionsRecorded} Log",
-                subtitle = "${kpi.totalVehiclesRegistered} Armada aktif",
-                icon = Icons.Default.LocalGasStation,
-                iconTint = Color(0xFF2563EB),
-                containerColor = Color(0xFFEFF6FF),
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF2563EB).copy(alpha = 0.12f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocalGasStation,
+                        contentDescription = null,
+                        tint = Color(0xFF2563EB),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Aktivitas Pengisian & Armada",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${kpi.totalTransactionsRecorded} Catatan BBM",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFFEFF6FF)
+                ) {
+                    Text(
+                        text = "${kpi.totalVehiclesRegistered} Armada Aktif",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1D4ED8)
+                        ),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun KpiMetricCard(
+private fun KpiMetricTile(
     title: String,
     value: String,
     subtitle: String,
     icon: ImageVector,
-    iconTint: Color,
-    containerColor: Color,
+    accentColor: Color,
     modifier: Modifier = Modifier
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = modifier
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -242,19 +442,19 @@ private fun KpiMetricCard(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(iconTint.copy(alpha = 0.15f))
+                        .background(accentColor.copy(alpha = 0.12f))
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = iconTint,
+                        tint = accentColor,
                         modifier = Modifier.size(18.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.labelMedium.copy(
+                    style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
@@ -264,9 +464,8 @@ private fun KpiMetricCard(
             Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 19.sp
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.ExtraBold
                 ),
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -274,8 +473,83 @@ private fun KpiMetricCard(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExecutiveQuickActions(onNavigateToTab: (OwnerTab) -> Unit) {
+    Column {
+        Text(
+            text = "Pintasan Aksi Konsol",
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            QuickActionPill(
+                icon = Icons.Default.PriceChange,
+                label = "Atur Paket",
+                onClick = { onNavigateToTab(OwnerTab.PLANS) },
+                modifier = Modifier.weight(1f)
+            )
+            QuickActionPill(
+                icon = Icons.Default.Group,
+                label = "Akses Pro",
+                onClick = { onNavigateToTab(OwnerTab.USERS) },
+                modifier = Modifier.weight(1f)
+            )
+            QuickActionPill(
+                icon = Icons.Default.Payments,
+                label = "Audit Transaksi",
+                onClick = { onNavigateToTab(OwnerTab.TRANSACTIONS) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickActionPill(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MariPrimaryBlue,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1
             )
         }
