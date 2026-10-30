@@ -179,18 +179,21 @@ Pada layar autentikasi, tombol Google secara cerdas berstatus *"Masuk dengan Goo
 2. Buat proyek baru bernama **`Mari Partner Fuel`** (atau pilih proyek yang sudah Anda buat di bilah navigasi atas).
 3. Di bilah pencarian atas atau menu sidebar kiri, buka **APIs & Services** ➡️ **Credentials**.
 
-##### A. Konfigurasi Layar Persetujuan (OAuth Consent Screen) — *Hanya Sekali di Awal*
+##### A. Konfigurasi Layar Persetujuan (OAuth Consent Screen / Google Auth Platform) — *Hanya Sekali di Awal*
 > [!NOTE]
-> Jika Anda melihat banner kuning bertuliskan *"Remember to configure OAuth consent screen with information about your application"*, Google Cloud mewajibkan pengaturan consent screen terlebih dahulu sebelum membuat Client ID.
+> **Tampilan Baru Google Cloud (Google Auth Platform)**:
+> Jika Anda diarahkan ke halaman bertuliskan **"Google Auth Platform not configured yet"**, langsung klik tombol biru **[Get started]** di tengah layar.
+> 
+> Atau jika Anda melihat banner kuning bertuliskan *"Remember to configure OAuth consent screen with information about your application"*, klik tombol **Configure consent screen**.
 
-1. Klik tombol **Configure consent screen** pada banner kuning (atau klik menu **OAuth consent screen** di sidebar kiri).
-2. Pada pilihan **User Type**, pilih **External** (agar dapat digunakan oleh akun Google publik), lalu klik **CREATE**.
-3. Isi data dasar aplikasi:
+1. Pada halaman awal atau tombol **Get started**, isi formulir identitas aplikasi:
    - **App name**: `Mari Partner Fuel`
    - **User support email**: Pilih email Google Anda dari menu dropdown.
-   - **Developer contact information**: Masukkan alamat email Anda.
-4. Klik tombol **SAVE AND CONTINUE** di bagian bawah.
-5. Pada langkah **Scopes** (Izin) dan **Test Users**, biarkan default (langsung klik **SAVE AND CONTINUE** hingga kembali ke ringkasan/dashboard).
+2. Pada bagian **Audience / User Type**, pilih **External** (agar dapat digunakan oleh seluruh akun Google publik).
+3. Pada bagian **Contact Information**:
+   - **Email addresses**: Masukkan alamat email Anda.
+4. Beri centang persetujuan kebijakan (*User Data Policy*) jika diminta, lalu klik tombol **SAVE AND CONTINUE** atau **FINISH** hingga selesai.
+5. Pada langkah **Scopes** (Izin) dan **Test Users**, biarkan default (cukup klik **SAVE AND CONTINUE** terus sampai kembali ke ringkasan/dashboard).
 
 ##### B. Buat OAuth Client ID (Tipe Web Application)
 1. Kembali ke menu **APIs & Services** ➡️ **Credentials**.
