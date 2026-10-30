@@ -1,10 +1,10 @@
 package id.maripartner.fuel.core
 
 import android.app.Application
-import id.maripartner.fuel.feature.admin.SaasAdminViewModel
 import id.maripartner.fuel.feature.analytics.AnalyticsViewModel
 import id.maripartner.fuel.feature.auth.AuthViewModel
 import id.maripartner.fuel.feature.dashboard.DashboardViewModel
+import id.maripartner.fuel.feature.owner.OwnerConsoleViewModel
 import id.maripartner.fuel.feature.profile.ProfileViewModel
 import id.maripartner.fuel.feature.profile.edit.EditProfileViewModel
 import id.maripartner.fuel.feature.receipt_scan.ReceiptScanViewModel
@@ -46,6 +46,6 @@ class ViewModelReflectionTest {
         assertNotNull(VehiclesViewModel::class.java.getConstructor())
         assertNotNull(ProfileViewModel::class.java.getConstructor())
         assertNotNull(EditProfileViewModel::class.java.getConstructor())
-        assertNotNull(SaasAdminViewModel::class.java.getConstructor())
+        assertNotNull(OwnerConsoleViewModel::class.java.getConstructor())
     }
 }

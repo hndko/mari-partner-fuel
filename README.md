@@ -1,4 +1,4 @@
-# ⛽ Mari Partner Fuel
+﻿# ⛽ Mari Partner Fuel
 
 > **AI-Powered Fuel Expense Tracker for Android**  
 > Aplikasi Android Native Kotlin cerdas untuk mencatat, menganalisis, dan mengoptimalkan pengeluaran bahan bakar kendaraan dengan OCR hybrid (Google ML Kit lokal + AI cloud fallback), Supabase online backend, autentikasi email & Google, serta langganan Pro via QRISpy.
@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Release_Candidate-RC--1-blue?style=for-the-badge" alt="Release Candidate RC-1" />
   <img src="https://img.shields.io/badge/Production_Readiness-Ready_for_Closed_Testing-3ECF8E?style=for-the-badge" alt="Ready for Closed Testing" />
   <img src="https://img.shields.io/badge/AAB_Size-7.57_MB-blue?style=for-the-badge" alt="AAB Size 7.57 MB" />
-  <img src="https://img.shields.io/badge/Version-v1.8.0-blue?style=for-the-badge" alt="Version 1.8.0" />
+  <img src="https://img.shields.io/badge/Version-v1.9.0-blue?style=for-the-badge" alt="Version 1.9.0" />
 </p>
 
 ---
@@ -95,13 +95,16 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Draf Lengkap Daftar Toko (*Store Listing*) dalam bahasa Indonesia beserta spesifikasi aset grafis (ikon 512x512, feature graphic 1024x500, screenshot 9:16).
   - Kepatuhan Pembayaran Google Play: Penegakan in-app subscription Play Billing v7.1.1, SKU bulanan/tahunan, dan lisensi pengujian bebas biaya riil.
   - Rencana Pengujian Tertutup: Regulasi 20 penguji / 14 hari akun personal dan runbook rilis publikasi bertahap (*staged rollout*).
-- 👑 **Panel Pemilik SaaS & Super Admin Dashboard (Tahap 12 / v1.8.0)**:
+- 👑 **Konsol Multi-Tab Pemilik SaaS & Pengaturan Paket (Tahap 12 / v1.9.0)**:
   - Dashboard monitoring bisnis SaaS terintegrasi langsung di aplikasi Android (akses VIP eksklusif via menu Profil bagi akun dengan peran `owner` atau `admin`).
   - Metrik KPI bisnis real-time: Total omset pendapatan (Rp), total pengguna terdaftar, jumlah pengguna Pro aktif, dan total transaksi BBM armada tercatat.
   - Grafik tren pendaftaran pengguna interaktif berbasis Native Jetpack Compose Canvas dengan filter rentang waktu (7 hari, 30 hari, semua waktu).
   - Distribusi paket langganan multi-segmen (Free Tier vs Pro Bulanan vs Pro Tahunan) dan indikator rasio konversi.
   - Manajemen akun pengguna cepat dan dialog **Upgrade / Perpanjang Pro Manual** langsung dari smartphone dengan opsi masa aktif fleksibel (30 hari, 90 hari, 365 hari).
-  - Keamanan otoritatif PostgreSQL RPC `SECURITY DEFINER` (`get_saas_owner_metrics` & `admin_grant_user_pro`) yang memvalidasi otentikasi caller di database server.
+    - **Katalog & Manajemen Harga Paket**: Pengaturan harga langganan (Rp), batas kuota scan AI bulanan, limit kendaraan armada, dan visibilitas paket aktif/nonaktif via dialog modal interaktif berformat pemisah ribuan.
+    - **Audit Log Transaksi Keuangan**: Pemantauan real-time seluruh mutasi transaksi pembayaran masuk (QRISpy / Play Store) dengan status, referensi payment gateway, dan akumulasi omset.
+    - **Arsitektur Folder Bersih Terisolasi**: Pemisahan ketat seluruh modul kode Pemilik (`feature/owner/*`, `domain/model/owner/*`, `domain/repository/owner/*`, `data/repository/owner/*`) dari modul pengguna reguler.
+    - Keamanan otoritatif PostgreSQL RPC `SECURITY DEFINER` (`get_saas_owner_metrics` & `admin_grant_user_pro`) yang memvalidasi otentikasi caller di database server.
 - 🔒 **Zero-Secret & Isolasi RLS**: Proteksi akses lintas akun (anti-BOLA/IDOR) dan tanda tangan URL struk berumur pendek.
 
 ---

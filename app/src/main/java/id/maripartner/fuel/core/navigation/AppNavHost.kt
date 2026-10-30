@@ -15,8 +15,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import id.maripartner.fuel.data.repository.AuthRepositoryImpl
-import id.maripartner.fuel.feature.admin.SaasAdminDashboardScreen
 import id.maripartner.fuel.feature.analytics.AnalyticsScreen
+import id.maripartner.fuel.feature.owner.OwnerConsoleScreen
 import id.maripartner.fuel.feature.auth.AuthUiEvent
 import id.maripartner.fuel.feature.auth.AuthViewModel
 import id.maripartner.fuel.feature.auth.ForgotPasswordScreen
@@ -375,9 +375,9 @@ fun AppNavHost(
                 )
             }
 
-            // Panel Pemilik SaaS (SaaS Owner Dashboard)
+            // Panel Pemilik SaaS (SaaS Owner Console)
             composable(NavRoute.SaasAdminDashboard.route) {
-                SaasAdminDashboardScreen(
+                OwnerConsoleScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

@@ -1,10 +1,10 @@
-package id.maripartner.fuel.domain.model
+package id.maripartner.fuel.domain.model.owner
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Model metrik utama SaaS untuk Panel Pemilik / Admin.
+ * Model metrik utama SaaS untuk Panel Pemilik (Owner Console).
  */
 @Serializable
 data class SaasAdminMetrics(
@@ -72,7 +72,7 @@ data class PlanConversionStats(
 )
 
 /**
- * Ringkasan profil akun pengguna untuk manajemen dan monitoring.
+ * Ringkasan profil akun pengguna untuk manajemen dan monitoring pemilik.
  */
 @Serializable
 data class AdminUserSummary(
@@ -97,7 +97,7 @@ data class AdminUserSummary(
 )
 
 /**
- * DTO respons saat Owner memberikan status Pro manual kepada pengguna.
+ * DTO respons saat Pemilik memberikan status Pro manual kepada pengguna.
  */
 @Serializable
 data class GrantProResult(

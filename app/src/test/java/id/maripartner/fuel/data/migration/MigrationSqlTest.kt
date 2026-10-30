@@ -27,6 +27,7 @@ class MigrationSqlTest {
         val tahap7File = File(migrationDir, "20261029000007_payment_integration_and_activation.sql")
         val tahap8File = File(migrationDir, "20261029000008_security_hardening_and_integrity.sql")
         val tahap10File = File(migrationDir, "20261030000002_saas_admin_owner_dashboard.sql")
+        val tahap11File = File(migrationDir, "20261030000003_saas_owner_plan_and_tx_management.sql")
 
         assertTrue("File initial_schema.sql harus ada", schemaFile.exists())
         assertTrue("File rls_and_storage.sql harus ada", rlsFile.exists())
@@ -37,6 +38,7 @@ class MigrationSqlTest {
         assertTrue("File payment_integration_and_activation.sql harus ada", tahap7File.exists())
         assertTrue("File security_hardening_and_integrity.sql harus ada", tahap8File.exists())
         assertTrue("File saas_admin_owner_dashboard.sql harus ada", tahap10File.exists())
+        assertTrue("File saas_owner_plan_and_tx_management.sql harus ada", tahap11File.exists())
     }
 
     @Test
@@ -204,5 +206,18 @@ class MigrationSqlTest {
         assertTrue("Harus ada RPC get_saas_owner_metrics", content.contains("create or replace function public.get_saas_owner_metrics"))
         assertTrue("Harus ada RPC admin_grant_user_pro", content.contains("create or replace function public.admin_grant_user_pro"))
         assertTrue("Harus ada guard akses owner", content.contains("public.is_admin_or_owner(v_caller_id)"))
+    }
+
+    @Test
+    fun migrationTahap11_configuresSaasOwnerPlanAndTxManagement() {
+        val file = File(migrationDir, "20261030000003_saas_owner_plan_and_tx_management.sql")
+        val content = file.readText()
+
+        assertTrue("Harus ada RPC admin_update_subscription_plan", content.contains("create or replace function public.admin_update_subscription_plan"))
+        assertTrue("Harus ada RPC admin_get_payment_transactions", content.contains("create or replace function public.admin_get_payment_transactions"))
+        assertTrue("Harus ada guard akses is_admin_or_owner", content.contains("public.is_admin_or_owner(v_caller_id)"))
+        assertTrue("Harus ada validasi harga negatif", content.contains("p_price_idr < 0"))
+        assertTrue("Harus ada validasi kuota negatif", content.contains("p_ai_scan_quota < 0"))
+        assertTrue("Harus ada grant execute admin_get_payment_transactions", content.contains("grant execute on function public.admin_get_payment_transactions"))
     }
 }
