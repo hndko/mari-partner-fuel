@@ -282,21 +282,50 @@ Setelah aplikasi terbuka di layar smartphone Anda:
 
 ---
 
-## 🌟 Langkah 6 (Opsional): Pengaturan AI Cloud & Pembayaran
+## 🌟 Langkah 6 (Opsional): Pengaturan Kunci Server (Supabase Service Role, Gemini AI & QRISpy)
 
-Aplikasi sudah 100% berfungsi normal dengan fitur gratis di atas. Jika Anda ingin mengaktifkan fitur tambahan:
+> 🔒 **ATURAN KEAMANAN TINGKAT TINGGI (Zero-Secret di APK)**:
+> Ketiga kunci di bawah ini adalah **kunci rahasia sisi server (*server-side secrets*)**.
+> Kunci ini **TIDAK PERNAH** dimasukkan ke dalam kode Android atau APK, melainkan disimpan di **Supabase Edge Functions Secrets** atau backend server.
 
-### A. Fitur AI Cloud Fallback (Google Gemini)
-*Digunakan jika ada struk yang sangat buram/berkerut dan ingin dibantu ekstraksi oleh Gemini AI:*
-1. Dapatkan API Key gratis di [Google AI Studio](https://aistudio.google.com/).
-2. Di Supabase CLI / Secrets, pasang:
-   ```bash
-   supabase secrets set GEMINI_API_KEY="AIzaSy..."
-   ```
+---
 
-### B. Fitur Langganan Pro (Google Play Billing / QRISpy)
-- Pada versi Google Play Store, langganan menggunakan in-app billing resmi Google Play.
-- Pada versi direct APK, aplikasi dapat menerima pembayaran QRIS dinamis via gateway [qrispy.id](https://qrispy.id).
+### 1. `SUPABASE_SERVICE_ROLE_KEY` (Superadmin Database Key)
+- **Fungsi**: Kunci master superadmin backend Supabase yang memiliki hak akses penuh membypass aturan Row Level Security (RLS). Digunakan oleh Edge Function untuk mengaktifkan status langganan Pro pengguna setelah pembayaran terverifikasi.
+- **Cara Mendapatkannya**:
+  1. Buka dashboard proyek Supabase Anda.
+  2. Di sidebar kiri paling bawah, klik menu **Project Settings (Gerigi ⚙️)** ➡️ pilih **API** (atau **Data API**).
+  3. Pada bagian **Project API keys**, cari baris **`service_role` / `secret`**.
+  4. Klik tombol **Reveal** (ikon mata), lalu klik tombol **Copy**.
+
+---
+
+### 2. `GEMINI_API_KEY` (AI Cloud Fallback Google)
+- **Fungsi**: Digunakan sebagai cadangan pintar (*fallback*) jika foto struk BBM pengguna berkerut, lecek, atau buram, sehingga model AI Google Gemini dapat membantu mengekstrak nama SPBU, volume liter, dan nominal secara akurat.
+- **Cara Mendapatkannya (100% Gratis)**:
+  1. Buka situs [Google AI Studio](https://aistudio.google.com/).
+  2. Login dengan akun Google Anda.
+  3. Klik tombol biru **Get API key** di pojok kiri atas.
+  4. Klik **Create API key** ➡️ pilih proyek Google Cloud Anda (misalnya `Mari Partner Fuel` yang telah Anda buat).
+  5. Salin API Key yang muncul (berawalan `AIzaSy...`).
+  6. Pasang ke Supabase Edge Functions Secrets:
+     ```bash
+     supabase secrets set GEMINI_API_KEY="AIzaSy_key_anda"
+     ```
+
+---
+
+### 3. `QRISPY_API_TOKEN` (Payment Gateway QRIS Dinamis)
+- **Fungsi**: Digunakan untuk membuat barcode QRIS dinamis otomatis instan saat pengguna ingin berlangganan paket Pro bulanan/tahunan pada versi direct APK/web.
+- **Cara Mendapatkannya**:
+  1. Buka situs resmi penyedia QRIS: [https://qrispy.id](https://qrispy.id).
+  2. Daftarkan akun merchant Anda dan login.
+  3. Buka menu **Integrasi API** / **API Tokens**.
+  4. Klik **Generate Token** / **Buat Token Baru**, lalu salin token API tersebut.
+  5. Pasang ke Supabase Edge Functions Secrets:
+     ```bash
+     supabase secrets set QRISPY_API_TOKEN="token_anda"
+     ```
 
 ---
 
