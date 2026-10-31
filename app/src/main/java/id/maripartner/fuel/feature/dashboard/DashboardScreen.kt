@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -97,6 +98,10 @@ import id.maripartner.fuel.feature.dashboard.component.FuelBudgetCard
 import id.maripartner.fuel.feature.dashboard.component.FuelBudgetDialog
 import id.maripartner.fuel.feature.dashboard.component.FuelPriceRadarDialog
 import id.maripartner.fuel.feature.dashboard.component.NearbySpbuBanner
+import id.maripartner.fuel.feature.dashboard.component.DashboardHeroHeader
+import id.maripartner.fuel.feature.dashboard.component.DashboardQuickGrid
+import id.maripartner.fuel.feature.dashboard.component.DashboardFeatureGrid
+import id.maripartner.fuel.core.designsystem.theme.MariBgLight
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
@@ -142,6 +147,17 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showAnomalyDetailDialog by remember { mutableStateOf(false) }
+    var showQuickHelpDialog by remember { mutableStateOf(false) }
+
+    // Hitung efisiensi rata-rata dari transaksi berurutan jika tersedia
+    val avgEfficiency = remember(uiState.summary.recentTransactions) {
+        val txs = uiState.summary.recentTransactions.filter { (it.odometerKm ?: 0.0) > 0 }
+        if (txs.size >= 2) {
+            val dist = (txs.first().odometerKm ?: 0.0) - (txs.last().odometerKm ?: 0.0)
+            val vol = txs.drop(1).sumOf { it.volumeLiters ?: 0.0 }
+            if (dist > 0 && vol > 0) dist / vol else null
+        } else null
+    }
 
     // Trigger notifikasi sistem Android saat masa aktif Pro mendekati habis (<= 7 hari) atau baru beralih ke Free
     LaunchedEffect(uiState.isExpiringSoon, uiState.isRecentlyExpired, uiState.daysUntilExpiry) {
@@ -159,170 +175,151 @@ fun DashboardScreen(
     }
 
     Scaffold(
-        topBar = {
-            FuelTopBar(
-                title = "Mari Partner Fuel",
-                actions = {
-                    // Chip Status Langganan Pro / Free Tier
-                    AssistChip(
-                        onClick = onNavigateToProPlans,
-                        label = {
-                            Text(
-                                text = if (uiState.isProUser) "Pro Member" else "Tingkatkan ke Pro",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = if (uiState.isProUser) Color(0xFFE5A100) else MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = if (uiState.isProUser) Color(0xFFFFF3CD) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                            labelColor = if (uiState.isProUser) Color(0xFF7A5800) else MaterialTheme.colorScheme.primary
-                        ),
-                        border = AssistChipDefaults.assistChipBorder(
-                            enabled = true,
-                            borderColor = if (uiState.isProUser) Color(0xFFE5A100) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                        ),
-                        modifier = Modifier.padding(end = 4.dp)
+        modifier = modifier
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MariBgLight)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = innerPadding.calculateBottomPadding() + 24.dp)
+        ) {
+            // 1. Hero Gradient Header (Status Bar + Avatar + Pro Status + Saldo Besar + Catat BBM + Ticker + Status Chips)
+            DashboardHeroHeader(
+                userName = uiState.userName,
+                isProUser = uiState.isProUser,
+                planName = uiState.planName,
+                totalExpensesMonthIdr = uiState.summary.totalExpenseIdr,
+                recentTransaction = uiState.summary.recentTransactions.firstOrNull(),
+                budgetReport = uiState.fuelBudgetReport,
+                vehiclesCount = uiState.totalVehiclesCount,
+                avgEfficiency = avgEfficiency,
+                onNavigateToProPlans = onNavigateToProPlans,
+                onNavigateToTransactionForm = onNavigateToManualInput,
+                onNavigateToTransactions = onNavigateToTransactions,
+                onOpenBudgetDialog = { viewModel.onEvent(DashboardUiEvent.SetShowBudgetDialog(true)) },
+                onNavigateToVehicles = onNavigateToVehicles,
+                onNavigateToAnalytics = onNavigateToAnalytics,
+                onHelpClicked = { showQuickHelpDialog = true }
+            )
+
+            // 2. Elevated Rounded Sheet Container (Overlapping the gradient)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-18).dp),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 6.dp
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = 680.dp)
+                            .fillMaxWidth()
+                            .padding(top = 18.dp, bottom = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp)
+                    ) {
+                    // 2.1 Hub Menu Pintasan 8-Ikon (Grid 2 Baris x 4 Kolom)
+                    DashboardQuickGrid(
+                        pendingRemindersCount = uiState.pendingRemindersCount,
+                        onNavigateToReceiptScan = onNavigateToScan,
+                        onNavigateToTransactionForm = onNavigateToManualInput,
+                        onNavigateToTripCalculator = onNavigateToTripCalculator,
+                        onOpenBudgetDialog = { viewModel.onEvent(DashboardUiEvent.SetShowBudgetDialog(true)) },
+                        onOpenRadarDialog = { viewModel.onEvent(DashboardUiEvent.SetShowFuelPriceRadar(true)) },
+                        onCheckNearbySpbu = { viewModel.onEvent(DashboardUiEvent.CheckNearbySpbu) },
+                        onFilterService = onNavigateToReminders,
+                        onNavigateToNightHud = onNavigateToNightHud
                     )
 
-                    // Tombol Segarkan Dashboard
-                    IconButton(
-                        onClick = { viewModel.onEvent(DashboardUiEvent.Refresh) },
-                        enabled = !uiState.isRefreshing
-                    ) {
-                        if (uiState.isRefreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Segarkan Dashboard",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    // 2.2 Detektor Otomatis Kehadiran di SPBU (Jika terdeteksi dalam geofence)
+                    uiState.nearestSpbuResult?.let { nearest ->
+                        if (nearest.isWithinGeofence) {
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                NearbySpbuBanner(
+                                    result = nearest,
+                                    onNavigateToScan = onNavigateToScan,
+                                    onDismiss = { /* dismissed */ }
+                                )
+                            }
+                        }
+                    }
+
+                    // 2.3 Banner Pengingat Masa Aktif Pro / Transisi ke Free Tier
+                    if (uiState.showExpiryBanner) {
+                        if (uiState.isExpiringSoon) {
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                SubscriptionExpiringAlertBanner(
+                                    planName = uiState.planName,
+                                    daysUntilExpiry = uiState.daysUntilExpiry,
+                                    expiresAtFormatted = uiState.expiresAtFormatted,
+                                    onRenewClick = onNavigateToProPlans,
+                                    onDismiss = { viewModel.onEvent(DashboardUiEvent.DismissExpiryBanner) }
+                                )
+                            }
+                        } else if (uiState.isRecentlyExpired) {
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                SubscriptionRecentlyExpiredBanner(
+                                    onUpgradeClick = onNavigateToProPlans,
+                                    onDismiss = { viewModel.onEvent(DashboardUiEvent.DismissExpiryBanner) }
+                                )
+                            }
+                        }
+                    }
+
+                    // 2.4 Peringatan Cerdas Anomali Efisiensi Konsumsi BBM
+                    uiState.fuelAnomalyResult?.let { anomaly ->
+                        if (anomaly.hasAnomaly) {
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                FuelAnomalyAlertCard(
+                                    anomaly = anomaly,
+                                    onConsultClick = { showAnomalyDetailDialog = true }
+                                )
+                            }
+                        }
+                    }
+
+                    // 2.5 Grid Kartu Wawasan Cerdas & Optimasi Armada (2-Kolom)
+                    DashboardFeatureGrid(
+                        onNavigateToSpbuBenchmark = onNavigateToAnalytics,
+                        onNavigateToFuelShockSimulator = onNavigateToAnalytics,
+                        onNavigateToEcoDriverCertificate = onNavigateToAnalytics,
+                        onNavigateToAnomalyDetection = { showAnomalyDetailDialog = true }
+                    )
+
+                    // 2.6 Carousel Tips Cerdas Efisiensi BBM (Auto-slide 5s & Swipable)
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        FuelEfficiencyTipCard()
+                    }
+
+                    // 2.7 Ringkasan Kendaraan Utama
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        PrimaryVehicleOverviewSection(
+                            primaryVehicle = uiState.primaryVehicle,
+                            onManageVehicles = onNavigateToVehicles
+                        )
+                    }
+
+                    // 2.8 Transaksi Terbaru
+                    if (uiState.summary.recentTransactions.isNotEmpty()) {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            RecentTransactionsSection(
+                                transactions = uiState.summary.recentTransactions,
+                                onViewAll = onNavigateToTransactions,
+                                onTransactionClick = onNavigateToTransactionDetail
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
-            )
-        },
-        modifier = modifier
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFF1F6FF),
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                ),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = 760.dp)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                // 1. Header Sambutan Pengguna & Periode
-                GreetingHeaderSection(
-                    userName = uiState.userName,
-                    totalVehicles = uiState.totalVehiclesCount
-                )
-
-                // 1.0 Detektor Otomatis Kehadiran di SPBU (Prioritas Geofence)
-                uiState.nearestSpbuResult?.let { nearest ->
-                    if (nearest.isWithinGeofence) {
-                        NearbySpbuBanner(
-                            result = nearest,
-                            onNavigateToScan = onNavigateToScan,
-                            onDismiss = { /* dismissed for this view session */ }
-                        )
-                    }
-                }
-
-                // 1.1 Banner Pengingat Masa Aktif Pro / Transisi ke Free Tier
-                if (uiState.showExpiryBanner) {
-                    if (uiState.isExpiringSoon) {
-                        SubscriptionExpiringAlertBanner(
-                            planName = uiState.planName,
-                            daysUntilExpiry = uiState.daysUntilExpiry,
-                            expiresAtFormatted = uiState.expiresAtFormatted,
-                            onRenewClick = onNavigateToProPlans,
-                            onDismiss = { viewModel.onEvent(DashboardUiEvent.DismissExpiryBanner) }
-                        )
-                    } else if (uiState.isRecentlyExpired) {
-                        SubscriptionRecentlyExpiredBanner(
-                            onUpgradeClick = onNavigateToProPlans,
-                            onDismiss = { viewModel.onEvent(DashboardUiEvent.DismissExpiryBanner) }
-                        )
-                    }
-                }
-
-                // 1.2 Peringatan Cerdas Anomali Efisiensi Konsumsi BBM (Prioritas 3)
-                uiState.fuelAnomalyResult?.let { anomaly ->
-                    if (anomaly.hasAnomaly) {
-                        FuelAnomalyAlertCard(
-                            anomaly = anomaly,
-                            onConsultClick = { showAnomalyDetailDialog = true }
-                        )
-                    }
-                }
-
-                // 2. Hero Card: Ringkasan Pengeluaran & Metrik BBM Bulan Berjalan
-                HeroMonthlySpendingCard(summary = uiState.summary)
-
-                // 2.1 Pagu Anggaran BBM & Prediksi Tanggal Tua (Fitur Pagu Anggaran)
-                FuelBudgetCard(
-                    report = uiState.fuelBudgetReport,
-                    onSetBudgetClick = { viewModel.onEvent(DashboardUiEvent.SetShowBudgetDialog(true)) }
-                )
-
-                // 3. Action Hub: Menu Aksi Cepat, Kalkulator Perjalanan & Radar BBM
-                QuickActionHubSection(
-                    pendingRemindersCount = uiState.pendingRemindersCount,
-                    onNavigateToScan = onNavigateToScan,
-                    onNavigateToManualInput = onNavigateToManualInput,
-                    onNavigateToReminders = onNavigateToReminders,
-                    onNavigateToAnalytics = onNavigateToAnalytics,
-                    onNavigateToTripCalculator = onNavigateToTripCalculator,
-                    onNavigateToNightHud = onNavigateToNightHud,
-                    onOpenFuelPriceRadar = { viewModel.onEvent(DashboardUiEvent.SetShowFuelPriceRadar(true)) }
-                )
-
-                // 4. Kendaraan Utama / Ajakan Mendaftarkan Kendaraan
-                PrimaryVehicleOverviewSection(
-                    primaryVehicle = uiState.primaryVehicle,
-                    onManageVehicles = onNavigateToVehicles
-                )
-
-                // 5. Transaksi Terbaru
-                RecentTransactionsSection(
-                    transactions = uiState.summary.recentTransactions,
-                    onViewAll = onNavigateToTransactions,
-                    onTransactionClick = onNavigateToTransactionDetail
-                )
-
-                // 6. Tips Cerdas Efisiensi BBM (Eco-Driving Insight)
-                FuelEfficiencyTipCard()
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
     }
 
     if (showAnomalyDetailDialog && uiState.fuelAnomalyResult != null) {
@@ -343,6 +340,50 @@ fun DashboardScreen(
     if (uiState.showFuelPriceRadarDialog) {
         FuelPriceRadarDialog(
             onDismiss = { viewModel.onEvent(DashboardUiEvent.SetShowFuelPriceRadar(false)) }
+        )
+    }
+
+    if (showQuickHelpDialog) {
+        AlertDialog(
+            onDismissRequest = { showQuickHelpDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showQuickHelpDialog = false }) {
+                    Text("Mengerti", fontWeight = FontWeight.Bold)
+                }
+            },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MariPrimaryBlue
+                    )
+                    Text("Panduan Mari Partner Fuel", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "• Scan Struk SPBU: Pindai struk otomatis on-device tanpa butuh kuota internet.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        "• Pagu Anggaran: Pantau sisa kuota bensin dan prediksi tanggal habis sebelum gajian.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        "• Mode Malam HUD: Pantulkan layar di kaca depan mobil saat berkendara malam.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        "• Wawasan Cerdas: Cek perbandingan SPBU terhemat, simulasi kenaikan BBM, dan sertifikat Eco-Driver.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         )
     }
 }
