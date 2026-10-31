@@ -76,6 +76,10 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
    - UI mengobservasi `StateFlow<UiState<T>>` dari ViewModel secara immutable.
    - UI memancarkan user intent/event ke ViewModel melalui fungsi event terstandar.
 3. **Dilarang Blocking I/O pada Main Thread**: Seluruh operasi jaringan (Supabase), disk I/O, dan pengolahan gambar ML Kit wajib berjalan pada background dispatcher (`Dispatchers.IO` / `Dispatchers.Default`).
+4. **Auth Middleware & Strict Route Guarding**:
+   - Seluruh rute yang memerlukan autentikasi (`Dashboard`, `Transactions`, `Analytics`, `Vehicles`, `Profile`, `TripCalculator`, `ProPlans`, dsb.) wajib diproteksi secara deterministik lewat `resolveStartDestination` dan `@Composable AuthenticatedRoute`.
+   - Apabila sesi pengguna belum aktif (`session == null`), sistem dilarang memuat Composable berproteksi dan wajib mengalihkan rute secara seketika ke halaman Login (`NavRoute.Login.route`) dengan pembersihan tumpukan navigasi (`popUpTo(0) { inclusive = true }`).
+   - Visibilitas elemen navigasi global (`AppBottomBar`) diisolasi secara mutlak hanya saat sesi pengguna valid (`isSessionActive == true`).
 
 ---
 
@@ -258,7 +262,7 @@ mari-partner-fuel/
 │       │   │   │   │   ├── component/    # FuelButton, FuelStateView, FuelTopBar, FuelCard, BiometricLockOverlay
 │       │   │   │   │   └── theme/        # Color, Type, Shape, Theme (Light & Dark)
 │       │   │   │   ├── location/         # SpbuDirectory, SpbuProximityManager (offline geofence ~250m)
-│       │   │   │   ├── navigation/       # NavRoute, BottomNavItem, AppBottomBar, AppNavHost
+│       │   │   │   ├── navigation/       # NavRoute, BottomNavItem, AppBottomBar, AppNavHost, AuthGuard
 │       │   │   │   └── security/         # BiometricAuthManager, KeystoreManager
 │       │   │   ├── data/
 │       │   │   │   ├── local/            # DataStore, Preferences (FuelBudgetPreferences), Cache

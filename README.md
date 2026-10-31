@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
   <img src="https://img.shields.io/badge/Payment-Play_Billing_%26_QRISpy-FF8F00?style=for-the-badge" alt="Payment Dual-Track" />
-  <img src="https://img.shields.io/badge/Tests-180_Passing-brightgreen?style=for-the-badge" alt="Tests 180 Passing" />
+  <img src="https://img.shields.io/badge/Tests-185_Passing-brightgreen?style=for-the-badge" alt="Tests 185 Passing" />
   <img src="https://img.shields.io/badge/Release_Candidate-RC--1-blue?style=for-the-badge" alt="Release Candidate RC-1" />
   <img src="https://img.shields.io/badge/Production_Readiness-Ready_for_Closed_Testing-3ECF8E?style=for-the-badge" alt="Ready for Closed Testing" />
   <img src="https://img.shields.io/badge/AAB_Size-7.57_MB-blue?style=for-the-badge" alt="AAB Size 7.57 MB" />
@@ -147,6 +147,10 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
     - **Arsitektur Folder Bersih Terisolasi**: Pemisahan ketat seluruh modul kode Pemilik (`feature/owner/*`, `domain/model/owner/*`, `domain/repository/owner/*`, `data/repository/owner/*`) dari modul pengguna reguler.
     - Keamanan otoritatif PostgreSQL RPC `SECURITY DEFINER` (`get_saas_owner_metrics` & `admin_grant_user_pro`) yang memvalidasi otentikasi caller di database server.
 - 🔒 **Zero-Secret & Isolasi RLS**: Proteksi akses lintas akun (anti-BOLA/IDOR) dan tanda tangan URL struk berumur pendek.
+- 🛡️ **Middleware & Navigation AuthGuard (Strict Triple-Layer Protection)**:
+  - Pelindung rute deterministik: pengguna yang belum login (`session == null`) otomatis dan seketika dialihkan ke halaman Login (`NavRoute.Login.route`) dengan pembersihan tumpukan rute (`popUpTo(0) { inclusive = true }`).
+  - Proteksi tiga lapis: Layer 1 pada penentuan rute awal (`resolveStartDestination`), Layer 2 pada observer perubahan rute (`LaunchedEffect(currentRoute)`), dan Layer 3 pada composable route wrapper (`AuthenticatedRoute`).
+  - Mencegah bypass melalui Android deep link atau explicit intent, serta mengisolasi visibilitas navigasi global bawah (`AppBottomBar`) hanya saat sesi pengguna terbukti aktif.
 
 ---
 
@@ -166,7 +170,7 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
 | **Serialisasi** | Kotlinx Serialization 1.7.3 | Parsing JSON ketat dan type-safe |
 | **Keamanan Biometrik** | AndroidX Biometric 1.2.0-alpha05 | Kunci keamanan autentikasi sidik jari & wajah di perangkat |
 | **Geofencing & Lokasi** | Android Native Location Manager | Deteksi kedekatan area SPBU offline tanpa kuota atau API maps berbayar |
-| **Testing** | JUnit 4, Kotlinx Coroutines Test, Espresso | Suite pengujian otomatis logika domain dan UI State (180 passing) |
+| **Testing** | JUnit 4, Kotlinx Coroutines Test, Espresso | Suite pengujian otomatis logika domain, navigasi, dan UI State (185 passing) |
 
 ---
 
@@ -204,9 +208,15 @@ Data dikelola oleh PostgreSQL Supabase dengan 7 tabel relasional utama berindeks
 | :--- | :---: | :---: |
 | **Pencatatan Manual** | ✅ Tersedia | ✅ Tersedia |
 | **OCR Lokal ML Kit** | ✅ Tanpa Batas | ✅ Tanpa Batas |
-| **Bantuan Cloud AI** | ⚡ Kuota Dasar Bulanan | ⚡ Kuota Prioritas Besar |
+| **Bantuan Cloud AI** | ⚡ Kuota Dasar Bulanan (5 Scan) | ⚡ Kuota Prioritas Besar (100 Scan) |
 | **Maksimal Kendaraan** | Maksimal 2 Kendaraan | Tanpa Batas |
-| **Riwayat & Laporan** | ✅ Lengkap | ✅ Lengkap + Ekspor CSV Semua Periode |
+| **Pagu Anggaran BBM & Prediksi Tanggal Tua** | ✅ Fitur Standar | ⚡ Fitur Lanjutan |
+| **Radar Komparasi Harga BBM & Kalkulator Arbitrase** | ✅ Tersedia | ✅ Tersedia |
+| **Detektor Geofence Kehadiran SPBU (~250m)** | ✅ Tersedia | ✅ Tersedia |
+| **Kunci Keamanan Biometrik (Fingerprint/Face)** | ✅ Tersedia | ✅ Tersedia |
+| **Matriks Biaya Riil per km & Simulasi Margin Driver** | ❌ Terkunci | 👑 Fitur Pro Eksklusif |
+| **Sertifikat Digital Eco-Driver PDF & Rekap CO2** | ❌ Terkunci | 👑 Fitur Pro Eksklusif |
+| **Ekspor Laporan PDF Formal Ber-Kop Kantor** | ❌ Terkunci (Hanya CSV) | 👑 Fitur Pro Eksklusif (PDF + CSV) |
 | **Saat Pro Berakhir** | Data riwayat & kendaraan **TIDAK AKAN DIKUNCI ATAU DIHAPUS** |
 
 ---

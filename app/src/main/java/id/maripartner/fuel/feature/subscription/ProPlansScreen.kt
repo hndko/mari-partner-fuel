@@ -762,6 +762,7 @@ private fun PlanCard(
                 PlanFeatureItem(text = "Deteksi cerdas anomali konsumsi & kebocoran BBM", isIncluded = true)
                 PlanFeatureItem(text = "Pagu anggaran BBM & prediksi habis tanggal tua", isIncluded = true)
                 PlanFeatureItem(text = "Radar komparasi harga BBM & kalkulator hemat SPBU", isIncluded = true)
+                PlanFeatureItem(text = "Detektor otomatis kehadiran di area SPBU (~250m)", isIncluded = true)
                 PlanFeatureItem(text = "Kunci privasi biometrik aplikasi (Fingerprint & Wajah)", isIncluded = true)
                 PlanFeatureItem(text = "Matriks TCO riil operasional & kalkulator margin driver", isIncluded = isPro)
                 PlanFeatureItem(text = "Sertifikat digital resmi Eco-Driver & emisi CO₂ (PDF)", isIncluded = isPro)

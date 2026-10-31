@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.QrCode
@@ -59,6 +60,7 @@ import id.maripartner.fuel.core.designsystem.theme.MariBorderLight
 import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
 import id.maripartner.fuel.core.designsystem.theme.MariMutedLight
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
+import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import id.maripartner.fuel.core.designsystem.theme.MariTextLight
 import id.maripartner.fuel.domain.model.PaymentProviderType
 import id.maripartner.fuel.domain.model.SubscriptionPlan
@@ -315,6 +317,35 @@ private fun PlanSummaryCard(plan: SubscriptionPlan) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MariMutedLight
             )
+
+            HorizontalDivider(color = MariBorderLight)
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf(
+                    "Kendaraan armada tanpa batas & 100 scan AI/bln",
+                    "Matriks Biaya Riil per Km (TCO) & Kalkulator Margin Driver",
+                    "Sertifikat Digital Eco-Driver & Rekap Emisi CO₂ (PDF)",
+                    "Ekspor Laporan PDF Formal Ber-Kop (Reimbursement & Pajak)",
+                    "Pagu Anggaran BBM Pro & Radar Komparasi Harga SPBU"
+                ).forEach { featureText ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MariSuccess,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = featureText,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                            color = MariTextLight
+                        )
+                    }
+                }
+            }
         }
     }
 }

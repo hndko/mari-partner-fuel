@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -55,8 +57,28 @@ fun AppNavHost(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // Resolusi destinasi awal secara aman: redirect ke Login jika rute yang ditargetkan berproteksi dan sesi belum ada
+    val effectiveStartDestination = remember(startDestination) {
+        val initialSession = AuthRepositoryImpl().getCurrentSession()
+        resolveStartDestination(startDestination, initialSession)
+    }
+
+    // Auth Middleware: Observasi perubahan rute dan redirect ke Login jika pengguna mencoba mengakses rute terproteksi tanpa sesi
+    LaunchedEffect(currentRoute) {
+        if (!isPublicRoute(currentRoute)) {
+            val session = AuthRepositoryImpl().getCurrentSession()
+            if (session == null) {
+                navController.navigate(NavRoute.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
+
     val bottomBarRoutes = BottomNavItem.items.map { it.route }
-    val showBottomBar = currentRoute in bottomBarRoutes
+    val isSessionActive = AuthRepositoryImpl().getCurrentSession() != null
+    val showBottomBar = currentRoute in bottomBarRoutes && isSessionActive
 
     Scaffold(
         bottomBar = {
@@ -79,7 +101,7 @@ fun AppNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = startDestination,
+            startDestination = effectiveStartDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
             // 1. Splash Screen dengan pemulihan sesi otomatis
@@ -137,100 +159,112 @@ fun AppNavHost(
 
             // 3. Destinasi 5 Tab Bottom Navigation
             composable(NavRoute.Dashboard.route) {
-                DashboardScreen(
-                    onNavigateToScan = {
-                        navController.navigate(NavRoute.ReceiptScan.route)
-                    },
-                    onNavigateToManualInput = {
-                        navController.navigate(NavRoute.TransactionForm.createRoute())
-                    },
-                    onNavigateToProPlans = {
-                        navController.navigate(NavRoute.ProPlans.route)
-                    },
-                    onNavigateToReminders = {
-                        navController.navigate(NavRoute.Reminders.route)
-                    },
-                    onNavigateToTransactions = {
-                        navController.navigate(NavRoute.Transactions.route)
-                    },
-                    onNavigateToTransactionDetail = { id ->
-                        navController.navigate(NavRoute.TransactionDetail.createRoute(id))
-                    },
-                    onNavigateToVehicles = {
-                        navController.navigate(NavRoute.Vehicles.route)
-                    },
-                    onNavigateToAnalytics = {
-                        navController.navigate(NavRoute.Analytics.route)
-                    },
-                    onNavigateToTripCalculator = {
-                        navController.navigate(NavRoute.TripCalculator.route)
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    DashboardScreen(
+                        onNavigateToScan = {
+                            navController.navigate(NavRoute.ReceiptScan.route)
+                        },
+                        onNavigateToManualInput = {
+                            navController.navigate(NavRoute.TransactionForm.createRoute())
+                        },
+                        onNavigateToProPlans = {
+                            navController.navigate(NavRoute.ProPlans.route)
+                        },
+                        onNavigateToReminders = {
+                            navController.navigate(NavRoute.Reminders.route)
+                        },
+                        onNavigateToTransactions = {
+                            navController.navigate(NavRoute.Transactions.route)
+                        },
+                        onNavigateToTransactionDetail = { id ->
+                            navController.navigate(NavRoute.TransactionDetail.createRoute(id))
+                        },
+                        onNavigateToVehicles = {
+                            navController.navigate(NavRoute.Vehicles.route)
+                        },
+                        onNavigateToAnalytics = {
+                            navController.navigate(NavRoute.Analytics.route)
+                        },
+                        onNavigateToTripCalculator = {
+                            navController.navigate(NavRoute.TripCalculator.route)
+                        }
+                    )
+                }
             }
 
             composable(NavRoute.Transactions.route) {
-                TransactionsScreen(
-                    onNavigateToCreate = {
-                        navController.navigate(NavRoute.TransactionForm.createRoute())
-                    },
-                    onNavigateToDetail = { id ->
-                        navController.navigate(NavRoute.TransactionDetail.createRoute(id))
-                    },
-                    onNavigateToProPlans = {
-                        navController.navigate(NavRoute.ProPlans.route)
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    TransactionsScreen(
+                        onNavigateToCreate = {
+                            navController.navigate(NavRoute.TransactionForm.createRoute())
+                        },
+                        onNavigateToDetail = { id ->
+                            navController.navigate(NavRoute.TransactionDetail.createRoute(id))
+                        },
+                        onNavigateToProPlans = {
+                            navController.navigate(NavRoute.ProPlans.route)
+                        }
+                    )
+                }
             }
 
             composable(NavRoute.Analytics.route) {
-                AnalyticsScreen(
-                    onNavigateToCreateTransaction = {
-                        navController.navigate(NavRoute.TransactionForm.createRoute())
-                    },
-                    onNavigateToTripCalculator = {
-                        navController.navigate(NavRoute.TripCalculator.route)
-                    },
-                    onNavigateToProPlans = {
-                        navController.navigate(NavRoute.ProPlans.route)
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    AnalyticsScreen(
+                        onNavigateToCreateTransaction = {
+                            navController.navigate(NavRoute.TransactionForm.createRoute())
+                        },
+                        onNavigateToTripCalculator = {
+                            navController.navigate(NavRoute.TripCalculator.route)
+                        },
+                        onNavigateToProPlans = {
+                            navController.navigate(NavRoute.ProPlans.route)
+                        }
+                    )
+                }
             }
 
             composable(NavRoute.Vehicles.route) {
-                VehiclesScreen(
-                    onNavigateToAddVehicle = {
-                        navController.navigate(NavRoute.VehicleForm.createRoute())
-                    },
-                    onNavigateToEditVehicle = { id ->
-                        navController.navigate(NavRoute.VehicleForm.createRoute(id))
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    VehiclesScreen(
+                        onNavigateToAddVehicle = {
+                            navController.navigate(NavRoute.VehicleForm.createRoute())
+                        },
+                        onNavigateToEditVehicle = { id ->
+                            navController.navigate(NavRoute.VehicleForm.createRoute(id))
+                        }
+                    )
+                }
             }
 
             composable(NavRoute.Profile.route) {
-                ProfileScreen(
-                    onNavigateToProPlans = {
-                        navController.navigate(NavRoute.ProPlans.route)
-                    },
-                    onNavigateToEditProfile = {
-                        navController.navigate(NavRoute.EditProfile.route)
-                    },
-                    onNavigateToSaasAdmin = {
-                        navController.navigate(NavRoute.SaasAdminDashboard.route)
-                    },
-                    onLogout = {
-                        authViewModel.onEvent(AuthUiEvent.SignOut)
-                        navController.navigate(NavRoute.Login.route) {
-                            popUpTo(0) { inclusive = true }
+                AuthenticatedRoute(navController) {
+                    ProfileScreen(
+                        onNavigateToProPlans = {
+                            navController.navigate(NavRoute.ProPlans.route)
+                        },
+                        onNavigateToEditProfile = {
+                            navController.navigate(NavRoute.EditProfile.route)
+                        },
+                        onNavigateToSaasAdmin = {
+                            navController.navigate(NavRoute.SaasAdminDashboard.route)
+                        },
+                        onLogout = {
+                            authViewModel.onEvent(AuthUiEvent.SignOut)
+                            navController.navigate(NavRoute.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
 
             composable(NavRoute.EditProfile.route) {
-                EditProfileScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
+                AuthenticatedRoute(navController) {
+                    EditProfileScreen(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
 
             // 4. Sub-alur Manajemen Kendaraan
@@ -244,11 +278,13 @@ fun AppNavHost(
                     }
                 )
             ) { backStackEntry ->
-                val vehicleId = backStackEntry.arguments?.getString("id")
-                VehicleFormScreen(
-                    vehicleId = vehicleId,
-                    onNavigateBack = { navController.popBackStack() }
-                )
+                AuthenticatedRoute(navController) {
+                    val vehicleId = backStackEntry.arguments?.getString("id")
+                    VehicleFormScreen(
+                        vehicleId = vehicleId,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
 
             // 5. Sub-alur Transaksi BBM Manual & Detail
@@ -262,14 +298,16 @@ fun AppNavHost(
                     }
                 )
             ) { backStackEntry ->
-                val transactionId = backStackEntry.arguments?.getString("id")
-                TransactionFormScreen(
-                    transactionId = transactionId,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToAddVehicle = {
-                        navController.navigate(NavRoute.VehicleForm.createRoute())
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    val transactionId = backStackEntry.arguments?.getString("id")
+                    TransactionFormScreen(
+                        transactionId = transactionId,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToAddVehicle = {
+                            navController.navigate(NavRoute.VehicleForm.createRoute())
+                        }
+                    )
+                }
             }
 
             composable(
@@ -280,45 +318,53 @@ fun AppNavHost(
                     }
                 )
             ) { backStackEntry ->
-                val id = backStackEntry.arguments?.getString("id").orEmpty()
-                TransactionDetailScreen(
-                    transactionId = id,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToEdit = { txId ->
-                        navController.navigate(NavRoute.TransactionForm.createRoute(txId))
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    val id = backStackEntry.arguments?.getString("id").orEmpty()
+                    TransactionDetailScreen(
+                        transactionId = id,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToEdit = { txId ->
+                            navController.navigate(NavRoute.TransactionForm.createRoute(txId))
+                        }
+                    )
+                }
             }
 
             // 6. Sub-alur Pindai Struk OCR & Review (Human-in-the-Loop)
             composable(NavRoute.ReceiptScan.route) {
-                ReceiptScanScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToReview = { navController.navigate(NavRoute.ScanReview.route) },
-                    viewModel = receiptScanViewModel
-                )
+                AuthenticatedRoute(navController) {
+                    ReceiptScanScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToReview = { navController.navigate(NavRoute.ScanReview.route) },
+                        viewModel = receiptScanViewModel
+                    )
+                }
             }
 
             composable(NavRoute.ScanReview.route) {
-                ScanReviewScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onSaveSuccess = {
-                        navController.navigate(NavRoute.Transactions.route) {
-                            popUpTo(NavRoute.Dashboard.route)
-                        }
-                    },
-                    viewModel = receiptScanViewModel
-                )
+                AuthenticatedRoute(navController) {
+                    ScanReviewScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onSaveSuccess = {
+                            navController.navigate(NavRoute.Transactions.route) {
+                                popUpTo(NavRoute.Dashboard.route)
+                            }
+                        },
+                        viewModel = receiptScanViewModel
+                    )
+                }
             }
 
             // 7. Sub-alur Pengingat Perawatan Kendaraan
             composable(NavRoute.Reminders.route) {
-                RemindersScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToCreate = { navController.navigate(NavRoute.ReminderForm.createRoute()) },
-                    onNavigateToEdit = { id -> navController.navigate(NavRoute.ReminderForm.createRoute(id)) },
-                    viewModel = remindersViewModel
-                )
+                AuthenticatedRoute(navController) {
+                    RemindersScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToCreate = { navController.navigate(NavRoute.ReminderForm.createRoute()) },
+                        onNavigateToEdit = { id -> navController.navigate(NavRoute.ReminderForm.createRoute(id)) },
+                        viewModel = remindersViewModel
+                    )
+                }
             }
 
             composable(
@@ -329,80 +375,94 @@ fun AppNavHost(
                     defaultValue = null
                 })
             ) { backStackEntry ->
-                val reminderId = backStackEntry.arguments?.getString("id")
-                ReminderFormScreen(
-                    reminderId = reminderId,
-                    onNavigateBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() },
-                    viewModel = remindersViewModel
-                )
+                AuthenticatedRoute(navController) {
+                    val reminderId = backStackEntry.arguments?.getString("id")
+                    ReminderFormScreen(
+                        reminderId = reminderId,
+                        onNavigateBack = { navController.popBackStack() },
+                        onSaved = { navController.popBackStack() },
+                        viewModel = remindersViewModel
+                    )
+                }
             }
 
             // Kalkulator Biaya Perjalanan & Split Bill (Prioritas 2)
             composable(NavRoute.TripCalculator.route) {
-                TripCalculatorScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToProPlans = {
-                        navController.navigate(NavRoute.ProPlans.route)
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    TripCalculatorScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToProPlans = {
+                            navController.navigate(NavRoute.ProPlans.route)
+                        }
+                    )
+                }
             }
 
             // Halaman Paket & Langganan (Tahap 6 & 7)
             composable(NavRoute.ProPlans.route) {
-                ProPlansScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToCheckout = { planCode ->
-                        navController.navigate(NavRoute.Checkout.createRoute(planCode))
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    ProPlansScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToCheckout = { planCode ->
+                            navController.navigate(NavRoute.Checkout.createRoute(planCode))
+                        }
+                    )
+                }
             }
 
             // Halaman Checkout Pembayaran (Tahap 7)
             composable(NavRoute.Checkout.route) { backStackEntry ->
-                val planCode = backStackEntry.arguments?.getString("planId") ?: "pro_monthly"
-                CheckoutScreen(
-                    planCode = planCode,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToQris = { ref ->
-                        navController.navigate(NavRoute.QrisPayment.createRoute(ref))
-                    },
-                    onNavigateToSuccess = { ref ->
-                        navController.navigate(NavRoute.PaymentStatus.createRoute(ref))
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    val planCode = backStackEntry.arguments?.getString("planId") ?: "pro_monthly"
+                    CheckoutScreen(
+                        planCode = planCode,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToQris = { ref ->
+                            navController.navigate(NavRoute.QrisPayment.createRoute(ref))
+                        },
+                        onNavigateToSuccess = { ref ->
+                            navController.navigate(NavRoute.PaymentStatus.createRoute(ref))
+                        }
+                    )
+                }
             }
 
             // Halaman Pembayaran QRIS (Tahap 7)
             composable(NavRoute.QrisPayment.route) { backStackEntry ->
-                val paymentRef = backStackEntry.arguments?.getString("paymentReference").orEmpty()
-                QrisPaymentScreen(
-                    paymentReference = paymentRef,
-                    onNavigateBack = { navController.popBackStack() },
-                    onPaymentSuccess = { ref ->
-                        navController.navigate(NavRoute.PaymentStatus.createRoute(ref))
-                    }
-                )
+                AuthenticatedRoute(navController) {
+                    val paymentRef = backStackEntry.arguments?.getString("paymentReference").orEmpty()
+                    QrisPaymentScreen(
+                        paymentReference = paymentRef,
+                        onNavigateBack = { navController.popBackStack() },
+                        onPaymentSuccess = { ref ->
+                            navController.navigate(NavRoute.PaymentStatus.createRoute(ref))
+                        }
+                    )
+                }
             }
 
             // Halaman Status Pembayaran Berhasil (Tahap 7)
             composable(NavRoute.PaymentStatus.route) { backStackEntry ->
-                val paymentRef = backStackEntry.arguments?.getString("paymentReference").orEmpty()
-                PaymentStatusScreen(
-                    paymentReference = paymentRef,
-                    onNavigateToDashboard = {
-                        navController.navigate(NavRoute.Dashboard.route) {
-                            popUpTo(NavRoute.Dashboard.route) { inclusive = true }
+                AuthenticatedRoute(navController) {
+                    val paymentRef = backStackEntry.arguments?.getString("paymentReference").orEmpty()
+                    PaymentStatusScreen(
+                        paymentReference = paymentRef,
+                        onNavigateToDashboard = {
+                            navController.navigate(NavRoute.Dashboard.route) {
+                                popUpTo(NavRoute.Dashboard.route) { inclusive = true }
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
 
             // Panel Pemilik SaaS (SaaS Owner Console)
             composable(NavRoute.SaasAdminDashboard.route) {
-                OwnerConsoleScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
+                AuthenticatedRoute(navController) {
+                    OwnerConsoleScreen(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }

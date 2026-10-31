@@ -270,8 +270,18 @@ class SubscriptionRepositoryImpl(
                 aiScanQuota = 5,
                 maxVehicles = 2,
                 isActive = true,
-                features = listOf("manual_transactions", "local_ocr", "export_csv", "vehicles_limit_2", "ai_scans_5"),
-                description = "Paket esensial gratis untuk 2 kendaraan aktif dan 5 pemindaian struk AI per bulan."
+                features = listOf(
+                    "manual_transactions",
+                    "local_ocr",
+                    "export_csv",
+                    "vehicles_limit_2",
+                    "ai_scans_5",
+                    "fuel_budgeting_basic",
+                    "fuel_price_radar",
+                    "spbu_proximity_detector",
+                    "biometric_security"
+                ),
+                description = "Paket esensial gratis untuk 2 kendaraan aktif, 5 scan AI/bln, pagu anggaran BBM, dan radar harga SPBU."
             ),
             SubscriptionPlan(
                 id = "plan_pro_monthly",
@@ -282,8 +292,25 @@ class SubscriptionRepositoryImpl(
                 aiScanQuota = 100,
                 maxVehicles = null,
                 isActive = true,
-                features = listOf("manual_transactions", "local_ocr", "cloud_ai_extraction", "unlimited_vehicles", "ai_scans_100", "advanced_analytics", "export_csv", "priority_support"),
-                description = "Akses penuh Mari Pro bulanan tanpa batas kendaraan, 100 scan AI, dan analitik lengkap."
+                features = listOf(
+                    "manual_transactions",
+                    "local_ocr",
+                    "cloud_ai_extraction",
+                    "unlimited_vehicles",
+                    "ai_scans_100",
+                    "advanced_analytics",
+                    "true_cost_per_km_tco",
+                    "driver_margin_simulator",
+                    "eco_driver_certificate_pdf",
+                    "fuel_budgeting_pro",
+                    "fuel_price_radar",
+                    "spbu_proximity_detector",
+                    "biometric_security",
+                    "export_formal_pdf",
+                    "export_csv",
+                    "priority_support"
+                ),
+                description = "Akses penuh Mari Pro bulanan tanpa batas armada, 100 scan AI, matriks TCO per km, margin driver, dan sertifikat Eco-Driver PDF."
             ),
             SubscriptionPlan(
                 id = "plan_pro_yearly",
@@ -294,8 +321,26 @@ class SubscriptionRepositoryImpl(
                 aiScanQuota = 100,
                 maxVehicles = null,
                 isActive = true,
-                features = listOf("manual_transactions", "local_ocr", "cloud_ai_extraction", "unlimited_vehicles", "ai_scans_100", "advanced_analytics", "export_csv", "priority_support", "discount_2_months"),
-                description = "Hemat 17% dengan paket tahunan. Nikmati seluruh fitur Pro tanpa batas kendaraan."
+                features = listOf(
+                    "manual_transactions",
+                    "local_ocr",
+                    "cloud_ai_extraction",
+                    "unlimited_vehicles",
+                    "ai_scans_100",
+                    "advanced_analytics",
+                    "true_cost_per_km_tco",
+                    "driver_margin_simulator",
+                    "eco_driver_certificate_pdf",
+                    "fuel_budgeting_pro",
+                    "fuel_price_radar",
+                    "spbu_proximity_detector",
+                    "biometric_security",
+                    "export_formal_pdf",
+                    "export_csv",
+                    "priority_support",
+                    "discount_2_months"
+                ),
+                description = "Hemat 17% dengan paket tahunan. Nikmati seluruh fitur Pro, TCO per km, margin driver, dan sertifikat Eco-Driver PDF."
             )
         )
     }
