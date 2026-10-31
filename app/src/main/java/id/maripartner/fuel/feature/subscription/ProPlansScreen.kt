@@ -692,7 +692,7 @@ private fun PlanCard(
 
             HorizontalDivider(color = MariBorderLight)
 
-            // Features Checklist
+            // Features Checklist (Dinamis Sesuai Ketentuan & Batasan Hak Paket)
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 val vehicleText = if (plan.maxVehicles == null) "Kendaraan tanpa batas" else "Maksimal ${plan.maxVehicles} kendaraan aktif"
                 val aiText = "${plan.aiScanQuota} scan struk AI per bulan"
@@ -701,10 +701,13 @@ private fun PlanCard(
                 PlanFeatureItem(text = vehicleText, isIncluded = true)
                 PlanFeatureItem(text = "Riwayat transaksi & filter", isIncluded = true)
                 PlanFeatureItem(text = "OCR teks on-device lokal tanpa batas", isIncluded = true)
-                PlanFeatureItem(text = aiText, isIncluded = isPro)
-                PlanFeatureItem(text = "Analitik performa & grafik efisiensi BBM", isIncluded = isPro)
+                PlanFeatureItem(text = aiText, isIncluded = plan.aiScanQuota > 0)
+                PlanFeatureItem(
+                    text = if (isPro) "Analitik lanjutan & komparasi multi-armada" else "Analitik dasar & efisiensi BBM (km/l)",
+                    isIncluded = true
+                )
                 PlanFeatureItem(text = "Cloud AI Gemini Fallback prioritas tinggi", isIncluded = isPro)
-                PlanFeatureItem(text = "Ekspor data riwayat ke format CSV", isIncluded = isPro)
+                PlanFeatureItem(text = "Ekspor data riwayat ke format CSV", isIncluded = true)
                 PlanFeatureItem(text = "Prioritas dukungan teknis", isIncluded = isPro)
             }
         }
