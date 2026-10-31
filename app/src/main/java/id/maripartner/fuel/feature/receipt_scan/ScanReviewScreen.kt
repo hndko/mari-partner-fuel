@@ -61,7 +61,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
+import id.maripartner.fuel.core.designsystem.component.FuelSweetAlertDialog
 import id.maripartner.fuel.core.designsystem.component.FuelTextField
+import id.maripartner.fuel.core.designsystem.component.SweetAlertType
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
 import id.maripartner.fuel.core.designsystem.component.ThousandSeparatorVisualTransformation
 
@@ -394,37 +396,18 @@ fun ScanReviewScreen(
         }
     }
 
-    // Dialog Persetujuan Penggunaan AI Cloud
-    if (state.showAiConsentDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onEvent(ReceiptScanUiEvent.DismissAiConsent) },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Gunakan Bantuan AI Cloud?")
-                }
-            },
-            text = {
-                Text(
-                    "Teks hasil pembacaan struk akan dikirimkan secara aman ke Supabase Edge Function untuk dianalisis oleh AI (Gemini 1.5 Flash).\n\n" +
-                    "Privasi Terjamin: Nomor polisi kendaraan dan identitas pribadi akun Anda TIDAK PERNAH dikirimkan ke pihak ketiga."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.onEvent(ReceiptScanUiEvent.ConfirmAiOptimization) }) {
-                    Text("Kirim ke AI Cloud")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.onEvent(ReceiptScanUiEvent.DismissAiConsent) }) {
-                    Text("Batal")
-                }
-            }
-        )
-    }
+    // Modal Persetujuan Penggunaan AI Cloud
+    FuelSweetAlertDialog(
+        show = state.showAiConsentDialog,
+        type = SweetAlertType.INFO,
+        title = "Gunakan Bantuan AI Cloud?",
+        message = "Teks hasil pembacaan struk akan dikirimkan secara aman ke Supabase Edge Function untuk dianalisis oleh AI (Gemini 1.5 Flash).\n\n" +
+            "• Privasi Terjamin: Nomor polisi dan identitas akun Anda TIDAK PERNAH dikirimkan.\n" +
+            "• Verifikasi Manusia: Hasil pembacaan tetap wajib Anda periksa sebelum disimpan.\n" +
+            "• Kuota Terhitung: Menggunakan 1 kuota scan AI bulanan dari paket Anda.",
+        confirmText = "Kirim ke AI Cloud",
+        dismissText = "Batal",
+        onConfirm = { viewModel.onEvent(ReceiptScanUiEvent.ConfirmAiOptimization) },
+        onDismiss = { viewModel.onEvent(ReceiptScanUiEvent.DismissAiConsent) }
+    )
 }
