@@ -87,6 +87,7 @@ import id.maripartner.fuel.core.designsystem.component.FuelTextLink
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
 import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
+import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -224,8 +225,13 @@ fun ProfileScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (uiState.isPro) {
+                                val proLabel = if (uiState.planName.isNotBlank() && !uiState.planName.contains("Free", ignoreCase = true)) {
+                                    "${uiState.planName} Aktif"
+                                } else {
+                                    "Paket Pro Aktif"
+                                }
                                 FuelStatusChip(
-                                    text = "Paket Pro Aktif",
+                                    text = proLabel,
                                     type = FuelChipType.Success,
                                     icon = Icons.Default.Diamond
                                 )
@@ -444,37 +450,41 @@ fun ProfileScreen(
                     }
                 }
 
-                // 3. Banner Upgrade Pro jika masih Free
-                if (!uiState.isPro) {
-                    FuelCard {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Diamond,
-                                contentDescription = null,
-                                tint = MariPrimaryBlue,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .padding(end = 12.dp)
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Kelola BBM Lebih Maksimal",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Tingkatkan ke Pro untuk kuota scan AI hingga 100x/bulan dan multi-kendaraan tanpa batas.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(14.dp))
-                        FuelPrimaryButton(
-                            text = "Lihat Pilihan Paket Pro",
-                            onClick = onNavigateToProPlans
+                // 3. Status Paket Langganan
+                FuelCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Diamond,
+                            contentDescription = null,
+                            tint = if (uiState.isPro) MariSuccess else MariPrimaryBlue,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .padding(end = 12.dp)
                         )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (uiState.isPro) "Paket Berlangganan: ${uiState.planName}" else "Kelola BBM Lebih Maksimal",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            val subSubtitle = if (uiState.isPro) {
+                                uiState.planExpiresAt?.let { "Masa aktif berlaku sampai: $it" }
+                                    ?: "Status Pro aktif dengan armada dan analitik tak terbatas."
+                            } else {
+                                "Tingkatkan ke Pro untuk kuota scan AI hingga 100x/bulan dan multi-kendaraan tanpa batas."
+                            }
+                            Text(
+                                text = subSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    FuelPrimaryButton(
+                        text = if (uiState.isPro) "Kelola Paket & Langganan" else "Lihat Pilihan Paket Pro",
+                        onClick = onNavigateToProPlans
+                    )
                 }
 
                 // 4. Panel Preferensi & Pengaturan Aplikasi

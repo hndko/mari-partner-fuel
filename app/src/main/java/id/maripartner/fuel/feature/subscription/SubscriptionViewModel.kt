@@ -21,12 +21,12 @@ class SubscriptionViewModel(
     val uiState: StateFlow<SubscriptionUiState> = _uiState.asStateFlow()
 
     init {
-        loadData(forceRefresh = false)
+        loadData(forceRefresh = true)
     }
 
     fun onEvent(event: SubscriptionUiEvent) {
         when (event) {
-            is SubscriptionUiEvent.LoadData -> loadData(forceRefresh = false)
+            is SubscriptionUiEvent.LoadData -> loadData(forceRefresh = true)
             is SubscriptionUiEvent.Refresh -> loadData(forceRefresh = true)
             is SubscriptionUiEvent.SelectBillingPeriod -> {
                 _uiState.update { it.copy(selectedBillingPeriod = event.period) }

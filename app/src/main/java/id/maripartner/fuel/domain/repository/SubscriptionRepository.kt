@@ -8,4 +8,5 @@ interface SubscriptionRepository {
     suspend fun getMyEntitlement(forceRefresh: Boolean = false): AppResult<UserEntitlement>
     suspend fun getSubscriptionPlans(): AppResult<List<SubscriptionPlan>>
     suspend fun getCachedEntitlement(): UserEntitlement?
+    fun clearCache()
 }

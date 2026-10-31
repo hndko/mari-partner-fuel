@@ -67,11 +67,16 @@ class ProfileViewModel(
                 }
             }
 
-            // 2. Muat status langganan
+            // 2. Muat status langganan terkini (selalu forceRefresh agar mutasi SaaS langsung terdeteksi)
             var isPro = false
-            when (val entitlementRes = subscriptionRepository.getMyEntitlement()) {
+            var planName = "Mari Free"
+            var expiresStr: String? = null
+            when (val entitlementRes = subscriptionRepository.getMyEntitlement(forceRefresh = true)) {
                 is AppResult.Success -> {
-                    isPro = entitlementRes.data.isPro
+                    val ent = entitlementRes.data
+                    isPro = ent.isPro
+                    planName = ent.planName.ifBlank { if (ent.isPro) "Mari Pro" else "Mari Free" }
+                    expiresStr = ent.expiresAt?.toString()?.take(10)
                 }
                 is AppResult.Error -> { }
             }
@@ -82,6 +87,8 @@ class ProfileViewModel(
                     email = email,
                     displayName = displayName.ifBlank { "Pengemudi" },
                     isPro = isPro,
+                    planName = planName,
+                    planExpiresAt = expiresStr,
                     isGoogleLinked = isGoogleLinked,
                     themePreference = themePref,
                     isLoading = false

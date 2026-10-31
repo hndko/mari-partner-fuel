@@ -3,39 +3,143 @@ package id.maripartner.fuel.data.repository
 import id.maripartner.fuel.core.common.result.AppException
 import id.maripartner.fuel.core.common.result.AppResult
 import id.maripartner.fuel.data.remote.dto.SubscriptionPlanDto
+import id.maripartner.fuel.data.remote.dto.SubscriptionRecordDto
 import id.maripartner.fuel.data.remote.dto.UserEntitlementDto
 import id.maripartner.fuel.data.remote.supabase.SupabaseClientProvider
 import id.maripartner.fuel.domain.model.AiQuotaStatus
 import id.maripartner.fuel.domain.model.SubscriptionPlan
 import id.maripartner.fuel.domain.model.UserEntitlement
 import id.maripartner.fuel.domain.repository.SubscriptionRepository
+import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import java.time.Instant
 
 class SubscriptionRepositoryImpl(
     private val functions: Functions? = null,
     private val postgrest: Postgrest? = null,
+    private val auth: Auth? = null,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SubscriptionRepository {
 
     private fun getFunctions(): Functions = functions ?: SupabaseClientProvider.functions
     private fun getPostgrest(): Postgrest = postgrest ?: SupabaseClientProvider.postgrest
+    private fun getAuth(): Auth = auth ?: SupabaseClientProvider.auth
 
     @Volatile
     private var cachedEntitlement: UserEntitlement? = null
+
+    override fun clearCache() {
+        cachedEntitlement = null
+    }
 
     override suspend fun getMyEntitlement(forceRefresh: Boolean): AppResult<UserEntitlement> = withContext(dispatcher) {
         if (!forceRefresh && cachedEntitlement != null) {
             return@withContext AppResult.Success(cachedEntitlement!!)
         }
 
+        val currentUserId = getAuth().currentUserOrNull()?.id
+
+        // Tingkat 1 (Autoritatif Langsung): Query tabel subscriptions via PostgREST
+        if (!currentUserId.isNullOrBlank()) {
+            try {
+                val subs = getPostgrest().from("subscriptions").select(
+                    Columns.raw("id, user_id, plan_id, status, starts_at, expires_at, auto_renew, provider, subscription_plans(*)")
+                ) {
+                    filter {
+                        eq("user_id", currentUserId)
+                        eq("status", "active")
+                    }
+                    order("created_at", Order.DESCENDING)
+                    limit(1)
+                }.decodeList<SubscriptionRecordDto>()
+
+                if (subs.isNotEmpty()) {
+                    val activeSub = subs.first()
+                    val expiresInstant = activeSub.expiresAt?.let {
+                        runCatching { Instant.parse(it) }.getOrNull()
+                    }
+                    val isStillActive = expiresInstant == null || expiresInstant.isAfter(Instant.now())
+                    if (isStillActive && activeSub.subscriptionPlan != null) {
+                        val plan = activeSub.subscriptionPlan
+                        val isProPlan = !plan.code.equals("free", ignoreCase = true)
+                        val entitlement = UserEntitlement(
+                            userId = currentUserId,
+                            isPro = isProPlan,
+                            planCode = plan.code,
+                            planName = plan.name,
+                            status = activeSub.status,
+                            expiresAt = expiresInstant,
+                            autoRenew = activeSub.autoRenew,
+                            maxVehicles = plan.maxVehicles,
+                            features = plan.getFeaturesList(),
+                            aiQuota = AiQuotaStatus(
+                                limit = plan.aiScanQuota,
+                                used = 0,
+                                remaining = plan.aiScanQuota
+                            )
+                        )
+                        cachedEntitlement = entitlement
+                        return@withContext AppResult.Success(entitlement)
+                    }
+                }
+            } catch (_: Exception) { }
+
+            // Tingkat 2: RPC get_user_effective_entitlement
+            try {
+                val params = buildJsonObject {
+                    put("p_user_id", currentUserId)
+                }
+                val rpcResult = getPostgrest().rpc("get_user_effective_entitlement", params)
+                val jsonElement = json.parseToJsonElement(rpcResult.data)
+                val jsonObj = jsonElement.jsonObject
+                val isPro = jsonObj["is_pro"]?.jsonPrimitive?.booleanOrNull ?: false
+                val planCode = jsonObj["plan_code"]?.jsonPrimitive?.contentOrNull ?: "free"
+                val planName = jsonObj["plan_name"]?.jsonPrimitive?.contentOrNull ?: "Mari Free"
+                val expiresStr = jsonObj["expires_at"]?.jsonPrimitive?.contentOrNull
+                val expiresInstant = expiresStr?.let { runCatching { Instant.parse(it) }.getOrNull() }
+                val maxVehicles = jsonObj["max_vehicles"]?.jsonPrimitive?.intOrNull
+                val aiQuotaLimit = jsonObj["ai_scan_quota"]?.jsonPrimitive?.intOrNull ?: 5
+                val features = jsonObj["features"]?.jsonArray?.mapNotNull { runCatching { it.jsonPrimitive.content }.getOrNull() } ?: emptyList()
+
+                val entitlement = UserEntitlement(
+                    userId = currentUserId,
+                    isPro = isPro,
+                    planCode = planCode,
+                    planName = planName,
+                    status = "active",
+                    expiresAt = expiresInstant,
+                    autoRenew = false,
+                    maxVehicles = maxVehicles,
+                    features = features,
+                    aiQuota = AiQuotaStatus(
+                        limit = aiQuotaLimit,
+                        used = 0,
+                        remaining = aiQuotaLimit
+                    )
+                )
+                cachedEntitlement = entitlement
+                return@withContext AppResult.Success(entitlement)
+            } catch (_: Exception) { }
+        }
+
+        // Tingkat 3: Edge Function get-my-entitlements (jika terdeploy)
         try {
             val response = getFunctions().invoke("get-my-entitlements")
             val text = response.bodyAsText()
@@ -49,7 +153,7 @@ class SubscriptionRepositoryImpl(
             }
 
             val entitlement = UserEntitlement(
-                userId = dto.userId,
+                userId = dto.userId.ifBlank { currentUserId.orEmpty() },
                 isPro = dto.isPro,
                 planCode = dto.planCode,
                 planName = dto.planName,
@@ -67,25 +171,27 @@ class SubscriptionRepositoryImpl(
             )
 
             cachedEntitlement = entitlement
-            AppResult.Success(entitlement)
-        } catch (e: Exception) {
-            // Jika ada cache lokal, gunakan untuk mencegah pemblokiran UI
-            cachedEntitlement?.let {
-                return@withContext AppResult.Success(it)
-            }
+            return@withContext AppResult.Success(entitlement)
+        } catch (_: Exception) { }
 
-            // Fallback aman ke Free jika jaringan belum stabil
-            val fallbackFree = UserEntitlement(
-                isPro = false,
-                planCode = "free",
-                planName = "Mari Free",
-                status = "active",
-                maxVehicles = 2,
-                features = listOf("manual_transactions", "local_ocr", "export_csv", "vehicles_limit_2", "ai_scans_5"),
-                aiQuota = AiQuotaStatus(limit = 5, used = 0, remaining = 5)
-            )
-            AppResult.Success(fallbackFree)
+        // Jika ada cache lokal sebelumnya, gunakan
+        cachedEntitlement?.let {
+            return@withContext AppResult.Success(it)
         }
+
+        // Fallback aman ke Free jika offline dan belum ada data
+        val fallbackFree = UserEntitlement(
+            userId = currentUserId.orEmpty(),
+            isPro = false,
+            planCode = "free",
+            planName = "Mari Free",
+            status = "active",
+            maxVehicles = 2,
+            features = listOf("manual_transactions", "local_ocr", "export_csv", "vehicles_limit_2", "ai_scans_5"),
+            aiQuota = AiQuotaStatus(limit = 5, used = 0, remaining = 5)
+        )
+        cachedEntitlement = fallbackFree
+        AppResult.Success(fallbackFree)
     }
 
     override suspend fun getSubscriptionPlans(): AppResult<List<SubscriptionPlan>> = withContext(dispatcher) {

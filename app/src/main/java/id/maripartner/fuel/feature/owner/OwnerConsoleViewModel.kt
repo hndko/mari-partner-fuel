@@ -3,7 +3,9 @@ package id.maripartner.fuel.feature.owner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.maripartner.fuel.core.common.result.AppResult
+import id.maripartner.fuel.data.repository.SubscriptionRepositoryImpl
 import id.maripartner.fuel.data.repository.owner.OwnerRepositoryImpl
+import id.maripartner.fuel.domain.repository.SubscriptionRepository
 import id.maripartner.fuel.domain.repository.owner.OwnerRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,10 +14,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class OwnerConsoleViewModel(
-    private val repository: OwnerRepository
+    private val repository: OwnerRepository,
+    private val subscriptionRepository: SubscriptionRepository = SubscriptionRepositoryImpl()
 ) : ViewModel() {
 
-    constructor() : this(OwnerRepositoryImpl())
+    constructor() : this(OwnerRepositoryImpl(), SubscriptionRepositoryImpl())
 
     private val _uiState = MutableStateFlow(OwnerConsoleUiState())
     val uiState: StateFlow<OwnerConsoleUiState> = _uiState.asStateFlow()
@@ -135,6 +138,7 @@ class OwnerConsoleViewModel(
         viewModelScope.launch {
             when (val result = repository.getSaasMetrics(timeframe)) {
                 is AppResult.Success -> {
+                    subscriptionRepository.clearCache()
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -161,6 +165,7 @@ class OwnerConsoleViewModel(
         viewModelScope.launch {
             when (val result = repository.getSubscriptionPlans()) {
                 is AppResult.Success -> {
+                    subscriptionRepository.clearCache()
                     _uiState.update { it.copy(plans = result.data) }
                 }
                 is AppResult.Error -> { }
@@ -172,6 +177,7 @@ class OwnerConsoleViewModel(
         viewModelScope.launch {
             when (val result = repository.getPaymentTransactions(50)) {
                 is AppResult.Success -> {
+                    subscriptionRepository.clearCache()
                     _uiState.update { it.copy(transactions = result.data) }
                 }
                 is AppResult.Error -> { }
@@ -189,6 +195,7 @@ class OwnerConsoleViewModel(
         viewModelScope.launch {
             when (val result = repository.grantUserPro(user.id, days, notes)) {
                 is AppResult.Success -> {
+                    subscriptionRepository.clearCache()
                     _uiState.update {
                         it.copy(
                             isSubmittingGrant = false,
@@ -234,6 +241,7 @@ class OwnerConsoleViewModel(
                 description = description
             )) {
                 is AppResult.Success -> {
+                    subscriptionRepository.clearCache()
                     _uiState.update {
                         it.copy(
                             isSubmittingPlanEdit = false,

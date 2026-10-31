@@ -10,6 +10,8 @@ data class ProfileUiState(
     val email: String = "",
     val displayName: String = "Pengemudi",
     val isPro: Boolean = false,
+    val planName: String = "Mari Free",
+    val planExpiresAt: String? = null,
     val isGoogleLinked: Boolean = false,
     val isGoogleSignInConfigured: Boolean = false,
     val themePreference: String = "system",

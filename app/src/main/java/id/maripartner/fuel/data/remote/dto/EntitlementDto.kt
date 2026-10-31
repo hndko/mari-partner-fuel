@@ -24,3 +24,16 @@ data class UserEntitlementDto(
     val features: List<String> = emptyList(),
     @SerialName("ai_quota") val aiQuota: AiQuotaDto = AiQuotaDto()
 )
+
+@Serializable
+data class SubscriptionRecordDto(
+    val id: String = "",
+    @SerialName("user_id") val userId: String = "",
+    @SerialName("plan_id") val planId: String = "",
+    val status: String = "active",
+    @SerialName("starts_at") val startsAt: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
+    @SerialName("auto_renew") val autoRenew: Boolean = false,
+    @SerialName("provider") val provider: String? = null,
+    @SerialName("subscription_plans") val subscriptionPlan: SubscriptionPlanDto? = null
+)

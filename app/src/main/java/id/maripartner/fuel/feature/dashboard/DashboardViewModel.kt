@@ -116,7 +116,7 @@ class DashboardViewModel(
             // 5. Cek status Pro
             var isPro = false
             try {
-                val entitlementRes = subscriptionRepository.getMyEntitlement()
+                val entitlementRes = subscriptionRepository.getMyEntitlement(forceRefresh = true)
                 if (entitlementRes is AppResult.Success) {
                     isPro = entitlementRes.data.isPro
                 }

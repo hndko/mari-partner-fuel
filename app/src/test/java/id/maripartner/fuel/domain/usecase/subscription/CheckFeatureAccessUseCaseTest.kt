@@ -24,6 +24,7 @@ class CheckFeatureAccessUseCaseTest {
         }
 
         override suspend fun getCachedEntitlement(): UserEntitlement? = entitlement
+        override fun clearCache() {}
     }
 
     @Test
