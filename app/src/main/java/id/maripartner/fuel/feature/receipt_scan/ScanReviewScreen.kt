@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DirectionsCar
@@ -59,12 +60,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
 import id.maripartner.fuel.core.designsystem.component.FuelSweetAlertDialog
 import id.maripartner.fuel.core.designsystem.component.FuelTextField
 import id.maripartner.fuel.core.designsystem.component.SweetAlertType
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
+import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import id.maripartner.fuel.core.designsystem.component.ThousandSeparatorVisualTransformation
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -252,6 +255,15 @@ fun ScanReviewScreen(
                 }
             }
 
+            if (state.availableVehicles.size == 1) {
+                Text(
+                    text = "✓ Kendaraan utama aktif terpilih otomatis",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
+                    color = MariSuccess,
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                )
+            }
+
             // 5. Total Pembayaran (Rp) (Format otomatis pemisah ribuan)
             val formattedDisplay = state.totalAmountRaw.toLongOrNull()?.let {
                 CurrencyFormatter.formatIdr(it)
@@ -373,6 +385,16 @@ fun ScanReviewScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // 8.1 Nama Pengemudi / Shift
+            FuelTextField(
+                value = state.driverName,
+                onValueChange = { viewModel.onEvent(ReceiptScanUiEvent.DriverNameChanged(it)) },
+                label = "NAMA PENGEMUDI / SHIFT (OPSIONAL)",
+                placeholder = "misal: Budi (Shift Pagi)",
+                leadingIcon = Icons.Default.Badge,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             // 9. Catatan Tambahan
             OutlinedTextField(
                 value = state.notes,
@@ -409,5 +431,29 @@ fun ScanReviewScreen(
         dismissText = "Batal",
         onConfirm = { viewModel.onEvent(ReceiptScanUiEvent.ConfirmAiOptimization) },
         onDismiss = { viewModel.onEvent(ReceiptScanUiEvent.DismissAiConsent) }
+    )
+
+    // Modal Peringatan Odometer Mundur
+    FuelSweetAlertDialog(
+        show = state.showOdometerWarningDialog,
+        type = SweetAlertType.WARNING,
+        title = "Peringatan Odometer Mundur",
+        message = "Odometer yang Anda masukkan (${state.pendingOdometerValue?.toLong()} km) lebih rendah dari catatan terakhir kendaraan (${state.latestRecordedOdometer?.toLong() ?: 0} km).\n\nApakah spidometer telah diganti/reset, atau ingin memperbaiki angka?",
+        confirmText = "Tetap Simpan",
+        dismissText = "Perbaiki Angka",
+        onConfirm = { viewModel.onEvent(ReceiptScanUiEvent.ConfirmLowerOdometer) },
+        onDismiss = { viewModel.onEvent(ReceiptScanUiEvent.DismissOdometerWarning) }
+    )
+
+    // Modal Peringatan Transaksi Serupa / Duplikat
+    FuelSweetAlertDialog(
+        show = state.showDuplicateWarningDialog,
+        type = SweetAlertType.WARNING,
+        title = "Peringatan Transaksi Serupa",
+        message = state.duplicateWarningMessage ?: "Ditemukan transaksi serupa di waktu berdekatan. Apakah Anda yakin ingin tetap menyimpan?",
+        confirmText = "Tetap Simpan",
+        dismissText = "Periksa Kembali",
+        onConfirm = { viewModel.onEvent(ReceiptScanUiEvent.ConfirmDuplicateSubmission) },
+        onDismiss = { viewModel.onEvent(ReceiptScanUiEvent.DismissDuplicateWarning) }
     )
 }

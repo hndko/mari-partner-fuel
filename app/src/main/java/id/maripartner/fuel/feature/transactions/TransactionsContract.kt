@@ -32,6 +32,7 @@ data class TransactionFormState(
     val fuelType: String = "",
     val odometerKmRaw: String = "",
     val notes: String = "",
+    val driverName: String = "",
     val scanStatus: String = "manual",
     val isScanningOcr: Boolean = false,
     val receiptBytes: ByteArray? = null,
@@ -40,6 +41,11 @@ data class TransactionFormState(
     val existingReceiptUrl: String? = null,
     val removeReceipt: Boolean = false,
     val discrepancyWarning: String? = null,
+    val showOdometerWarningDialog: Boolean = false,
+    val pendingOdometerValue: Double? = null,
+    val latestRecordedOdometer: Double? = null,
+    val showDuplicateWarningDialog: Boolean = false,
+    val duplicateWarningMessage: String? = null,
     val isSubmitting: Boolean = false,
     val isSuccess: Boolean = false,
     val vehicleError: String? = null,
@@ -84,6 +90,11 @@ sealed interface TransactionFormEvent {
     data class FuelTypeChanged(val type: String) : TransactionFormEvent
     data class OdometerChanged(val raw: String) : TransactionFormEvent
     data class NotesChanged(val notes: String) : TransactionFormEvent
+    data class DriverNameChanged(val driverName: String) : TransactionFormEvent
+    data object ConfirmLowerOdometer : TransactionFormEvent
+    data object DismissOdometerWarning : TransactionFormEvent
+    data object ConfirmDuplicateSubmission : TransactionFormEvent
+    data object DismissDuplicateWarning : TransactionFormEvent
     data class ReceiptPicked(val bytes: ByteArray, val mimeType: String) : TransactionFormEvent
     data object RemoveReceipt : TransactionFormEvent
     data object Submit : TransactionFormEvent

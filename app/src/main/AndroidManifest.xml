@@ -54,6 +54,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- AppWidget Provider untuk Widget Beranda Android Cepat -->
+        <receiver
+            android:name=".core.widget.MariFuelAppWidgetProvider"
+            android:label="Ringkasan Pagu BBM &amp; Aksi Cepat"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/mari_fuel_widget_info" />
+        </receiver>
+
         <!-- FileProvider untuk ekspor dan pembagian dokumen PDF resmi & CSV -->
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -42,6 +42,9 @@ sealed class NavRoute(val route: String) {
     // Trip & Fuel Cost Calculator
     data object TripCalculator : NavRoute("trip_calculator")
 
+    // Automotive Night HUD & Windshield Reflector
+    data object NightHud : NavRoute("night_hud")
+
     // Pro Subscription & Checkout
     data object ProPlans : NavRoute("pro_plans")
     data object Checkout : NavRoute("checkout/{planId}") {

@@ -68,6 +68,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import id.maripartner.fuel.feature.analytics.component.DriverMarginDialog
 import id.maripartner.fuel.feature.analytics.component.EcoDriverCard
+import id.maripartner.fuel.feature.analytics.component.FleetDriverShiftCard
+import id.maripartner.fuel.feature.analytics.component.FuelShockSimulatorCard
+import id.maripartner.fuel.feature.analytics.component.SpbuBenchmarkCard
 import id.maripartner.fuel.feature.analytics.component.VehicleTcoCard
 import id.maripartner.fuel.core.common.result.UiState
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
@@ -311,6 +314,27 @@ fun AnalyticsScreen(
                                 onUpgradeProClick = onNavigateToProPlans
                             )
 
+                            // D.3 Indeks Performa & Efisiensi SPBU (Fitur Pro Eksklusif)
+                            SpbuBenchmarkCard(
+                                report = uiState.spbuBenchmarkReport,
+                                isProUser = uiState.isProUser,
+                                onUpgradeProClick = onNavigateToProPlans
+                            )
+
+                            // D.4 Simulator Kenaikan Harga BBM (What-If Shock)
+                            FuelShockSimulatorCard(
+                                result = uiState.fuelShockSimulationResult,
+                                selectedHike = uiState.simulatedPriceHike,
+                                onHikeSelected = { viewModel.onEvent(AnalyticsUiEvent.UpdateSimulatedPriceHike(it)) }
+                            )
+
+                            // D.5 Logbook Shift Pengemudi Armada (Fitur Pro Eksklusif)
+                            FleetDriverShiftCard(
+                                report = uiState.fleetDriverReport,
+                                isProUser = uiState.isProUser,
+                                onUpgradeProClick = onNavigateToProPlans
+                            )
+
                             Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
@@ -367,6 +391,27 @@ fun AnalyticsScreen(
                                 isProUser = uiState.isProUser,
                                 isExporting = uiState.isExportingCertificate,
                                 onExportCertificateClick = { viewModel.onEvent(AnalyticsUiEvent.ExportEcoCertificate) },
+                                onUpgradeProClick = onNavigateToProPlans
+                            )
+
+                            // D.3 Indeks Performa & Efisiensi SPBU (Fitur Pro Eksklusif)
+                            SpbuBenchmarkCard(
+                                report = uiState.spbuBenchmarkReport,
+                                isProUser = uiState.isProUser,
+                                onUpgradeProClick = onNavigateToProPlans
+                            )
+
+                            // D.4 Simulator Kenaikan Harga BBM (What-If Shock)
+                            FuelShockSimulatorCard(
+                                result = uiState.fuelShockSimulationResult,
+                                selectedHike = uiState.simulatedPriceHike,
+                                onHikeSelected = { viewModel.onEvent(AnalyticsUiEvent.UpdateSimulatedPriceHike(it)) }
+                            )
+
+                            // D.5 Logbook Shift Pengemudi Armada (Fitur Pro Eksklusif)
+                            FleetDriverShiftCard(
+                                report = uiState.fleetDriverReport,
+                                isProUser = uiState.isProUser,
                                 onUpgradeProClick = onNavigateToProPlans
                             )
 

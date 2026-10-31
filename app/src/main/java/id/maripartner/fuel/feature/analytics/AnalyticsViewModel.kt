@@ -21,11 +21,14 @@ import id.maripartner.fuel.domain.repository.AuthRepository
 import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.MaintenanceReminderRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
+import id.maripartner.fuel.domain.usecase.analytics.BenchmarkSpbuEfficiencyUseCase
 import id.maripartner.fuel.domain.usecase.analytics.CalculateFuelEfficiencyUseCase
 import id.maripartner.fuel.domain.usecase.analytics.CalculateVehicleTcoUseCase
 import id.maripartner.fuel.domain.usecase.analytics.DetectFuelConsumptionAnomalyUseCase
 import id.maripartner.fuel.domain.usecase.analytics.GenerateEcoScoreUseCase
 import id.maripartner.fuel.domain.usecase.analytics.GetAnalyticsReportUseCase
+import id.maripartner.fuel.domain.usecase.analytics.GetFleetDriverReportUseCase
+import id.maripartner.fuel.domain.usecase.analytics.SimulateFuelPriceShockUseCase
 import id.maripartner.fuel.domain.usecase.export.GenerateEcoCertificatePdfUseCase
 import id.maripartner.fuel.domain.usecase.subscription.GetMyEntitlementsUseCase
 import kotlinx.coroutines.Dispatchers
@@ -54,7 +57,10 @@ class AnalyticsViewModel(
     private val getMyEntitlementsUseCase: GetMyEntitlementsUseCase = GetMyEntitlementsUseCase(),
     private val calculateVehicleTcoUseCase: CalculateVehicleTcoUseCase = CalculateVehicleTcoUseCase(),
     private val generateEcoScoreUseCase: GenerateEcoScoreUseCase = GenerateEcoScoreUseCase(),
-    private val generateEcoCertificatePdfUseCase: GenerateEcoCertificatePdfUseCase = GenerateEcoCertificatePdfUseCase()
+    private val generateEcoCertificatePdfUseCase: GenerateEcoCertificatePdfUseCase = GenerateEcoCertificatePdfUseCase(),
+    private val benchmarkSpbuEfficiencyUseCase: BenchmarkSpbuEfficiencyUseCase = BenchmarkSpbuEfficiencyUseCase(),
+    private val simulateFuelPriceShockUseCase: SimulateFuelPriceShockUseCase = SimulateFuelPriceShockUseCase(),
+    private val getFleetDriverReportUseCase: GetFleetDriverReportUseCase = GetFleetDriverReportUseCase()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
@@ -91,6 +97,35 @@ class AnalyticsViewModel(
             }
             is AnalyticsUiEvent.SetShowTcoMarginDialog -> {
                 _uiState.update { it.copy(showTcoMarginDialog = event.show) }
+            }
+            is AnalyticsUiEvent.UpdateSimulatedPriceHike -> {
+                _uiState.update { current ->
+                    val updatedShock = current.reportState.let { r ->
+                        if (r is UiState.Success) {
+                            simulateFuelPriceShockUseCase(
+                                monthlyLiters = r.data.totalVolumeLiters,
+                                currentMonthlyCostIdr = r.data.totalExpenseIdr,
+                                priceHikePerLiter = event.hike,
+                                avgCostPerKmIdr = current.vehicleTcoResult?.fuelCostPerKm ?: 750.0
+                            )
+                        } else {
+                            current.fuelShockSimulationResult
+                        }
+                    }
+                    current.copy(
+                        simulatedPriceHike = event.hike,
+                        fuelShockSimulationResult = updatedShock
+                    )
+                }
+            }
+            is AnalyticsUiEvent.SetShowSpbuBenchmarkDialog -> {
+                _uiState.update { it.copy(showSpbuBenchmarkDialog = event.show) }
+            }
+            is AnalyticsUiEvent.SetShowFuelShockDialog -> {
+                _uiState.update { it.copy(showFuelShockDialog = event.show) }
+            }
+            is AnalyticsUiEvent.SetShowFleetDriverDialog -> {
+                _uiState.update { it.copy(showFleetDriverDialog = event.show) }
             }
             is AnalyticsUiEvent.ExportEcoCertificate -> exportEcoCertificate()
             is AnalyticsUiEvent.ClearExportedCertificate -> _uiState.update { it.copy(exportedCertificateFile = null) }
@@ -199,6 +234,27 @@ class AnalyticsViewModel(
                 )
             }
 
+            // Indeks Performa SPBU, Simulasi Kenaikan Harga BBM, & Logbook Pengemudi
+            val spbuBenchmark = if (vehicleTransactions.isNotEmpty()) {
+                benchmarkSpbuEfficiencyUseCase(
+                    transactions = vehicleTransactions,
+                    baselineKmPerLiter = 0.0
+                )
+            } else null
+
+            val totalLiters = vehicleTransactions.mapNotNull { it.volumeLiters }.sum()
+            val totalCost = vehicleTransactions.sumOf { it.totalAmountIdr }
+            val fuelShock = simulateFuelPriceShockUseCase(
+                monthlyLiters = totalLiters,
+                currentMonthlyCostIdr = totalCost,
+                priceHikePerLiter = currentState.simulatedPriceHike,
+                avgCostPerKmIdr = vehicleTcoResult?.fuelCostPerKm ?: 750.0
+            )
+
+            val fleetReport = if (vehicleTransactions.isNotEmpty()) {
+                getFleetDriverReportUseCase(vehicleTransactions)
+            } else null
+
             val result = getAnalyticsReportUseCase(
                 period = currentState.selectedPeriod,
                 customStartDate = currentState.customStartDate,
@@ -221,6 +277,9 @@ class AnalyticsViewModel(
                             fuelAnomalyResult = anomalyResult,
                             vehicleTcoResult = vehicleTcoResult,
                             ecoDriverReport = ecoDriverReport,
+                            spbuBenchmarkReport = spbuBenchmark,
+                            fuelShockSimulationResult = fuelShock,
+                            fleetDriverReport = fleetReport,
                             isProUser = isPro,
                             isRefreshing = false,
                             errorMessage = null

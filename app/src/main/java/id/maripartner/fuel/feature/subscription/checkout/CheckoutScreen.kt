@@ -324,6 +324,8 @@ private fun PlanSummaryCard(plan: SubscriptionPlan) {
                 listOf(
                     "Kendaraan armada tanpa batas & 100 scan AI/bln",
                     "Matriks Biaya Riil per Km (TCO) & Kalkulator Margin Driver",
+                    "Indeks Performa & Efisiensi SPBU (Peringkat SPBU Teririt)",
+                    "Logbook Shift Pengemudi Armada & Widget Layar Utama",
                     "Sertifikat Digital Eco-Driver & Rekap Emisi CO₂ (PDF)",
                     "Ekspor Laporan PDF Formal Ber-Kop (Reimbursement & Pajak)",
                     "Pagu Anggaran BBM Pro & Radar Komparasi Harga SPBU"

@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Speed
@@ -134,6 +135,7 @@ fun DashboardScreen(
     onNavigateToVehicles: () -> Unit = {},
     onNavigateToAnalytics: () -> Unit = {},
     onNavigateToTripCalculator: () -> Unit = {},
+    onNavigateToNightHud: () -> Unit = {},
     viewModel: DashboardViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
@@ -298,6 +300,7 @@ fun DashboardScreen(
                     onNavigateToReminders = onNavigateToReminders,
                     onNavigateToAnalytics = onNavigateToAnalytics,
                     onNavigateToTripCalculator = onNavigateToTripCalculator,
+                    onNavigateToNightHud = onNavigateToNightHud,
                     onOpenFuelPriceRadar = { viewModel.onEvent(DashboardUiEvent.SetShowFuelPriceRadar(true)) }
                 )
 
@@ -580,6 +583,7 @@ private fun QuickActionHubSection(
     onNavigateToReminders: () -> Unit,
     onNavigateToAnalytics: () -> Unit,
     onNavigateToTripCalculator: () -> Unit,
+    onNavigateToNightHud: () -> Unit = {},
     onOpenFuelPriceRadar: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -720,6 +724,26 @@ private fun QuickActionHubSection(
                 isPrimary = false,
                 onClick = onOpenFuelPriceRadar,
                 modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Baris 4: Automotive Night HUD Mode
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ActionCardItem(
+                title = "HUD Kaca Depan",
+                subtitle = "Mode malam pantul kaca mobil",
+                icon = Icons.Default.Nightlight,
+                iconBgColor = Color(0xFFF3E8FF),
+                iconTintColor = Color(0xFF9333EA),
+                badgeText = "Night HUD",
+                badgeBgColor = Color(0xFFF3E8FF),
+                badgeTextColor = Color(0xFF9333EA),
+                isPrimary = false,
+                onClick = onNavigateToNightHud,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

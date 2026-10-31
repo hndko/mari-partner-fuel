@@ -10,7 +10,9 @@ import id.maripartner.fuel.data.repository.VehicleRepositoryImpl
 import id.maripartner.fuel.domain.model.FuelTransaction
 import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
+import id.maripartner.fuel.domain.usecase.analytics.GetFleetDriverReportUseCase
 import id.maripartner.fuel.domain.usecase.ocr.ProcessReceiptOcrUseCase
+import id.maripartner.fuel.domain.usecase.transaction.DetectDuplicateTransactionUseCase
 import id.maripartner.fuel.domain.usecase.transaction.EstimateFuelCalculationUseCase
 import id.maripartner.fuel.domain.usecase.transaction.SaveTransactionUseCase
 import id.maripartner.fuel.domain.usecase.vehicle.GetVehiclesUseCase
@@ -29,7 +31,9 @@ class TransactionFormViewModel(
     private val getVehiclesUseCase: GetVehiclesUseCase = GetVehiclesUseCase(vehicleRepository),
     private val calculator: EstimateFuelCalculationUseCase = EstimateFuelCalculationUseCase(),
     private val processReceiptOcrUseCase: ProcessReceiptOcrUseCase = ProcessReceiptOcrUseCase(),
-    private val storageManager: ReceiptStorageManager = ReceiptStorageManager()
+    private val storageManager: ReceiptStorageManager = ReceiptStorageManager(),
+    private val detectDuplicateTransactionUseCase: DetectDuplicateTransactionUseCase = DetectDuplicateTransactionUseCase(),
+    private val getFleetDriverReportUseCase: GetFleetDriverReportUseCase = GetFleetDriverReportUseCase()
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(TransactionFormState())
@@ -50,15 +54,17 @@ class TransactionFormViewModel(
                         } else {
                             current.vehicleId
                         }
+                        val selectedV = activeVehicles.firstOrNull { it.id == initialVehicleId }
                         val initialFuel = if (current.fuelType.isBlank()) {
-                            activeVehicles.firstOrNull { it.id == initialVehicleId }?.defaultFuelType.orEmpty()
+                            selectedV?.defaultFuelType.orEmpty()
                         } else {
                             current.fuelType
                         }
                         current.copy(
                             availableVehicles = activeVehicles,
                             vehicleId = initialVehicleId,
-                            fuelType = initialFuel
+                            fuelType = initialFuel,
+                            latestRecordedOdometer = selectedV?.lastOdometerKm
                         )
                     }
                 }
@@ -72,6 +78,9 @@ class TransactionFormViewModel(
             when (val result = transactionRepository.getTransactionById(transactionId)) {
                 is AppResult.Success -> {
                     val tx = result.data
+                    val extractedDriver = getFleetDriverReportUseCase.extractDriverName(tx.notes).orEmpty()
+                    val cleanNotes = tx.notes?.let { getFleetDriverReportUseCase.formatDriverTag("", it) }.orEmpty()
+
                     _formState.update {
                         it.copy(
                             id = tx.id,
@@ -83,7 +92,8 @@ class TransactionFormViewModel(
                             stationName = tx.stationName.orEmpty(),
                             fuelType = tx.fuelType.orEmpty(),
                             odometerKmRaw = tx.odometerKm?.toString().orEmpty(),
-                            notes = tx.notes.orEmpty(),
+                            notes = cleanNotes,
+                            driverName = extractedDriver,
                             scanStatus = tx.scanStatus,
                             existingStoragePath = tx.storagePath,
                             existingReceiptUrl = tx.signedReceiptUrl
@@ -107,6 +117,7 @@ class TransactionFormViewModel(
                     it.copy(
                         vehicleId = event.vehicleId,
                         fuelType = if (it.fuelType.isBlank()) defaultFuel else it.fuelType,
+                        latestRecordedOdometer = vehicle?.lastOdometerKm,
                         vehicleError = null
                     )
                 }
@@ -138,6 +149,23 @@ class TransactionFormViewModel(
             }
             is TransactionFormEvent.NotesChanged -> {
                 _formState.update { it.copy(notes = event.notes) }
+            }
+            is TransactionFormEvent.DriverNameChanged -> {
+                _formState.update { it.copy(driverName = event.driverName) }
+            }
+            is TransactionFormEvent.ConfirmLowerOdometer -> {
+                _formState.update { it.copy(showOdometerWarningDialog = false) }
+                submit(ignoreOdometerWarning = true)
+            }
+            is TransactionFormEvent.DismissOdometerWarning -> {
+                _formState.update { it.copy(showOdometerWarningDialog = false) }
+            }
+            is TransactionFormEvent.ConfirmDuplicateSubmission -> {
+                _formState.update { it.copy(showDuplicateWarningDialog = false) }
+                submit(ignoreDuplicateWarning = true)
+            }
+            is TransactionFormEvent.DismissDuplicateWarning -> {
+                _formState.update { it.copy(showDuplicateWarningDialog = false) }
             }
             is TransactionFormEvent.ReceiptPicked -> {
                 val validation = storageManager.validateReceiptFile(event.bytes.size.toLong(), event.mimeType)
@@ -231,7 +259,10 @@ class TransactionFormViewModel(
         }
     }
 
-    private fun submit() {
+    private fun submit(
+        ignoreOdometerWarning: Boolean = false,
+        ignoreDuplicateWarning: Boolean = false
+    ) {
         val s = _formState.value
         if (s.isSubmitting) return
 
@@ -250,6 +281,23 @@ class TransactionFormViewModel(
         val price = s.pricePerLiterRaw.trim().replace(',', '.').toDoubleOrNull()
         val odo = s.odometerKmRaw.trim().replace(',', '.').toDoubleOrNull()
 
+        // 1. Validasi Odometer Mundur (Monotonic Guard)
+        val selectedVehicle = s.availableVehicles.firstOrNull { it.id == s.vehicleId }
+        val lastOdo = selectedVehicle?.lastOdometerKm ?: s.latestRecordedOdometer
+        if (!ignoreOdometerWarning && odo != null && lastOdo != null && odo < lastOdo) {
+            _formState.update {
+                it.copy(
+                    showOdometerWarningDialog = true,
+                    pendingOdometerValue = odo,
+                    latestRecordedOdometer = lastOdo
+                )
+            }
+            return
+        }
+
+        // 2. Format Nama Pengemudi / Shift ke dalam Notes
+        val formattedNotes = getFleetDriverReportUseCase.formatDriverTag(s.driverName, s.notes)
+
         val transaction = FuelTransaction(
             id = s.id,
             vehicleId = s.vehicleId,
@@ -260,15 +308,46 @@ class TransactionFormViewModel(
             stationName = s.stationName.trim().takeIf { it.isNotBlank() },
             fuelType = s.fuelType.trim().takeIf { it.isNotBlank() },
             odometerKm = odo,
-            notes = s.notes.trim().takeIf { it.isNotBlank() },
+            notes = formattedNotes.trim().takeIf { it.isNotBlank() },
             scanStatus = s.scanStatus,
-            receiptFileId = null // Data transaksi disimpan murni string/angka tanpa file permanen di server
+            receiptFileId = null // Ephemeral: transaksi disimpan murni teks & angka
         )
 
+        // 3. Detektor Duplikasi Transaksi & Anti-Fraud
+        if (!ignoreDuplicateWarning) {
+            viewModelScope.launch {
+                val recentRes = transactionRepository.getTransactions(
+                    filter = id.maripartner.fuel.domain.model.TransactionFilter(vehicleId = s.vehicleId),
+                    limit = 10
+                )
+                if (recentRes is AppResult.Success) {
+                    val duplicateCheck = detectDuplicateTransactionUseCase(transaction, recentRes.data)
+                    if (duplicateCheck.isDuplicate) {
+                        _formState.update {
+                            it.copy(
+                                showDuplicateWarningDialog = true,
+                                duplicateWarningMessage = duplicateCheck.message
+                            )
+                        }
+                        return@launch
+                    }
+                }
+                executeSave(transaction, odo, selectedVehicle)
+            }
+            return
+        }
+
+        executeSave(transaction, odo, selectedVehicle)
+    }
+
+    private fun executeSave(
+        transaction: FuelTransaction,
+        odo: Double?,
+        selectedVehicle: id.maripartner.fuel.domain.model.Vehicle?
+    ) {
         _formState.update { it.copy(isSubmitting = true, errorMessage = null) }
 
         viewModelScope.launch {
-            // Foto struk hanya digunakan sementara untuk scan di HP, tidak diunggah ke storage server
             val result = saveTransactionUseCase(
                 transaction = transaction,
                 receiptBytes = null,
@@ -278,6 +357,16 @@ class TransactionFormViewModel(
 
             when (result) {
                 is AppResult.Success -> {
+                    // Update odometer terbaru kendaraan & perbarui widget
+                    if (odo != null && selectedVehicle != null && odo > (selectedVehicle.lastOdometerKm ?: 0.0)) {
+                        vehicleRepository.updateVehicle(selectedVehicle.copy(lastOdometerKm = odo))
+                    }
+                    try {
+                        id.maripartner.fuel.core.widget.MariFuelAppWidgetProvider.updateAllWidgets(
+                            id.maripartner.fuel.MariPartnerFuelApp.appContext
+                        )
+                    } catch (_: Exception) {}
+
                     _formState.update { it.copy(isSubmitting = false, isSuccess = true) }
                 }
                 is AppResult.Error -> {

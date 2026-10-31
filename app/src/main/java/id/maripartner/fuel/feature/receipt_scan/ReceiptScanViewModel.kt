@@ -9,8 +9,10 @@ import id.maripartner.fuel.domain.model.FuelTransaction
 import id.maripartner.fuel.domain.model.ReceiptCandidateData
 import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
+import id.maripartner.fuel.domain.usecase.analytics.GetFleetDriverReportUseCase
 import id.maripartner.fuel.domain.usecase.ocr.ExtractReceiptWithAiUseCase
 import id.maripartner.fuel.domain.usecase.ocr.ProcessReceiptOcrUseCase
+import id.maripartner.fuel.domain.usecase.transaction.DetectDuplicateTransactionUseCase
 import id.maripartner.fuel.domain.usecase.transaction.EstimateFuelCalculationUseCase
 import id.maripartner.fuel.domain.usecase.transaction.SaveTransactionUseCase
 import id.maripartner.fuel.domain.usecase.vehicle.GetVehiclesUseCase
@@ -30,7 +32,9 @@ class ReceiptScanViewModel(
     private val transactionRepository: FuelTransactionRepository = FuelTransactionRepositoryImpl(),
     private val getVehiclesUseCase: GetVehiclesUseCase = GetVehiclesUseCase(vehicleRepository),
     private val saveTransactionUseCase: SaveTransactionUseCase = SaveTransactionUseCase(transactionRepository),
-    private val calculator: EstimateFuelCalculationUseCase = EstimateFuelCalculationUseCase()
+    private val calculator: EstimateFuelCalculationUseCase = EstimateFuelCalculationUseCase(),
+    private val detectDuplicateTransactionUseCase: DetectDuplicateTransactionUseCase = DetectDuplicateTransactionUseCase(),
+    private val getFleetDriverReportUseCase: GetFleetDriverReportUseCase = GetFleetDriverReportUseCase()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReceiptScanUiState())
@@ -53,9 +57,11 @@ class ReceiptScanViewModel(
                         } else {
                             current.selectedVehicleId
                         }
+                        val selectedV = vehicles.firstOrNull { it.id == defaultVehicleId }
                         current.copy(
                             availableVehicles = vehicles,
-                            selectedVehicleId = defaultVehicleId
+                            selectedVehicleId = defaultVehicleId,
+                            latestRecordedOdometer = selectedV?.lastOdometerKm
                         )
                     }
                 }
@@ -78,10 +84,12 @@ class ReceiptScanViewModel(
                 runLocalOcr()
             }
             is ReceiptScanUiEvent.ClearImage -> {
+                _uiState.value.selectedBitmap?.recycle()
                 _uiState.update {
                     ReceiptScanUiState(
                         availableVehicles = it.availableVehicles,
-                        selectedVehicleId = it.selectedVehicleId
+                        selectedVehicleId = it.selectedVehicleId,
+                        latestRecordedOdometer = it.latestRecordedOdometer
                     )
                 }
             }
@@ -99,7 +107,13 @@ class ReceiptScanViewModel(
                 _uiState.update { it.copy(showAiConsentDialog = false) }
             }
             is ReceiptScanUiEvent.VehicleSelected -> {
-                _uiState.update { it.copy(selectedVehicleId = event.vehicleId) }
+                val v = _uiState.value.availableVehicles.firstOrNull { it.id == event.vehicleId }
+                _uiState.update {
+                    it.copy(
+                        selectedVehicleId = event.vehicleId,
+                        latestRecordedOdometer = v?.lastOdometerKm
+                    )
+                }
             }
             is ReceiptScanUiEvent.TotalAmountChanged -> {
                 val clean = event.text.filter { it.isDigit() }
@@ -125,6 +139,23 @@ class ReceiptScanViewModel(
             }
             is ReceiptScanUiEvent.NotesChanged -> {
                 _uiState.update { it.copy(notes = event.text) }
+            }
+            is ReceiptScanUiEvent.DriverNameChanged -> {
+                _uiState.update { it.copy(driverName = event.text) }
+            }
+            is ReceiptScanUiEvent.ConfirmLowerOdometer -> {
+                _uiState.update { it.copy(showOdometerWarningDialog = false) }
+                confirmAndSave(ignoreOdometerWarning = true)
+            }
+            is ReceiptScanUiEvent.DismissOdometerWarning -> {
+                _uiState.update { it.copy(showOdometerWarningDialog = false) }
+            }
+            is ReceiptScanUiEvent.ConfirmDuplicateSubmission -> {
+                _uiState.update { it.copy(showDuplicateWarningDialog = false) }
+                confirmAndSave(ignoreDuplicateWarning = true)
+            }
+            is ReceiptScanUiEvent.DismissDuplicateWarning -> {
+                _uiState.update { it.copy(showDuplicateWarningDialog = false) }
             }
             is ReceiptScanUiEvent.ConfirmAndSave -> {
                 confirmAndSave()
@@ -239,7 +270,10 @@ class ReceiptScanViewModel(
         }
     }
 
-    private fun confirmAndSave() {
+    private fun confirmAndSave(
+        ignoreOdometerWarning: Boolean = false,
+        ignoreDuplicateWarning: Boolean = false
+    ) {
         val s = _uiState.value
         if (s.isSubmittingTransaction) return
 
@@ -258,11 +292,29 @@ class ReceiptScanViewModel(
         val price = s.pricePerLiterRaw.trim().replace(',', '.').toDoubleOrNull()
         val odo = s.odometerKmRaw.trim().replace(',', '.').toDoubleOrNull()
 
+        val selectedVehicle = s.availableVehicles.firstOrNull { it.id == s.selectedVehicleId }
+        val lastOdo = selectedVehicle?.lastOdometerKm ?: s.latestRecordedOdometer
+
+        // 1. Validasi Odometer Mundur (Monotonic Guard)
+        if (!ignoreOdometerWarning && odo != null && lastOdo != null && odo < lastOdo) {
+            _uiState.update {
+                it.copy(
+                    showOdometerWarningDialog = true,
+                    pendingOdometerValue = odo,
+                    latestRecordedOdometer = lastOdo
+                )
+            }
+            return
+        }
+
         // Gabungkan tanggal dan waktu menjadi Instant
         val dateTime = s.transactionDate.atTime(s.transactionTime)
         val instant = dateTime.atZone(ZoneId.systemDefault()).toInstant()
 
         val scanStatus = if (usedCloudAi) "ai_review" else "ocr_review"
+
+        // Format nama pengemudi ke dalam catatan
+        val formattedNotes = getFleetDriverReportUseCase.formatDriverTag(s.driverName, s.notes)
 
         val transaction = FuelTransaction(
             vehicleId = s.selectedVehicleId,
@@ -273,15 +325,46 @@ class ReceiptScanViewModel(
             stationName = s.stationName.trim().takeIf { it.isNotBlank() },
             fuelType = s.fuelType.trim().takeIf { it.isNotBlank() },
             odometerKm = odo,
-            notes = s.notes.trim().takeIf { it.isNotBlank() },
+            notes = formattedNotes.trim().takeIf { it.isNotBlank() },
             scanStatus = scanStatus
         )
 
+        // 2. Detektor Duplikasi Transaksi & Anti-Fraud
+        if (!ignoreDuplicateWarning) {
+            viewModelScope.launch {
+                val recentRes = transactionRepository.getTransactions(
+                    filter = id.maripartner.fuel.domain.model.TransactionFilter(vehicleId = s.selectedVehicleId),
+                    limit = 10
+                )
+                if (recentRes is AppResult.Success) {
+                    val duplicateCheck = detectDuplicateTransactionUseCase(transaction, recentRes.data)
+                    if (duplicateCheck.isDuplicate) {
+                        _uiState.update {
+                            it.copy(
+                                showDuplicateWarningDialog = true,
+                                duplicateWarningMessage = duplicateCheck.message
+                            )
+                        }
+                        return@launch
+                    }
+                }
+                executeSave(transaction, odo, selectedVehicle, s.selectedBitmap)
+            }
+            return
+        }
+
+        executeSave(transaction, odo, selectedVehicle, s.selectedBitmap)
+    }
+
+    private fun executeSave(
+        transaction: FuelTransaction,
+        odo: Double?,
+        selectedVehicle: id.maripartner.fuel.domain.model.Vehicle?,
+        bitmapToRecycle: android.graphics.Bitmap?
+    ) {
         _uiState.update { it.copy(isSubmittingTransaction = true, errorMessage = null) }
 
         viewModelScope.launch {
-            // Foto struk hanya bersifat ephemeral untuk pemindaian teks di perangkat.
-            // Transaksi disimpan murni berbasis nilai string & angka tanpa menyimpan file permanen di storage server.
             val result = saveTransactionUseCase(
                 transaction = transaction,
                 receiptBytes = null,
@@ -291,7 +374,17 @@ class ReceiptScanViewModel(
 
             when (result) {
                 is AppResult.Success -> {
-                    s.selectedBitmap?.recycle()
+                    // Update odometer terbaru & sinkronkan widget
+                    if (odo != null && selectedVehicle != null && odo > (selectedVehicle.lastOdometerKm ?: 0.0)) {
+                        vehicleRepository.updateVehicle(selectedVehicle.copy(lastOdometerKm = odo))
+                    }
+                    try {
+                        id.maripartner.fuel.core.widget.MariFuelAppWidgetProvider.updateAllWidgets(
+                            id.maripartner.fuel.MariPartnerFuelApp.appContext
+                        )
+                    } catch (_: Exception) {}
+
+                    bitmapToRecycle?.recycle()
                     _uiState.update {
                         it.copy(
                             isSubmittingTransaction = false,
@@ -311,5 +404,10 @@ class ReceiptScanViewModel(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _uiState.value.selectedBitmap?.recycle()
     }
 }

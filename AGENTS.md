@@ -263,20 +263,22 @@ mari-partner-fuel/
 │       │   │   │   │   └── theme/        # Color, Type, Shape, Theme (Light & Dark)
 │       │   │   │   ├── location/         # SpbuDirectory, SpbuProximityManager (offline geofence ~250m)
 │       │   │   │   ├── navigation/       # NavRoute, BottomNavItem, AppBottomBar, AppNavHost, AuthGuard
-│       │   │   │   └── security/         # BiometricAuthManager, KeystoreManager
+│       │   │   │   ├── security/         # BiometricAuthManager, KeystoreManager
+│       │   │   │   └── widget/           # MariFuelAppWidgetProvider (RemoteViews Android Home Screen Quick Widget)
 │       │   │   ├── data/
 │       │   │   │   ├── local/            # DataStore, Preferences (FuelBudgetPreferences), Cache
 │       │   │   │   ├── ocr/              # Google ML Kit Text Recognition Engine
 │       │   │   │   ├── remote/           # Supabase Client Provider, Edge Function Callers
 │       │   │   │   └── repository/       # Repository Implementations
 │       │   │   ├── domain/
-│       │   │   │   ├── model/            # Vehicle, FuelTransaction, FuelBudget, VehicleTcoResult, EcoDriverReport, etc.
+│       │   │   │   ├── model/            # Vehicle, FuelTransaction, FuelBudget, VehicleTcoResult, SpbuBenchmark, FuelShock, etc.
 │       │   │   │   ├── repository/       # Repository Interfaces
-│       │   │   │   └── usecase/          # Pure Business Rules (TCO, Eco-Score, Budget, Arbitrage, PDF Export)
+│       │   │   │   └── usecase/          # Pure Business Rules (TCO, Eco-Score, Budget, SPBU Benchmark, Price Shock, Anti-Fraud)
 │       │   │   └── feature/
-│       │   │       ├── analytics/        # AnalyticsScreen, AnalyticsViewModel
+│       │   │       ├── analytics/        # AnalyticsScreen, AnalyticsViewModel, SPBU Benchmark & Fuel Shock Cards
 │       │   │       ├── auth/             # LoginScreen, RegisterScreen, AuthViewModel
 │       │   │       ├── dashboard/        # DashboardScreen, DashboardViewModel
+│       │   │       ├── hud/              # NightHudScreen (OLED Black HUD & Horizontal Windshield Reflector)
 │       │   │       ├── owner/            # OwnerConsoleScreen, multi-tab console (Dashboard, Plans, Users, Transactions)
 │       │   │       ├── profile/          # ProfileScreen, EditProfileScreen, ProfileViewModel
 │       │   │       ├── receipt_scan/     # CameraScanScreen, ScanReviewScreen, OcrViewModel

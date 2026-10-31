@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Info
@@ -74,6 +75,8 @@ import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelCard
 import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
 import id.maripartner.fuel.core.designsystem.component.FuelSecondaryButton
+import id.maripartner.fuel.core.designsystem.component.FuelSweetAlertDialog
+import id.maripartner.fuel.core.designsystem.component.SweetAlertType
 import id.maripartner.fuel.core.designsystem.component.FuelTextField
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
 import id.maripartner.fuel.core.designsystem.component.ThousandSeparatorVisualTransformation
@@ -82,6 +85,7 @@ import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
 import id.maripartner.fuel.core.designsystem.theme.MariDanger
 import id.maripartner.fuel.core.designsystem.theme.MariMutedLight
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
+import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import id.maripartner.fuel.core.designsystem.theme.MariTextLight
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -386,6 +390,15 @@ fun TransactionFormScreen(
                                 }
                             }
 
+                            if (state.availableVehicles.size == 1) {
+                                Text(
+                                    text = "✓ Kendaraan utama aktif terpilih otomatis",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
+                                    color = MariSuccess,
+                                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                                )
+                            }
+
                             // Banner informatif jika kendaraan belum ada sama sekali
                             if (state.availableVehicles.isEmpty()) {
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -621,6 +634,16 @@ fun TransactionFormScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
 
+                        // I. Nama Pengemudi / Shift (Opsional)
+                        FuelTextField(
+                            value = state.driverName,
+                            onValueChange = { viewModel.onEvent(TransactionFormEvent.DriverNameChanged(it)) },
+                            label = "NAMA PENGEMUDI / SHIFT (OPSIONAL)",
+                            placeholder = "Contoh: Budi (Shift Pagi)",
+                            leadingIcon = Icons.Default.Badge,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
                         // I. Catatan Tambahan (Opsional)
                         FuelTextField(
                             value = state.notes,
@@ -719,6 +742,30 @@ fun TransactionFormScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
+
+            // Dialog Konfirmasi Odometer Mundur
+            FuelSweetAlertDialog(
+                show = state.showOdometerWarningDialog,
+                title = "Peringatan Odometer Mundur",
+                message = "Odometer yang Anda masukkan (${state.pendingOdometerValue?.toLong()} km) lebih rendah dari catatan terakhir kendaraan (${state.latestRecordedOdometer?.toLong() ?: 0} km).\n\nApakah spidometer telah diganti/reset, atau ingin memperbaiki angka?",
+                confirmText = "Tetap Simpan",
+                dismissText = "Perbaiki Angka",
+                type = SweetAlertType.WARNING,
+                onConfirm = { viewModel.onEvent(TransactionFormEvent.ConfirmLowerOdometer) },
+                onDismiss = { viewModel.onEvent(TransactionFormEvent.DismissOdometerWarning) }
+            )
+
+            // Dialog Peringatan Transaksi Serupa / Duplikat
+            FuelSweetAlertDialog(
+                show = state.showDuplicateWarningDialog,
+                title = "Peringatan Transaksi Serupa",
+                message = state.duplicateWarningMessage ?: "Ditemukan transaksi serupa di waktu berdekatan. Apakah Anda yakin ingin tetap menyimpan?",
+                confirmText = "Tetap Simpan",
+                dismissText = "Periksa Kembali",
+                type = SweetAlertType.WARNING,
+                onConfirm = { viewModel.onEvent(TransactionFormEvent.ConfirmDuplicateSubmission) },
+                onDismiss = { viewModel.onEvent(TransactionFormEvent.DismissDuplicateWarning) }
+            )
         }
     }
 }

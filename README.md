@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase Backend" />
   <img src="https://img.shields.io/badge/OCR-Google_ML_Kit-EA4335?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
   <img src="https://img.shields.io/badge/Payment-Play_Billing_%26_QRISpy-FF8F00?style=for-the-badge" alt="Payment Dual-Track" />
-  <img src="https://img.shields.io/badge/Tests-185_Passing-brightgreen?style=for-the-badge" alt="Tests 185 Passing" />
+  <img src="https://img.shields.io/badge/Tests-192_Passing-brightgreen?style=for-the-badge" alt="Tests 192 Passing" />
   <img src="https://img.shields.io/badge/Release_Candidate-RC--1-blue?style=for-the-badge" alt="Release Candidate RC-1" />
   <img src="https://img.shields.io/badge/Production_Readiness-Ready_for_Closed_Testing-3ECF8E?style=for-the-badge" alt="Ready for Closed Testing" />
   <img src="https://img.shields.io/badge/AAB_Size-7.57_MB-blue?style=for-the-badge" alt="AAB Size 7.57 MB" />
@@ -94,6 +94,29 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Algoritma gamifikasi efisiensi berkendara (skor 0-100) dan predikat kehormatan (*Eco Master Legend*, *Smart Eco Driver*, dsb) berdasarkan konsumsi riil terhadap standar emisi.
   - Menghitung estimasi reduksi jejak karbon ($kg\ CO_2$ terselamatkan).
   - Ekspor sertifikat digital format PDF formal resolusi tinggi dengan border emas zamrud, stempel verifikasi keaslian digital, dan tombol langsung bagikan via Android Sharesheet (WhatsApp, Email, Drive).
+- ⛽ **Indeks Performa & Efisiensi SPBU (*Fuel Quality Benchmark & Brand Comparison*) [Fitur Pro Eksklusif]**:
+  - Algoritma komparasi efisiensi konsumsi riil (km/liter) per SPBU dan per merek (Pertamina, Shell, BP, Vivo) berbasis data pengisian berurutan.
+  - Peringkat grade performa (A+, A, B, C) serta deviasi persentase terhadap baseline kendaraan untuk membuktikan SPBU/merek bahan bakar mana yang paling irit dan bertenaga.
+- 📈 **Simulator Lonjakan & Dampak Kenaikan Harga BBM (*Fuel Shock Simulator & What-If Price Hike*)**:
+  - Slider interaktif simulasi skenario kenaikan harga bensin (+Rp 500 s/d +Rp 5.000 per liter).
+  - Menghitung dampak lonjakan beban anggaran bulanan/tahunan secara otomatis dan menyajikan rekomendasi cerdas reduksi kilometer perjalanan untuk mempertahankan stabilitas kas.
+- 🛡️ **Detektor Transaksi Kembar & Anti-Fraud Pengeluaran (*Double Submission & Duplicate Guard*)**:
+  - Deteksi otomatis transaksi berulang dalam rentang waktu berdekatan (≤ 3 jam) pada kendaraan yang sama dengan nominal atau volume serupa.
+  - Dialog konfirmasi interaktif untuk mencegah ketidaksengajaan double-submit struk maupun klaim ganda pengeluaran bensin.
+- 🌙 **Mode Pengemudi Malam & Reflektor Kaca Depan Mobil (*Night HUD & High-Contrast Windshield Reflector*)**:
+  - Antarmuka OLED murni hitam pekat (`#000000`) dengan tipografi kontras tinggi bebas silau (amber, cyan, emerald) saat berkendara di malam hari.
+  - Menampilkan jam digital monospaced raksasa, sisa pagu anggaran BBM, dan efisiensi km/L terakhir.
+  - Tombol toggle mode pantul (*Mirror Flip Horizontal* `scaleX = -1f`) untuk meletakkan smartphone di dashboard mobil sebagai Head-Up Display (HUD) optik di kaca depan.
+- 📋 **Buku Log Shift Pengemudi & Handover Armada (*Fleet Driver Shift Logbook*) [Fitur Pro Eksklusif]**:
+  - Dukungan pencatatan nama pengemudi/shift saat pengisian BBM via format terstandar `[Driver: Nama]`.
+  - Rekapitulasi performa per driver (total pengeluaran, volume BBM, dan efisiensi rata-rata) untuk armada operasional kantor atau bisnis UMKM.
+- 📱 **Widget Cepat Layar Utama Android (*AppWidgetProvider RemoteViews Quick Action & Budget Widget*)**:
+  - Widget interaktif di home screen smartphone Android yang menampilkan sisa pagu anggaran BBM bulanan secara real-time.
+  - Akses cepat 1-tap: langsung membuka pemindai struk hybrid kamera atau formulir pencatatan transaksi tanpa membuka menu beranda.
+- 🔄 **Penyempurnaan Alur Transaksi & Validasi Data (Workflow Polish)**:
+  - *Monotonic Odometer Guard*: Peringatan konfirmasi jika angka odometer yang dimasukkan lebih rendah dari catatan terakhir kendaraan (`lastOdometerKm`) guna melindungi integritas hitungan km/liter.
+  - *Auto-Selection Armada Tunggal*: Jika akun hanya memiliki 1 unit kendaraan aktif, sistem otomatis memilih dan mengunci kendaraan pada form input, review scan struk, dan kalkulator trip.
+  - *Pembersihan Ephemeral Cache Struk*: Pembebasan memori bitmap struk kamera secara deterministik pada pembersihan UI dan siklus hidup ViewModel.
 - 💎 **Paket Free & Pro Otoritatif (Server-Side Entitlement)**:
   - Katalog paket backend resmi: **Mari Free** (Rp 0, 2 kendaraan, 5 AI scans/bln), **Mari Pro Bulanan** (Rp 29.000, kendaraan tanpa batas, 100 AI scans/bln), dan **Mari Pro Tahunan** (Rp 290.000, hemat 17%).
   - Layanan backend `get-my-entitlements` sebagai Single Source of Truth (klien Android tidak dapat memalsukan status `is_pro`).
@@ -122,7 +145,7 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Anti-Prompt Injection AI: isolasi ketat tag `<untrusted_receipt_text>` dan pembatasan maksimal 8.000 karakter pada teks struk mentah.
   - Sanitasi Error 500: pencegahan kebocoran nama tabel atau skema SQL pada respons API backend.
 - 🧪 **Pengujian Mutu Menyeluruh, Kinerja & Release Candidate (Tahap 9)**:
-  - 137 pengujian otomatis (100% pass rate di 29 test suites) mencakup unit test, regression prevention, dan stress test.
+  - 192 pengujian otomatis (100% pass rate) mencakup unit test, domain invariants, regression prevention, dan stress test.
   - Benchmark performa terukur: ekspor CSV 1.000 transaksi dalam 84 ms, agregasi finansial 1.000 data dalam 3 ms, efisiensi BBM sequential odometer dalam 54 ms.
   - Kepatuhan penuh Google Play Store: Target SDK API 35 (Android 15), Minimum SDK API 26 (Android 8.0), desugaring JDK Java 8+ / `java.time`, Least Privilege permissions, dan audit privasi.
 - 🛡️ **Kesiapan Produksi & Audit Rilis Final (Tahap 10)**:

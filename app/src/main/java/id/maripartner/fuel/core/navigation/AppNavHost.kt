@@ -18,6 +18,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import id.maripartner.fuel.data.repository.AuthRepositoryImpl
 import id.maripartner.fuel.feature.analytics.AnalyticsScreen
+import id.maripartner.fuel.feature.hud.NightHudScreen
 import id.maripartner.fuel.feature.owner.OwnerConsoleScreen
 import id.maripartner.fuel.feature.auth.AuthUiEvent
 import id.maripartner.fuel.feature.auth.AuthViewModel
@@ -187,6 +188,9 @@ fun AppNavHost(
                         },
                         onNavigateToTripCalculator = {
                             navController.navigate(NavRoute.TripCalculator.route)
+                        },
+                        onNavigateToNightHud = {
+                            navController.navigate(NavRoute.NightHud.route)
                         }
                     )
                 }
@@ -394,6 +398,15 @@ fun AppNavHost(
                         onNavigateToProPlans = {
                             navController.navigate(NavRoute.ProPlans.route)
                         }
+                    )
+                }
+            }
+
+            // Mode Pengemudi Malam & HUD Kaca Depan Mobil (OLED Pure Black & Optical Mirror)
+            composable(NavRoute.NightHud.route) {
+                AuthenticatedRoute(navController) {
+                    NightHudScreen(
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
             }

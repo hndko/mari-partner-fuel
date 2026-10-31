@@ -34,7 +34,13 @@ data class ReceiptScanUiState(
     val transactionTime: LocalTime = LocalTime.now(),
     val odometerKmRaw: String = "",
     val notes: String = "",
+    val driverName: String = "",
     val discrepancyWarning: String? = null,
+    val showOdometerWarningDialog: Boolean = false,
+    val pendingOdometerValue: Double? = null,
+    val latestRecordedOdometer: Double? = null,
+    val showDuplicateWarningDialog: Boolean = false,
+    val duplicateWarningMessage: String? = null,
     val showAiConsentDialog: Boolean = false,
     val isAiProcessing: Boolean = false,
     val isSubmittingTransaction: Boolean = false,
@@ -69,6 +75,11 @@ sealed interface ReceiptScanUiEvent {
     data class StationNameChanged(val text: String) : ReceiptScanUiEvent
     data class OdometerChanged(val text: String) : ReceiptScanUiEvent
     data class NotesChanged(val text: String) : ReceiptScanUiEvent
+    data class DriverNameChanged(val text: String) : ReceiptScanUiEvent
+    data object ConfirmLowerOdometer : ReceiptScanUiEvent
+    data object DismissOdometerWarning : ReceiptScanUiEvent
+    data object ConfirmDuplicateSubmission : ReceiptScanUiEvent
+    data object DismissDuplicateWarning : ReceiptScanUiEvent
     data object ConfirmAndSave : ReceiptScanUiEvent
     data object DismissMessage : ReceiptScanUiEvent
 }

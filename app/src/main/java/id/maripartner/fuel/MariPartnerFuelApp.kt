@@ -56,6 +56,9 @@ class MariPartnerFuelApp : Application() {
         lateinit var instance: MariPartnerFuelApp
             private set
 
+        val appContext: Context
+            get() = instance.applicationContext
+
         const val FUEL_REMINDER_CHANNEL_ID = "fuel_service_reminders"
         const val SUBSCRIPTION_CHANNEL_ID = "subscription_status_alerts"
         const val SPBU_PROXIMITY_CHANNEL_ID = "spbu_proximity_alerts"

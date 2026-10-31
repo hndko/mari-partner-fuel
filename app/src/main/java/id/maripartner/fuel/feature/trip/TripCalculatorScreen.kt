@@ -68,6 +68,7 @@ import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
 import id.maripartner.fuel.core.designsystem.theme.MariBorderLight
 import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
+import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import id.maripartner.fuel.core.designsystem.theme.MariMutedLight
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
 import id.maripartner.fuel.core.designsystem.theme.MariTextLight
@@ -375,9 +376,9 @@ fun TripCalculatorScreen(
 
                         if (uiState.availableVehicles.isNotEmpty()) {
                             Text(
-                                text = "Pilih Armada Kendaraan Anda:",
+                                text = if (uiState.availableVehicles.size == 1) "Armada Terpilih Otomatis:" else "Pilih Armada Kendaraan Anda:",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MariMutedLight
+                                color = if (uiState.availableVehicles.size == 1) MariSuccess else MariMutedLight
                             )
                             Spacer(modifier = Modifier.height(6.dp))
 

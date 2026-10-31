@@ -3,8 +3,12 @@ package id.maripartner.fuel.feature.analytics
 import id.maripartner.fuel.core.common.result.UiState
 import id.maripartner.fuel.domain.model.AnalyticsPeriod
 import id.maripartner.fuel.domain.model.AnalyticsReport
+import id.maripartner.fuel.domain.model.DriverShiftSummary
 import id.maripartner.fuel.domain.model.EcoDriverReport
+import id.maripartner.fuel.domain.model.FleetDriverReport
 import id.maripartner.fuel.domain.model.FuelAnomalyResult
+import id.maripartner.fuel.domain.model.FuelShockSimulationResult
+import id.maripartner.fuel.domain.model.SpbuBenchmarkReport
 import id.maripartner.fuel.domain.model.Vehicle
 import id.maripartner.fuel.domain.model.VehicleTcoResult
 import java.io.File
@@ -23,10 +27,17 @@ data class AnalyticsUiState(
     val fuelAnomalyResult: FuelAnomalyResult? = null,
     val vehicleTcoResult: VehicleTcoResult? = null,
     val ecoDriverReport: EcoDriverReport? = null,
+    val spbuBenchmarkReport: SpbuBenchmarkReport? = null,
+    val fuelShockSimulationResult: FuelShockSimulationResult? = null,
+    val simulatedPriceHike: Double = 1000.0,
+    val fleetDriverReport: FleetDriverReport? = null,
     val driverRevenueRateIdr: Long = 3500L,
     val isExportingCertificate: Boolean = false,
     val exportedCertificateFile: File? = null,
     val showTcoMarginDialog: Boolean = false,
+    val showSpbuBenchmarkDialog: Boolean = false,
+    val showFuelShockDialog: Boolean = false,
+    val showFleetDriverDialog: Boolean = false,
     val isProUser: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null
@@ -40,9 +51,13 @@ sealed interface AnalyticsUiEvent {
     data class SelectCustomDateRange(val startDate: LocalDate, val endDate: LocalDate) : AnalyticsUiEvent
     data class SelectVehicle(val vehicleId: String?) : AnalyticsUiEvent
     data class UpdateDriverRevenueRate(val rateIdr: Long) : AnalyticsUiEvent
+    data class UpdateSimulatedPriceHike(val hike: Double) : AnalyticsUiEvent
     data object ExportEcoCertificate : AnalyticsUiEvent
     data object ClearExportedCertificate : AnalyticsUiEvent
     data class SetShowTcoMarginDialog(val show: Boolean) : AnalyticsUiEvent
+    data class SetShowSpbuBenchmarkDialog(val show: Boolean) : AnalyticsUiEvent
+    data class SetShowFuelShockDialog(val show: Boolean) : AnalyticsUiEvent
+    data class SetShowFleetDriverDialog(val show: Boolean) : AnalyticsUiEvent
     data object Refresh : AnalyticsUiEvent
     data object ClearError : AnalyticsUiEvent
 }

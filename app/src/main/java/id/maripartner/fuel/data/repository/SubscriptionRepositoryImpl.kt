@@ -279,9 +279,12 @@ class SubscriptionRepositoryImpl(
                     "fuel_budgeting_basic",
                     "fuel_price_radar",
                     "spbu_proximity_detector",
-                    "biometric_security"
+                    "biometric_security",
+                    "fuel_shock_simulator",
+                    "night_hud_display",
+                    "receipt_duplicate_fraud_detector"
                 ),
-                description = "Paket esensial gratis untuk 2 kendaraan aktif, 5 scan AI/bln, pagu anggaran BBM, dan radar harga SPBU."
+                description = "Paket esensial gratis untuk 2 kendaraan aktif, 5 scan AI/bln, pagu anggaran BBM, HUD malam, dan radar harga SPBU."
             ),
             SubscriptionPlan(
                 id = "plan_pro_monthly",
@@ -306,11 +309,17 @@ class SubscriptionRepositoryImpl(
                     "fuel_price_radar",
                     "spbu_proximity_detector",
                     "biometric_security",
+                    "fuel_shock_simulator",
+                    "night_hud_display",
+                    "receipt_duplicate_fraud_detector",
+                    "spbu_efficiency_benchmark",
+                    "fleet_driver_shift_logbook",
+                    "home_screen_widget",
                     "export_formal_pdf",
                     "export_csv",
                     "priority_support"
                 ),
-                description = "Akses penuh Mari Pro bulanan tanpa batas armada, 100 scan AI, matriks TCO per km, margin driver, dan sertifikat Eco-Driver PDF."
+                description = "Akses penuh Mari Pro bulanan tanpa batas armada, 100 scan AI, matriks TCO, peringkat SPBU teririt, dan logbook shift pengemudi."
             ),
             SubscriptionPlan(
                 id = "plan_pro_yearly",
@@ -335,12 +344,18 @@ class SubscriptionRepositoryImpl(
                     "fuel_price_radar",
                     "spbu_proximity_detector",
                     "biometric_security",
+                    "fuel_shock_simulator",
+                    "night_hud_display",
+                    "receipt_duplicate_fraud_detector",
+                    "spbu_efficiency_benchmark",
+                    "fleet_driver_shift_logbook",
+                    "home_screen_widget",
                     "export_formal_pdf",
                     "export_csv",
                     "priority_support",
                     "discount_2_months"
                 ),
-                description = "Hemat 17% dengan paket tahunan. Nikmati seluruh fitur Pro, TCO per km, margin driver, dan sertifikat Eco-Driver PDF."
+                description = "Hemat 17% dengan paket tahunan. Nikmati seluruh fitur Pro, TCO, peringkat SPBU teririt, dan logbook shift pengemudi."
             )
         )
     }
