@@ -72,7 +72,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (plan.price_idr <= 0) {
+    // 2.1 Evaluasi Harga Promo & Batas Pembelian (Purchase Limit Per User)
+    let finalPriceIdr = plan.price_idr;
+    let isPromoApplied = false;
+
+    if (plan.is_promo_active && plan.promo_price_idr != null) {
+      // Hitung riwayat transaksi promo user untuk paket ini
+      const { count } = await adminClient
+        .from("payment_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "paid")
+        .eq("is_promo", true)
+        .or(`metadata->>plan_code.eq.${plan.code},product_id.eq.${plan.code}`);
+
+      const userPromoCount = count ?? 0;
+      const isEligible = plan.promo_max_per_user == null || plan.promo_max_per_user <= 0 || userPromoCount < plan.promo_max_per_user;
+
+      if (isEligible) {
+        finalPriceIdr = plan.promo_price_idr;
+        isPromoApplied = true;
+      }
+    }
+
+    if (finalPriceIdr <= 0) {
       return new Response(
         JSON.stringify({ success: false, error: "Paket gratis tidak memerlukan alur pembayaran" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -126,7 +149,7 @@ Deno.serve(async (req) => {
 
       if (!qrisImageUrl) {
         // Safe Sandbox QRIS payload untuk pengujian lingkungan development
-        qrisImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=00020101021226580016ID.CO.MARIPARTNER0118${paymentReference}520454115303360540${plan.price_idr}5802ID5917MARI_PARTNER_FUEL6007JAKARTA`;
+        qrisImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=00020101021226580016ID.CO.MARIPARTNER0118${paymentReference}520454115303360540${finalPriceIdr}5802ID5917MARI_PARTNER_FUEL6007JAKARTA`;
       }
     }
 
@@ -135,9 +158,10 @@ Deno.serve(async (req) => {
       user_id: user.id,
       provider: payload.provider,
       payment_reference: paymentReference,
-      amount_idr: plan.price_idr,
+      amount_idr: finalPriceIdr,
       currency: "IDR",
       status: "pending",
+      is_promo: isPromoApplied,
       product_id: productId,
       base_plan_id: basePlanId,
       billing_period: plan.billing_period,
@@ -148,6 +172,9 @@ Deno.serve(async (req) => {
         plan_code: plan.code,
         plan_name: plan.name,
         user_email: user.email,
+        regular_price_idr: plan.price_idr,
+        is_promo: isPromoApplied,
+        promo_label: isPromoApplied ? plan.promo_label : null
       },
     });
 
@@ -163,7 +190,8 @@ Deno.serve(async (req) => {
         success: true,
         payment_reference: paymentReference,
         provider: payload.provider,
-        amount_idr: plan.price_idr,
+        amount_idr: finalPriceIdr,
+        is_promo: isPromoApplied,
         currency: "IDR",
         plan_code: plan.code,
         plan_name: plan.name,

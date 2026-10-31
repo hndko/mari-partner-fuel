@@ -17,7 +17,13 @@ data class SubscriptionPlanDto(
     @SerialName("max_vehicles") val maxVehicles: Int? = null,
     @SerialName("is_active") val isActive: Boolean = true,
     val features: JsonElement? = null,
-    val description: String? = null
+    val description: String? = null,
+    @SerialName("is_promo_active") val isPromoActive: Boolean = false,
+    @SerialName("promo_price_idr") val promoPriceIdr: Long? = null,
+    @SerialName("promo_max_per_user") val promoMaxPerUser: Int? = null,
+    @SerialName("promo_label") val promoLabel: String = "PROMO SPESIAL",
+    @SerialName("user_promo_purchases_count") val userPromoPurchasesCount: Int = 0,
+    @SerialName("is_user_eligible_for_promo") val isUserEligibleForPromo: Boolean = false
 ) {
     fun getFeaturesList(): List<String> {
         return try {

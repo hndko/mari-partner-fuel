@@ -70,7 +70,13 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Halaman visual perbandingan paket (`ProPlansScreen`) dengan meter kuota AI dan kepatuhan Google Play Payments Policy.
   - **Pengingat Proaktif & Transisi Otomatis ke Free Tier**:
     - Deteksi otomatis sisa masa aktif Pro $\le 7$ hari (`is_expiring_soon = true`) dengan pengingat ganda: banner interaktif di Beranda (`DashboardScreen`), badge peringatan di Layar Paket (`ProPlansScreen`), dan notifikasi sistem Android (`SubscriptionNotificationHelper`).
-    - Prosedur basis data otoritatif `process_expired_subscriptions`: otomatis memperbarui langganan kedaluwarsa menjadi `'expired'` saat melewati batas waktu, dan mengarsipkan armada ke-3 dan seterusnya (`is_archived = true`) dengan jaminan mutlak *Zero Data Loss Guarantee* (seluruh riwayat transaksi BBM & odometer tersimpan 100% aman).
+    - Prosedur basis data otoritatif `process_expired_subscriptions`: otomatis memperbarui langganan kedaluwarsa menjadi `'expired'` saat melewati batas waktu, dan mengarsipkan armada ke-3 dan seterusnya (`is_archived = true`) dengan jaminan mutlak *Zero Data Loss Guarantee* (seluruh riwayat transaksi BBM & odometer tersimpan 100% utuh).
+  - **Sistem Harga Promo Dinamis & Batasan Pembelian per Pengguna**:
+    - Dukungan harga promosi fleksibel pada paket eksisting (misal diskon promo Rp 1.000/bln dengan label khusus seperti `PROMO SPESIAL` atau `FLASH SALE 90%`).
+    - Batas pembelian per user (`promo_max_per_user`): Pembelian promo dapat dibatasi per akun (misal 1x klaim promo) atau tanpa batas (*unlimited claims*).
+    - Tampilan visual diskon terpadu di `ProPlansScreen`: harga normal dicoret (*strikethrough*), harga promo oranye/amber tebal, badge promo, dan keterangan kuota pembelian per akun.
+    - Penegakan otoritatif server (*Server-Authoritative*): RPC `get_available_subscription_plans` dan Edge Function `create-checkout` memvalidasi kelayakan promo di database Supabase secara real-time untuk mencegah manipulasi harga dari sisi klien.
+    - Pengaturan langsung melalui Owner SaaS Console (`EditPlanDialog`) dengan toggle switch promo, input harga diskon, batas pembelian, dan label tag promo.
 - 💳 **Integrasi Pembayaran & Aktivasi Pro (Dual-Track)**:
   - Jalur 1 (Google Play Store): Google Play Billing v7.1.1 untuk auto-renewing subscriptions, verifikasi purchase token sisi server via Edge Function `verify-play-purchase`, dan anti-replay token reuse prevention.
   - Jalur 2 (Direct/Web Distribution): Dynamic QRISpy dengan countdown 15 menit, verifikasi signature webhook, dan polling status fallback.

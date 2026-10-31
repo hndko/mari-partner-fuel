@@ -1,5 +1,6 @@
 package id.maripartner.fuel.data.repository.owner
 
+import android.util.Log
 import id.maripartner.fuel.core.common.result.AppException
 import id.maripartner.fuel.core.common.result.AppResult
 import id.maripartner.fuel.data.remote.supabase.SupabaseClientProvider
@@ -15,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -59,7 +61,11 @@ class OwnerRepositoryImpl(
         aiScanQuota: Int,
         maxVehicles: Int?,
         isActive: Boolean,
-        description: String?
+        description: String?,
+        isPromoActive: Boolean,
+        promoPriceIdr: Long?,
+        promoMaxPerUser: Int?,
+        promoLabel: String
     ): AppResult<String> = withContext(dispatcher) {
         try {
             val params = buildJsonObject {
@@ -69,17 +75,36 @@ class OwnerRepositoryImpl(
                 put("p_ai_scan_quota", aiScanQuota)
                 if (maxVehicles != null) {
                     put("p_max_vehicles", maxVehicles)
+                } else {
+                    put("p_max_vehicles", JsonNull)
                 }
                 put("p_is_active", isActive)
                 if (description != null) {
                     put("p_description", description.trim())
+                } else {
+                    put("p_description", JsonNull)
                 }
+                put("p_is_promo_active", isPromoActive)
+                if (promoPriceIdr != null) {
+                    put("p_promo_price_idr", promoPriceIdr)
+                } else {
+                    put("p_promo_price_idr", JsonNull)
+                }
+                if (promoMaxPerUser != null) {
+                    put("p_promo_max_per_user", promoMaxPerUser)
+                } else {
+                    put("p_promo_max_per_user", JsonNull)
+                }
+                put("p_promo_label", promoLabel.trim().ifBlank { "PROMO SPESIAL" })
             }
+            Log.d("OwnerRepo", "Calling admin_update_subscription_plan with params: $params")
             val result = getPostgrest().rpc("admin_update_subscription_plan", params)
+            Log.d("OwnerRepo", "admin_update_subscription_plan response data: ${result.data}")
             val jsonObj = json.parseToJsonElement(result.data)
             val message = jsonObj.toString()
             AppResult.Success("Konfigurasi paket '$name' berhasil disimpan.")
         } catch (e: Exception) {
+            Log.e("OwnerRepo", "admin_update_subscription_plan failed", e)
             AppResult.Error(sanitizeException(e, "Gagal memperbarui konfigurasi paket"))
         }
     }

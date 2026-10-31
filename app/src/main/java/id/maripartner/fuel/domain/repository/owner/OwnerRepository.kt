@@ -23,7 +23,7 @@ interface OwnerRepository {
     suspend fun getSubscriptionPlans(): AppResult<List<OwnerPlanItem>>
 
     /**
-     * Memperbarui konfigurasi paket langganan (nama, harga IDR, kuota AI, batas kendaraan, status aktif).
+     * Memperbarui konfigurasi paket langganan (nama, harga IDR, kuota AI, batas kendaraan, status aktif, dan harga promo).
      */
     suspend fun updateSubscriptionPlan(
         planId: String,
@@ -32,7 +32,11 @@ interface OwnerRepository {
         aiScanQuota: Int,
         maxVehicles: Int?,
         isActive: Boolean,
-        description: String? = null
+        description: String? = null,
+        isPromoActive: Boolean = false,
+        promoPriceIdr: Long? = null,
+        promoMaxPerUser: Int? = null,
+        promoLabel: String = "PROMO SPESIAL"
     ): AppResult<String>
 
     /**

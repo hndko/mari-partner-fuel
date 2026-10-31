@@ -62,13 +62,22 @@ fun EditPlanDialog(
     maxVehicles: String,
     isActive: Boolean,
     description: String,
+    isPromoActive: Boolean,
+    promoPriceIdr: String,
+    promoMaxPerUser: String,
+    promoLabel: String,
     isSubmitting: Boolean,
+    errorMessage: String? = null,
     onNameChanged: (String) -> Unit,
     onPriceChanged: (String) -> Unit,
     onAiQuotaChanged: (String) -> Unit,
     onMaxVehiclesChanged: (String) -> Unit,
     onIsActiveChanged: (Boolean) -> Unit,
     onDescriptionChanged: (String) -> Unit,
+    onIsPromoActiveChanged: (Boolean) -> Unit,
+    onPromoPriceChanged: (String) -> Unit,
+    onPromoMaxPerUserChanged: (String) -> Unit,
+    onPromoLabelChanged: (String) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -164,6 +173,21 @@ fun EditPlanDialog(
                     }
                 }
 
+                if (!errorMessage.isNullOrBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = errorMessage,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
                 // 1. Nama Paket
                 OutlinedTextField(
                     value = name,
@@ -245,6 +269,89 @@ fun EditPlanDialog(
                                 checkedTrackColor = MariPrimaryBlue
                             )
                         )
+                    }
+                }
+
+                // 5.1 Pengaturan Promo Khusus & Batas Pembelian
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isPromoActive) Color(0xFFFFFBEB) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = if (isPromoActive) Color(0xFFF59E0B) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Promo Harga Khusus",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = if (isPromoActive) Color(0xFF92400E) else MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = if (isPromoActive) "Promo aktif dengan harga diskon" else "Nonaktifkan promo untuk harga reguler",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    color = if (isPromoActive) Color(0xFFB45309) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = isPromoActive,
+                                onCheckedChange = onIsPromoActiveChanged,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFFD97706)
+                                )
+                            )
+                        }
+
+                        if (isPromoActive) {
+                            // Input Harga Promo (Rp)
+                            OutlinedTextField(
+                                value = promoPriceIdr,
+                                onValueChange = onPromoPriceChanged,
+                                label = { Text("Harga Promo (Rp)") },
+                                placeholder = { Text("Contoh: 1000") },
+                                prefix = { Text("Rp ", fontWeight = FontWeight.Bold) },
+                                visualTransformation = ThousandSeparatorVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            // Input Batas Pembelian per User (Kosongkan jika Unlimited)
+                            OutlinedTextField(
+                                value = promoMaxPerUser,
+                                onValueChange = onPromoMaxPerUserChanged,
+                                label = { Text("Batas Pembelian per User (Kosongkan = Bebas)") },
+                                placeholder = { Text("Contoh: 1 untuk 1x pembelian per akun") },
+                                suffix = { if (promoMaxPerUser.isNotEmpty()) Text("x Beli") else Text("Tanpa Batas") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            // Input Label Promo
+                            OutlinedTextField(
+                                value = promoLabel,
+                                onValueChange = onPromoLabelChanged,
+                                label = { Text("Label / Tag Promo") },
+                                placeholder = { Text("Misal: PROMO SPESIAL, FLASH SALE 90%") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
 

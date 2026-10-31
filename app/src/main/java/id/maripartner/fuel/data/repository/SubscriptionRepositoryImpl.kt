@@ -206,11 +206,22 @@ class SubscriptionRepositoryImpl(
 
     override suspend fun getSubscriptionPlans(): AppResult<List<SubscriptionPlan>> = withContext(dispatcher) {
         try {
-            val dtos = getPostgrest().from("subscription_plans").select {
-                filter {
-                    eq("is_active", true)
+            val currentUserId = getAuth().currentUserOrNull()?.id
+            val dtos: List<SubscriptionPlanDto> = try {
+                val params = buildJsonObject {
+                    if (!currentUserId.isNullOrBlank()) {
+                        put("p_user_id", currentUserId)
+                    }
                 }
-            }.decodeList<SubscriptionPlanDto>()
+                getPostgrest().rpc("get_available_subscription_plans", params).decodeList<SubscriptionPlanDto>()
+            } catch (_: Exception) {
+                // Fallback ke select langsung dari tabel subscription_plans
+                getPostgrest().from("subscription_plans").select {
+                    filter {
+                        eq("is_active", true)
+                    }
+                }.decodeList<SubscriptionPlanDto>()
+            }
 
             val plans = dtos.map { dto ->
                 SubscriptionPlan(
@@ -223,7 +234,13 @@ class SubscriptionRepositoryImpl(
                     maxVehicles = dto.maxVehicles,
                     isActive = dto.isActive,
                     features = dto.getFeaturesList(),
-                    description = dto.description
+                    description = dto.description,
+                    isPromoActive = dto.isPromoActive,
+                    promoPriceIdr = dto.promoPriceIdr,
+                    promoMaxPerUser = dto.promoMaxPerUser,
+                    promoLabel = dto.promoLabel,
+                    userPromoPurchasesCount = dto.userPromoPurchasesCount,
+                    isUserEligibleForPromo = dto.isUserEligibleForPromo || (dto.isPromoActive && dto.promoPriceIdr != null && (dto.promoMaxPerUser == null || dto.promoMaxPerUser <= 0 || dto.userPromoPurchasesCount < dto.promoMaxPerUser))
                 )
             }.sortedBy { it.priceIdr }
 

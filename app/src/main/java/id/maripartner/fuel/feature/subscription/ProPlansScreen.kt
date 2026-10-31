@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -619,22 +620,73 @@ private fun PlanCard(
                 }
             }
 
-            // Display Harga
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = if (plan.priceIdr == 0L) "Rp0" else CurrencyFormatter.formatIdr(plan.priceIdr),
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 28.sp
-                    ),
-                    color = if (isPro) MariPrimaryBlue else MariTextLight
-                )
-                Text(
-                    text = if (plan.priceIdr == 0L) " / selamanya" else if (plan.isYearly) " / tahun" else " / bulan",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MariMutedLight,
-                    modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
-                )
+            // Display Harga (Mendukung Promo Harga Khusus & Strikethrough)
+            val hasPromo = plan.hasActivePromoDiscount
+            val displayPrice = if (hasPromo) plan.effectivePriceIdr else plan.priceIdr
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (hasPromo) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = CurrencyFormatter.formatIdr(plan.priceIdr),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                textDecoration = TextDecoration.LineThrough
+                            ),
+                            color = MariMutedLight
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFFFEF3C7)
+                        ) {
+                            Text(
+                                text = plan.promoLabel,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 9.sp,
+                                    color = Color(0xFFB45309)
+                                ),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = if (displayPrice == 0L) "Rp0" else CurrencyFormatter.formatIdr(displayPrice),
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 28.sp
+                        ),
+                        color = if (hasPromo) Color(0xFFD97706) else if (isPro) MariPrimaryBlue else MariTextLight
+                    )
+                    Text(
+                        text = if (displayPrice == 0L) " / selamanya" else if (plan.isYearly) " / tahun" else " / bulan",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MariMutedLight,
+                        modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
+                    )
+                }
+
+                if (plan.isPromoActive && !plan.isUserEligibleForPromo && plan.userPromoPurchasesCount > 0) {
+                    Text(
+                        text = "Kuota promo Anda telah digunakan (${plan.userPromoPurchasesCount}x beli). Berlaku harga reguler.",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        color = MariMutedLight
+                    )
+                } else if (hasPromo && plan.promoMaxPerUser != null && plan.promoMaxPerUser > 0) {
+                    Text(
+                        text = "Khusus pembelian promo (Maksimal ${plan.promoMaxPerUser}x per akun)",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFB45309)
+                        )
+                    )
+                }
             }
 
             // CTA Button berdasarkan status kepemilikan dan aturan siklus

@@ -1,5 +1,6 @@
 package id.maripartner.fuel.feature.owner
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.maripartner.fuel.core.common.result.AppResult
@@ -82,6 +83,10 @@ class OwnerConsoleViewModel(
                         editPlanMaxVehicles = plan.maxVehicles?.toString().orEmpty(),
                         editPlanIsActive = plan.isActive,
                         editPlanDescription = plan.description.orEmpty(),
+                        editPlanIsPromoActive = plan.isPromoActive,
+                        editPlanPromoPriceIdr = plan.promoPriceIdr?.toString().orEmpty(),
+                        editPlanPromoMaxPerUser = plan.promoMaxPerUser?.toString().orEmpty(),
+                        editPlanPromoLabel = plan.promoLabel,
                         errorMessage = null
                     )
                 }
@@ -111,6 +116,18 @@ class OwnerConsoleViewModel(
             }
             is OwnerConsoleUiEvent.ChangeEditPlanDescription -> {
                 _uiState.update { it.copy(editPlanDescription = event.desc) }
+            }
+            is OwnerConsoleUiEvent.ChangeEditPlanIsPromoActive -> {
+                _uiState.update { it.copy(editPlanIsPromoActive = event.active) }
+            }
+            is OwnerConsoleUiEvent.ChangeEditPlanPromoPrice -> {
+                _uiState.update { it.copy(editPlanPromoPriceIdr = event.price.filter { c -> c.isDigit() }) }
+            }
+            is OwnerConsoleUiEvent.ChangeEditPlanPromoMaxPerUser -> {
+                _uiState.update { it.copy(editPlanPromoMaxPerUser = event.max.filter { c -> c.isDigit() }) }
+            }
+            is OwnerConsoleUiEvent.ChangeEditPlanPromoLabel -> {
+                _uiState.update { it.copy(editPlanPromoLabel = event.label) }
             }
             is OwnerConsoleUiEvent.SubmitEditPlan -> {
                 submitEditPlan()
@@ -224,26 +241,39 @@ class OwnerConsoleViewModel(
     }
 
     private fun submitEditPlan() {
-        val plan = _uiState.value.selectedPlanForEdit ?: return
+        val plan = _uiState.value.selectedPlanForEdit
+        Log.d("OwnerConsoleVM", "submitEditPlan() called. plan=$plan")
+        if (plan == null) return
         val name = _uiState.value.editPlanName.trim().ifBlank { plan.name }
         val price = _uiState.value.editPlanPriceIdr.toLongOrNull() ?: plan.priceIdr
         val aiQuota = _uiState.value.editPlanAiQuota.toIntOrNull() ?: plan.aiScanQuota
         val maxVehicles = _uiState.value.editPlanMaxVehicles.toIntOrNull()
         val isActive = _uiState.value.editPlanIsActive
         val description = _uiState.value.editPlanDescription.trim().ifBlank { null }
+        val isPromoActive = _uiState.value.editPlanIsPromoActive
+        val promoPriceIdr = _uiState.value.editPlanPromoPriceIdr.toLongOrNull()
+        val promoMaxPerUser = _uiState.value.editPlanPromoMaxPerUser.toIntOrNull()
+        val promoLabel = _uiState.value.editPlanPromoLabel.trim().ifBlank { "PROMO SPESIAL" }
 
+        Log.d("OwnerConsoleVM", "Submitting edit plan: id=${plan.id}, promoActive=$isPromoActive, promoPrice=$promoPriceIdr, promoMax=$promoMaxPerUser")
         _uiState.update { it.copy(isSubmittingPlanEdit = true, errorMessage = null) }
 
         viewModelScope.launch {
-            when (val result = repository.updateSubscriptionPlan(
+            val result = repository.updateSubscriptionPlan(
                 planId = plan.id,
                 name = name,
                 priceIdr = price,
                 aiScanQuota = aiQuota,
                 maxVehicles = maxVehicles,
                 isActive = isActive,
-                description = description
-            )) {
+                description = description,
+                isPromoActive = isPromoActive,
+                promoPriceIdr = promoPriceIdr,
+                promoMaxPerUser = promoMaxPerUser,
+                promoLabel = promoLabel
+            )
+            Log.d("OwnerConsoleVM", "updateSubscriptionPlan result: $result")
+            when (result) {
                 is AppResult.Success -> {
                     subscriptionRepository.clearCache()
                     _uiState.update {

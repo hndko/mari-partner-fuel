@@ -158,6 +158,12 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
    - Sistem mendeteksi sisa masa aktif Pro $\le 7$ hari (`is_expiring_soon = true`) dan menyajikan pengingat proaktif visual (In-App Banner di Beranda & Badge Peringatan di Layar Paket) serta Android System Notification.
    - Apabila masa aktif telah melewati jatuh tempo (`now() > expires_at`) tanpa diperpanjang, status langganan di backend (`process_expired_subscriptions`) otomatis beralih menjadi `'expired'` dan akun bertransisi ke Paket Free (kuota 5 scan AI/bln & maks 2 kendaraan aktif).
    - Seluruh kendaraan aktif ke-3 dan seterusnya diarsipkan otomatis (`is_archived = true`) dengan jaminan mutlak *Zero Data Loss Guarantee* (seluruh riwayat transaksi BBM dan log odometer tetap tersimpan 100% utuh).
+11. **Aturan Harga Promo & Batasan Pembelian per Pengguna (Promotional Pricing & Per-User Limit)**:
+   - Paket langganan eksisting dapat memiliki harga promosi khusus (`is_promo_active`, `promo_price_idr`, `promo_max_per_user`, `promo_label`).
+   - Batas pembelian per user (`promo_max_per_user`) mengontrol frekuensi klaim promo per akun: jika bernilai 1, pengguna hanya dapat membeli harga promo 1 kali; jika `null` atau `0`, promosi berlaku tanpa batas klaim (*unlimited*).
+   - Hak klaim promo dihitung secara server-authoritative via RPC `get_available_subscription_plans` dan diverifikasi ulang saat pembuatan order di Edge Function `create-checkout` dengan mencatat `is_promo = true` pada tabel `payment_transactions`.
+   - Apabila kuota klaim promo pengguna telah habis, tampilan dan checkout beralih secara anggun (*graceful fallback*) ke harga reguler tanpa error sistem.
+   - Owner/Admin dapat mengaktifkan/menonaktifkan promo, mengubah harga diskon, batas pembelian, dan tag promo secara real-time dari Owner Console SaaS.
 
 ---
 

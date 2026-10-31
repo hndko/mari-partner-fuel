@@ -421,6 +421,47 @@ private fun PlanManagementCard(
                 }
             }
 
+            // Banner Highlight Promo Khusus
+            if (plan.isPromoActive && plan.promoPriceIdr != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFFEF3C7),
+                    border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.6f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "🔥 ${plan.promoLabel}:",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF92400E)
+                            )
+                            Text(
+                                text = CurrencyFormatter.formatIdr(plan.promoPriceIdr),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                color = Color(0xFFB45309)
+                            )
+                        }
+                        Text(
+                            text = if (plan.promoMaxPerUser != null && plan.promoMaxPerUser > 0) "Maks ${plan.promoMaxPerUser}x / user" else "Bebas klaim",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 10.5.sp
+                            ),
+                            color = Color(0xFF78350F)
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Pricing Callout Row

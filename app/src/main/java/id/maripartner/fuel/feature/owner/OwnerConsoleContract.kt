@@ -30,6 +30,10 @@ data class OwnerConsoleUiState(
     val editPlanMaxVehicles: String = "",
     val editPlanIsActive: Boolean = true,
     val editPlanDescription: String = "",
+    val editPlanIsPromoActive: Boolean = false,
+    val editPlanPromoPriceIdr: String = "",
+    val editPlanPromoMaxPerUser: String = "",
+    val editPlanPromoLabel: String = "PROMO SPESIAL",
     val isSubmittingPlanEdit: Boolean = false
 ) {
     val filteredUsers: List<AdminUserSummary>
@@ -66,6 +70,10 @@ sealed interface OwnerConsoleUiEvent {
     data class ChangeEditPlanMaxVehicles(val vehicles: String) : OwnerConsoleUiEvent
     data class ChangeEditPlanIsActive(val active: Boolean) : OwnerConsoleUiEvent
     data class ChangeEditPlanDescription(val desc: String) : OwnerConsoleUiEvent
+    data class ChangeEditPlanIsPromoActive(val active: Boolean) : OwnerConsoleUiEvent
+    data class ChangeEditPlanPromoPrice(val price: String) : OwnerConsoleUiEvent
+    data class ChangeEditPlanPromoMaxPerUser(val max: String) : OwnerConsoleUiEvent
+    data class ChangeEditPlanPromoLabel(val label: String) : OwnerConsoleUiEvent
     data object SubmitEditPlan : OwnerConsoleUiEvent
 
     data object DismissMessages : OwnerConsoleUiEvent
