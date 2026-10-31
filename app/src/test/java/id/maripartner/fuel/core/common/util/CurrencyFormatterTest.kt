@@ -57,4 +57,23 @@ class CurrencyFormatterTest {
         assertEquals(15.25, CurrencyFormatter.parseLiters("15.25 Liter") ?: 0.0, 0.001)
         assertEquals(20.0, CurrencyFormatter.parseLiters("20 Ltr") ?: 0.0, 0.001)
     }
+
+    @Test
+    fun formatPercent_formatsCleanIntegerPercentages() {
+        assertEquals("100", CurrencyFormatter.formatPercent(100.0))
+        assertEquals("0", CurrencyFormatter.formatPercent(0.0))
+        assertEquals("50", CurrencyFormatter.formatPercent(50.0))
+        assertEquals("17", CurrencyFormatter.formatPercent(16.67))
+        assertEquals("33", CurrencyFormatter.formatPercent(33.33))
+        assertEquals("0", CurrencyFormatter.formatPercent(Double.NaN))
+        assertEquals("0", CurrencyFormatter.formatPercent(Double.POSITIVE_INFINITY))
+    }
+
+    @Test
+    fun formatPercentWithSymbol_appendsPercentCleanly() {
+        assertEquals("100%", CurrencyFormatter.formatPercentWithSymbol(100.0))
+        assertEquals("0%", CurrencyFormatter.formatPercentWithSymbol(0.0))
+        assertEquals("50%", CurrencyFormatter.formatPercentWithSymbol(50.0))
+        assertEquals("17%", CurrencyFormatter.formatPercentWithSymbol(16.7))
+    }
 }

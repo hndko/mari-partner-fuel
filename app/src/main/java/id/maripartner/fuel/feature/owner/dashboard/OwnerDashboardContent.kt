@@ -452,7 +452,7 @@ private fun HeroRevenueCard(
                         iconTint = Color(0xFFFBBF24),
                         label = "PRO AKTIF",
                         value = "${kpi.activeProUsers} Akun",
-                        subtext = "${conversionStats.conversionRatePercent}% Rasio",
+                        subtext = "${CurrencyFormatter.formatPercent(conversionStats.conversionRatePercent)}% Rasio",
                         modifier = Modifier.weight(1f)
                     )
 
@@ -570,7 +570,7 @@ private fun OperationalKpiRow(
             KpiMetricTile(
                 title = "Pelanggan Pro",
                 value = "${kpi.activeProUsers}",
-                subtitle = "${conversionStats.conversionRatePercent}% Rasio Konversi",
+                subtitle = "${CurrencyFormatter.formatPercent(conversionStats.conversionRatePercent)}% Rasio Konversi",
                 icon = Icons.Default.WorkspacePremium,
                 accentColor = Color(0xFFD97706),
                 modifier = Modifier.weight(1f)
@@ -1049,7 +1049,7 @@ private fun PlanConversionCard(
                     color = Color(0xFFFEF3C7)
                 ) {
                     Text(
-                        text = "${conversionStats.conversionRatePercent}% Pro",
+                        text = "${CurrencyFormatter.formatPercent(conversionStats.conversionRatePercent)}% Pro",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFFB45309)

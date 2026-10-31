@@ -94,4 +94,29 @@ object CurrencyFormatter {
             .replace(",", ".")
         return clean.toDoubleOrNull()
     }
+
+    /**
+     * Memformat angka persentase ke format bersih tanpa desimal (misal 100.0% -> 100%).
+     * Dibulatkan ke bilangan bulat terdekat untuk tampilan UI yang rapi dan profesional.
+     * Mencegah error jika nilai input bernilai NaN atau Infinite.
+     * Contoh:
+     * 100.0 -> "100"
+     * 50.0 -> "50"
+     * 0.0 -> "0"
+     * 16.7 -> "17"
+     */
+    fun formatPercent(percentage: Double): String {
+        if (percentage.isNaN() || percentage.isInfinite()) return "0"
+        return kotlin.math.round(percentage).toLong().toString()
+    }
+
+    /**
+     * Memformat angka persentase dengan akhiran '%' secara bersih tanpa desimal.
+     * Contoh:
+     * 100.0 -> "100%"
+     * 0.0 -> "0%"
+     */
+    fun formatPercentWithSymbol(percentage: Double): String {
+        return "${formatPercent(percentage)}%"
+    }
 }

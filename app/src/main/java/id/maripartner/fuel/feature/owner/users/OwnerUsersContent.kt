@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelChipType
 import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
@@ -351,9 +352,9 @@ private fun UsersKpiSummaryStrip(
     freeUsers: Int
 ) {
     val conversionPct = if (totalUsers > 0) {
-        String.format(Locale.US, "%.1f", (proUsers.toDouble() / totalUsers) * 100)
+        CurrencyFormatter.formatPercent((proUsers.toDouble() / totalUsers) * 100)
     } else {
-        "0.0"
+        "0"
     }
 
     Row(

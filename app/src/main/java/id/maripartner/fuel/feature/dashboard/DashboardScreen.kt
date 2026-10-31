@@ -433,7 +433,7 @@ private fun HeroMonthlySpendingCard(summary: DashboardSummary) {
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "$sign${String.format(Locale.US, "%.1f", pct)}% vs bulan lalu",
+                            text = "$sign${CurrencyFormatter.formatPercent(pct)}% vs bulan lalu",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = badgeColor
                         )

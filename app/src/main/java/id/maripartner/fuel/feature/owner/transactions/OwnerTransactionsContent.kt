@@ -455,9 +455,9 @@ private fun TransactionsKpiSummaryStrip(
     totalPendingAmount: Long
 ) {
     val successRate = if (totalCount > 0) {
-        String.format(Locale.ROOT, "%.1f", (paidCount.toDouble() / totalCount.toDouble()) * 100)
+        CurrencyFormatter.formatPercent((paidCount.toDouble() / totalCount.toDouble()) * 100)
     } else {
-        "0.0"
+        "0"
     }
 
     Row(

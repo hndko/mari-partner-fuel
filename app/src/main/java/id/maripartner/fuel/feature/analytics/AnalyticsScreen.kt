@@ -466,7 +466,7 @@ private fun AnalyticsKpiGrid(report: AnalyticsReport) {
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "$sign${String.format(Locale.US, "%.1f", pct)}%",
+                                text = "$sign${CurrencyFormatter.formatPercent(pct)}%",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = color
@@ -685,7 +685,7 @@ private fun VehicleDistributionCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "(${String.format(Locale.US, "%.1f", item.percentageOfTotal)}%)",
+                                text = "(${CurrencyFormatter.formatPercent(item.percentageOfTotal)}%)",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MariMutedLight
                             )
@@ -874,11 +874,11 @@ private fun SmartInsightCard(report: AnalyticsReport) {
             val (headline, description) = when {
                 report.periodChangePercentage != null && report.periodChangePercentage < 0 -> {
                     "Pengeluaran BBM Menurun" to
-                        "Pengeluaran pada periode ini ${String.format(Locale.US, "%.1f", kotlin.math.abs(report.periodChangePercentage))}% lebih rendah dibanding periode sebelumnya. Pertahankan gaya berkendara halus (eco-driving)!"
+                        "Pengeluaran pada periode ini ${CurrencyFormatter.formatPercent(kotlin.math.abs(report.periodChangePercentage))}% lebih rendah dibanding periode sebelumnya. Pertahankan gaya berkendara halus (eco-driving)!"
                 }
                 report.periodChangePercentage != null && report.periodChangePercentage > 0 -> {
                     "Pengeluaran Meningkat" to
-                        "Pengeluaran meningkat ${String.format(Locale.US, "%.1f", report.periodChangePercentage)}% dibanding periode sebelumnya. Periksa jadwal servis dan tekanan angin ban untuk menghemat BBM."
+                        "Pengeluaran meningkat ${CurrencyFormatter.formatPercent(report.periodChangePercentage)}% dibanding periode sebelumnya. Periksa jadwal servis dan tekanan angin ban untuk menghemat BBM."
                 }
                 report.transactionCount > 0 -> {
                     "Pola Pencatatan Teratur" to
