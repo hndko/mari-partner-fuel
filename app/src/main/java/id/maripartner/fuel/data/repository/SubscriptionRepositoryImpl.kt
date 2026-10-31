@@ -119,6 +119,9 @@ class SubscriptionRepositoryImpl(
                 val maxVehicles = jsonObj["max_vehicles"]?.jsonPrimitive?.intOrNull
                 val aiQuotaLimit = jsonObj["ai_scan_quota"]?.jsonPrimitive?.intOrNull ?: 5
                 val features = jsonObj["features"]?.jsonArray?.mapNotNull { runCatching { it.jsonPrimitive.content }.getOrNull() } ?: emptyList()
+                val isExpiringSoon = jsonObj["is_expiring_soon"]?.jsonPrimitive?.booleanOrNull ?: false
+                val daysUntilExpiry = jsonObj["days_until_expiry"]?.jsonPrimitive?.intOrNull
+                val isRecentlyExpired = jsonObj["is_recently_expired"]?.jsonPrimitive?.booleanOrNull ?: false
 
                 val entitlement = UserEntitlement(
                     userId = currentUserId,
@@ -135,7 +138,10 @@ class SubscriptionRepositoryImpl(
                         limit = aiQuotaLimit,
                         used = 0,
                         remaining = aiQuotaLimit
-                    )
+                    ),
+                    isExpiringSoon = isExpiringSoon,
+                    daysUntilExpiry = daysUntilExpiry,
+                    isRecentlyExpired = isRecentlyExpired
                 )
                 cachedEntitlement = entitlement
                 return@withContext AppResult.Success(entitlement)

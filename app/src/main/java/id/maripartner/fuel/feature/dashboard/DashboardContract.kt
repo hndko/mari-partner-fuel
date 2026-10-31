@@ -13,6 +13,12 @@ data class DashboardUiState(
     val pendingRemindersCount: Int = 0,
     val userName: String = "Pengemudi",
     val isProUser: Boolean = false,
+    val isExpiringSoon: Boolean = false,
+    val daysUntilExpiry: Int = 0,
+    val isRecentlyExpired: Boolean = false,
+    val planName: String = "Mari Free",
+    val expiresAtFormatted: String = "",
+    val showExpiryBanner: Boolean = true,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null
@@ -24,4 +30,5 @@ data class DashboardUiState(
 sealed interface DashboardUiEvent {
     data object Refresh : DashboardUiEvent
     data object ClearError : DashboardUiEvent
+    data object DismissExpiryBanner : DashboardUiEvent
 }

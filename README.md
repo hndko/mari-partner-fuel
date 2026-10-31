@@ -1,4 +1,4 @@
-﻿# ⛽ Mari Partner Fuel
+# ⛽ Mari Partner Fuel
 
 > **AI-Powered Fuel Expense Tracker for Android**  
 > Aplikasi Android Native Kotlin cerdas untuk mencatat, menganalisis, dan mengoptimalkan pengeluaran bahan bakar kendaraan dengan OCR hybrid (Google ML Kit lokal + AI cloud fallback), Supabase online backend, autentikasi email & Google, serta langganan Pro via QRISpy.
@@ -68,6 +68,9 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Kuota ekstraksi AI cloud ditegakkan secara atomik melalui PostgreSQL RPC (`reserve_ai_quota` & `finalize_ai_quota`) dengan proteksi idempotensi dan refund otomatis saat provider gagal.
   - Batas maksimal kendaraan aktif ditegakkan secara permanen di database via trigger PostgreSQL `trg_enforce_vehicle_limit`.
   - Halaman visual perbandingan paket (`ProPlansScreen`) dengan meter kuota AI dan kepatuhan Google Play Payments Policy.
+  - **Pengingat Proaktif & Transisi Otomatis ke Free Tier**:
+    - Deteksi otomatis sisa masa aktif Pro $\le 7$ hari (`is_expiring_soon = true`) dengan pengingat ganda: banner interaktif di Beranda (`DashboardScreen`), badge peringatan di Layar Paket (`ProPlansScreen`), dan notifikasi sistem Android (`SubscriptionNotificationHelper`).
+    - Prosedur basis data otoritatif `process_expired_subscriptions`: otomatis memperbarui langganan kedaluwarsa menjadi `'expired'` saat melewati batas waktu, dan mengarsipkan armada ke-3 dan seterusnya (`is_archived = true`) dengan jaminan mutlak *Zero Data Loss Guarantee* (seluruh riwayat transaksi BBM & odometer tersimpan 100% aman).
 - 💳 **Integrasi Pembayaran & Aktivasi Pro (Dual-Track)**:
   - Jalur 1 (Google Play Store): Google Play Billing v7.1.1 untuk auto-renewing subscriptions, verifikasi purchase token sisi server via Edge Function `verify-play-purchase`, dan anti-replay token reuse prevention.
   - Jalur 2 (Direct/Web Distribution): Dynamic QRISpy dengan countdown 15 menit, verifikasi signature webhook, dan polling status fallback.

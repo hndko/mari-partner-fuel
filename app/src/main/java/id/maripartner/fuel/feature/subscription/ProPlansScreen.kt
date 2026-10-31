@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,6 +64,8 @@ import id.maripartner.fuel.core.designsystem.theme.MariMutedLight
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
 import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import id.maripartner.fuel.core.designsystem.theme.MariTextLight
+import id.maripartner.fuel.core.designsystem.theme.MariWarning
+import id.maripartner.fuel.core.designsystem.theme.MariWarningBg
 import id.maripartner.fuel.domain.model.SubscriptionPlan
 import id.maripartner.fuel.domain.model.UserEntitlement
 
@@ -357,18 +360,44 @@ private fun UserStatusAndQuotaCard(entitlement: UserEntitlement) {
                 }
 
                 if (entitlement.isPro) {
-                    FuelStatusChip(text = "PRO AKTIF", type = FuelChipType.Success)
+                    val daysLeft = entitlement.effectiveDaysUntilExpiry ?: Int.MAX_VALUE
+                    if (entitlement.isExpiringSoon || daysLeft <= 7) {
+                        FuelStatusChip(
+                            text = if (daysLeft != Int.MAX_VALUE) "HABIS $daysLeft HARI LAGI" else "SEGERA BERAKHIR",
+                            type = FuelChipType.Warning
+                        )
+                    } else {
+                        FuelStatusChip(text = "PRO AKTIF", type = FuelChipType.Success)
+                    }
                 } else {
                     FuelStatusChip(text = "GRATIS", type = FuelChipType.Neutral)
                 }
             }
 
             if (entitlement.expiresAt != null) {
-                Text(
-                    text = "Masa aktif hingga: ${DateUtils.formatFullDate(entitlement.expiresAt)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MariMutedLight
-                )
+                val daysLeft = entitlement.effectiveDaysUntilExpiry ?: Int.MAX_VALUE
+                val isExpiring = entitlement.isPro && (entitlement.isExpiringSoon || daysLeft <= 7)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isExpiring) {
+                        Icon(
+                            imageVector = Icons.Default.WarningAmber,
+                            contentDescription = null,
+                            tint = MariWarning,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Text(
+                        text = "Masa aktif hingga: ${DateUtils.formatFullDate(entitlement.expiresAt)}" +
+                            if (isExpiring) " (Tersisa $daysLeft hari)" else "",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = if (isExpiring) FontWeight.Bold else FontWeight.Normal
+                        ),
+                        color = if (isExpiring) MariWarning else MariMutedLight
+                    )
+                }
             } else if (entitlement.isPro) {
                 Text(
                     text = "Masa aktif: Permanen (Seumur Hidup)",

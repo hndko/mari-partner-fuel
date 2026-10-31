@@ -28,12 +28,22 @@ class MariPartnerFuelApp : Application() {
                 description = channelDesc
             }
 
+            val subChannel = NotificationChannel(
+                SUBSCRIPTION_CHANNEL_ID,
+                "Status & Pengingat Langganan",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifikasi pengingat masa aktif Pro dan pembaruan paket"
+            }
+
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(subChannel)
         }
     }
 
     companion object {
         const val FUEL_REMINDER_CHANNEL_ID = "fuel_service_reminders"
+        const val SUBSCRIPTION_CHANNEL_ID = "subscription_status_alerts"
     }
 }

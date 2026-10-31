@@ -154,6 +154,10 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
    - Konfirmasi downgrade menandai status langganan pada backend dengan `cancel_at_period_end = true` dan `auto_renew = false`.
 9. **Aturan Peralihan Siklus Antar Paket Pro (Tahunan ke Bulanan)**:
    - Jika pengguna Pro Tahunan memilih paket Bulanan, sistem memberikan edukasi bahwa siklus bulanan baru akan berlaku efektif setelah masa aktif tahunan berakhir, sehingga pengguna tidak dirugikan atas biaya tahunan yang telah dibayarkan di muka.
+10. **Aturan Pengingat Masa Aktif Pro & Transisi Otomatis ke Free (Auto-Expire & Graceful Fallback)**:
+   - Sistem mendeteksi sisa masa aktif Pro $\le 7$ hari (`is_expiring_soon = true`) dan menyajikan pengingat proaktif visual (In-App Banner di Beranda & Badge Peringatan di Layar Paket) serta Android System Notification.
+   - Apabila masa aktif telah melewati jatuh tempo (`now() > expires_at`) tanpa diperpanjang, status langganan di backend (`process_expired_subscriptions`) otomatis beralih menjadi `'expired'` dan akun bertransisi ke Paket Free (kuota 5 scan AI/bln & maks 2 kendaraan aktif).
+   - Seluruh kendaraan aktif ke-3 dan seterusnya diarsipkan otomatis (`is_archived = true`) dengan jaminan mutlak *Zero Data Loss Guarantee* (seluruh riwayat transaksi BBM dan log odometer tetap tersimpan 100% utuh).
 
 ---
 

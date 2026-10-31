@@ -3,6 +3,7 @@ package id.maripartner.fuel.feature.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.maripartner.fuel.core.common.result.AppResult
+import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.data.repository.AuthRepositoryImpl
 import id.maripartner.fuel.data.repository.FuelTransactionRepositoryImpl
 import id.maripartner.fuel.data.repository.MaintenanceReminderRepositoryImpl
@@ -47,6 +48,7 @@ class DashboardViewModel(
         when (event) {
             is DashboardUiEvent.Refresh -> loadDashboard(isRefresh = true)
             is DashboardUiEvent.ClearError -> _uiState.update { it.copy(errorMessage = null) }
+            is DashboardUiEvent.DismissExpiryBanner -> _uiState.update { it.copy(showExpiryBanner = false) }
         }
     }
 
@@ -113,12 +115,25 @@ class DashboardViewModel(
                 }
             } catch (_: Exception) { }
 
-            // 5. Cek status Pro
+            // 5. Cek status Pro dan pengingat masa aktif
             var isPro = false
+            var isExpiringSoon = false
+            var daysUntilExpiry = 0
+            var isRecentlyExpired = false
+            var planName = "Mari Free"
+            var expiresFormatted = ""
+
             try {
                 val entitlementRes = subscriptionRepository.getMyEntitlement(forceRefresh = true)
                 if (entitlementRes is AppResult.Success) {
-                    isPro = entitlementRes.data.isPro
+                    val ent = entitlementRes.data
+                    isPro = ent.isPro
+                    planName = ent.planName.ifBlank { if (ent.isPro) "Mari Pro" else "Mari Free" }
+                    val daysLeft = ent.effectiveDaysUntilExpiry ?: Int.MAX_VALUE
+                    isExpiringSoon = ent.isExpiringSoon || (ent.isPro && daysLeft <= 7)
+                    daysUntilExpiry = if (daysLeft != Int.MAX_VALUE) daysLeft else 0
+                    isRecentlyExpired = ent.isRecentlyExpired
+                    expiresFormatted = ent.expiresAt?.let { DateUtils.formatFullDate(it) }.orEmpty()
                 }
             } catch (_: Exception) { }
 
@@ -130,6 +145,11 @@ class DashboardViewModel(
                     pendingRemindersCount = pendingReminders,
                     userName = displayName,
                     isProUser = isPro,
+                    isExpiringSoon = isExpiringSoon,
+                    daysUntilExpiry = daysUntilExpiry,
+                    isRecentlyExpired = isRecentlyExpired,
+                    planName = planName,
+                    expiresAtFormatted = expiresFormatted,
                     isLoading = false,
                     isRefreshing = false,
                     errorMessage = null

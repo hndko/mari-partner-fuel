@@ -30,9 +30,11 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Refresh
@@ -58,6 +60,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +72,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -88,6 +92,7 @@ import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import id.maripartner.fuel.core.designsystem.theme.MariSuccessBg
 import id.maripartner.fuel.core.designsystem.theme.MariWarning
 import id.maripartner.fuel.core.designsystem.theme.MariWarningBg
+import id.maripartner.fuel.core.notification.SubscriptionNotificationHelper
 import id.maripartner.fuel.domain.model.DashboardSummary
 import id.maripartner.fuel.domain.model.FuelTransaction
 import id.maripartner.fuel.domain.model.Vehicle
@@ -113,6 +118,22 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // Trigger notifikasi sistem Android saat masa aktif Pro mendekati habis (<= 7 hari) atau baru beralih ke Free
+    LaunchedEffect(uiState.isExpiringSoon, uiState.isRecentlyExpired, uiState.daysUntilExpiry) {
+        if (!uiState.isLoading && (uiState.isExpiringSoon || uiState.isRecentlyExpired)) {
+            SubscriptionNotificationHelper.checkAndNotifySubscriptionStatus(
+                context = context,
+                isPro = uiState.isProUser,
+                isExpiringSoon = uiState.isExpiringSoon,
+                daysLeft = uiState.daysUntilExpiry,
+                isRecentlyExpired = uiState.isRecentlyExpired,
+                planName = uiState.planName,
+                expiresAtFormatted = uiState.expiresAtFormatted
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -199,6 +220,24 @@ fun DashboardScreen(
                     userName = uiState.userName,
                     totalVehicles = uiState.totalVehiclesCount
                 )
+
+                // 1.1 Banner Pengingat Masa Aktif Pro / Transisi ke Free Tier
+                if (uiState.showExpiryBanner) {
+                    if (uiState.isExpiringSoon) {
+                        SubscriptionExpiringAlertBanner(
+                            planName = uiState.planName,
+                            daysUntilExpiry = uiState.daysUntilExpiry,
+                            expiresAtFormatted = uiState.expiresAtFormatted,
+                            onRenewClick = onNavigateToProPlans,
+                            onDismiss = { viewModel.onEvent(DashboardUiEvent.DismissExpiryBanner) }
+                        )
+                    } else if (uiState.isRecentlyExpired) {
+                        SubscriptionRecentlyExpiredBanner(
+                            onUpgradeClick = onNavigateToProPlans,
+                            onDismiss = { viewModel.onEvent(DashboardUiEvent.DismissExpiryBanner) }
+                        )
+                    }
+                }
 
                 // 2. Hero Card: Ringkasan Pengeluaran & Metrik BBM Bulan Berjalan
                 HeroMonthlySpendingCard(summary = uiState.summary)
@@ -1384,6 +1423,240 @@ private fun FuelEfficiencyTipCard() {
                             .clickable { currentTipIndex = idx }
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Banner Pengingat Masa Aktif Pro Segera Berakhir (<= 7 Hari)
+ */
+@Composable
+private fun SubscriptionExpiringAlertBanner(
+    planName: String,
+    daysUntilExpiry: Int,
+    expiresAtFormatted: String,
+    onRenewClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB)),
+        border = BorderStroke(1.5.dp, Color(0xFFF59E0B).copy(alpha = 0.6f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFEF3C7)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.HourglassTop,
+                            contentDescription = null,
+                            tint = Color(0xFFD97706),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFFFEF3C7)
+                        ) {
+                            Text(
+                                text = "SEGERA BERAKHIR ($daysUntilExpiry HARI LAGI)",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 9.sp,
+                                    letterSpacing = 0.8.sp
+                                ),
+                                color = Color(0xFFB45309),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Masa Aktif Pro Segera Berakhir",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF92400E)
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Tutup Pengingat",
+                        tint = Color(0xFFB45309),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = "Paket $planName Anda akan berakhir dalam $daysUntilExpiry hari (pada $expiresAtFormatted). Perpanjang sekarang agar kuota scan AI dan kapasitas armada tidak terputus.",
+                style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
+                color = Color(0xFF78350F)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = onRenewClick,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text(
+                        text = "Perpanjang Sekarang",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, Color(0xFFD97706).copy(alpha = 0.4f)),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text(
+                        text = "Nanti Saja",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = Color(0xFFB45309)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Banner Pemberitahuan Transisi ke Paket Free setelah Pro Berakhir
+ */
+@Composable
+private fun SubscriptionRecentlyExpiredBanner(
+    onUpgradeClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+        border = BorderStroke(1.5.dp, MariPrimaryBlue.copy(alpha = 0.4f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MariPrimaryBlue.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MariPrimaryBlue,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFFDBEAFE)
+                        ) {
+                            Text(
+                                text = "TRANSISI KE FREE TIER",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 9.sp,
+                                    letterSpacing = 0.8.sp
+                                ),
+                                color = Color(0xFF1D4ED8),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Paket Pro Telah Berakhir",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF1E3A8A)
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Tutup Info",
+                        tint = MariPrimaryBlue,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = "Masa aktif Pro telah berakhir dan akun otomatis bertransisi ke Paket Free (maks 2 armada aktif & 5 scan AI/bln). Seluruh riwayat transaksi BBM Anda tetap 100% aman tersimpan.",
+                style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
+                color = Color(0xFF1E40AF)
+            )
+
+            Button(
+                onClick = onUpgradeClick,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MariPrimaryBlue),
+                modifier = Modifier.height(36.dp)
+            ) {
+                Text(
+                    text = "Upgrade ke Pro Lagi",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White
+                )
             }
         }
     }
