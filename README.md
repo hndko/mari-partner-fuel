@@ -59,7 +59,7 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Hub Menu Aksi Cepat (*Quick Action Hub*): Akses instan 1-tap ke Scan Struk SPBU, Catat Manual, Pengingat Servis & Oli (dengan counter badge), dan Analitik Konsumsi.
   - Ringkasan Kendaraan Utama: Menampilkan tipe, plat nomor, jenis BBM default, dan odometer terkini secara elegan.
   - Panduan Memulai Interaktif (*Interactive 3-Step Starter Guide*): Menghilangkan tampilan kosong (*void*) bagi pengguna baru dengan arahan visual bertahap dan ajakan aksi (*Call-to-Action*) yang ramah.
-  - Kartu Tips Efisiensi BBM Harian (*Eco-Driving Insights*).
+  - Kartu Tips Efisiensi BBM Harian (*Eco-Driving Insights*): Carousel tips cerdas yang dapat digeser (*swipable HorizontalPager*) dengan gesture sentuh, berpindah otomatis setiap 5 detik secara berkala, tombol aksi *Ganti Tips* dengan animasi halus, dan pagination dots interaktif.
   - Analitik efisiensi bahan bakar (km/liter) berbasis odometer berurutan.
 - 📜 **Riwayat & Pencarian**: Filter rentang waktu, filter kendaraan, dan pencarian SPBU secara real-time dengan debounce.
 - 💎 **Paket Free & Pro Otoritatif (Server-Side Entitlement)**:

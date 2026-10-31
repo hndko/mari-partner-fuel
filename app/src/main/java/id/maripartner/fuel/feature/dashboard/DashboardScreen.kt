@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,7 +67,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +83,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
@@ -1259,13 +1266,28 @@ private val ECO_DRIVING_TIPS = listOf(
 
 /**
  * 6. Kartu Tips Cerdas Efisiensi BBM (Eco-Driving Insight)
- * Interaktif, dinamis, visual premium dengan kategori & estimasi penghematan
+ * Interaktif, dinamis, visual premium dengan kategori & estimasi penghematan.
+ * Mendukung gesture swipe (HorizontalPager) dan auto-scroll setiap 5 detik.
  */
 @Composable
 private fun FuelEfficiencyTipCard() {
     val initialIndex = remember { (LocalDate.now().dayOfYear) % ECO_DRIVING_TIPS.size }
-    var currentTipIndex by remember { mutableStateOf(initialIndex) }
-    val tip = ECO_DRIVING_TIPS[currentTipIndex]
+    val pagerState = rememberPagerState(initialPage = initialIndex) { ECO_DRIVING_TIPS.size }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Otomatis berpindah setiap 5 detik sekali; hitungan mereset otomatis saat user menggeser manual
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collectLatest {
+            delay(5000L)
+            while (pagerState.isScrollInProgress) {
+                delay(500L)
+            }
+            val nextPage = (pagerState.currentPage + 1) % ECO_DRIVING_TIPS.size
+            pagerState.animateScrollToPage(nextPage)
+        }
+    }
+
+    val currentTip = ECO_DRIVING_TIPS[pagerState.currentPage]
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1277,11 +1299,13 @@ private fun FuelEfficiencyTipCard() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp)
+                .padding(vertical = 16.dp)
         ) {
             // Header: Category Pill + Savings Pill + Shuffle Action
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1292,15 +1316,15 @@ private fun FuelEfficiencyTipCard() {
                     // Category Badge
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = tip.primaryColor.copy(alpha = 0.1f)
+                        color = currentTip.primaryColor.copy(alpha = 0.1f)
                     ) {
                         Text(
-                            text = tip.category,
+                            text = currentTip.category,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 10.sp
                             ),
-                            color = tip.primaryColor,
+                            color = currentTip.primaryColor,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
@@ -1312,7 +1336,7 @@ private fun FuelEfficiencyTipCard() {
                         border = BorderStroke(0.6.dp, MariSuccess.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = tip.savingsPotential,
+                            text = currentTip.savingsPotential,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 10.sp
@@ -1323,13 +1347,16 @@ private fun FuelEfficiencyTipCard() {
                     }
                 }
 
-                // Interactive "Ganti Tips" Button
+                // Interactive "Ganti Tips" Button (Smooth Animation to Next Page)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     border = BorderStroke(0.8.dp, MariBorderLight),
                     modifier = Modifier.clickable {
-                        currentTipIndex = (currentTipIndex + 1) % ECO_DRIVING_TIPS.size
+                        coroutineScope.launch {
+                            val nextPage = (pagerState.currentPage + 1) % ECO_DRIVING_TIPS.size
+                            pagerState.animateScrollToPage(nextPage)
+                        }
                     }
                 ) {
                     Row(
@@ -1357,60 +1384,68 @@ private fun FuelEfficiencyTipCard() {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Body Content: Squircle Icon + Title & Description
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = tip.primaryColor.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, tip.primaryColor.copy(alpha = 0.2f)),
-                    modifier = Modifier.size(46.dp)
+            // Swipable Horizontal Pager
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth()
+            ) { page ->
+                val tip = ECO_DRIVING_TIPS[page]
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp),
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = tip.icon,
-                            contentDescription = null,
-                            tint = tip.primaryColor,
-                            modifier = Modifier.size(24.dp)
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = tip.primaryColor.copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, tip.primaryColor.copy(alpha = 0.2f)),
+                        modifier = Modifier.size(46.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = tip.icon,
+                                contentDescription = null,
+                                tint = tip.primaryColor,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = tip.title,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.5.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = tip.description,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                lineHeight = 18.sp,
+                                fontSize = 12.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = tip.title,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.5.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = tip.description,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            lineHeight = 18.sp,
-                            fontSize = 12.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Dot Indicators (Pagination dots)
+            // Dot Indicators (Interactive Pagination Dots)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ECO_DRIVING_TIPS.forEachIndexed { idx, _ ->
-                    val isSelected = idx == currentTipIndex
+                    val isSelected = idx == pagerState.currentPage
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 3.dp)
@@ -1418,9 +1453,13 @@ private fun FuelEfficiencyTipCard() {
                             .width(if (isSelected) 18.dp else 5.dp)
                             .clip(RoundedCornerShape(3.dp))
                             .background(
-                                if (isSelected) tip.primaryColor else MariBorderLight
+                                if (isSelected) currentTip.primaryColor else MariBorderLight
                             )
-                            .clickable { currentTipIndex = idx }
+                            .clickable {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(idx)
+                                }
+                            }
                     )
                 }
             }
