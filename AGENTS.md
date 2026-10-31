@@ -25,7 +25,7 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
    - [🎯 1. Peran & Prinsip Kerja Utama (Role & Prime Directives)](#-1-peran--prinsip-kerja-utama-role--prime-directives)
    - [🏗️ 2. Arsitektur Android MVVM + Repository & Clean Layering](#-2-arsitektur-android-mvvm--repository--clean-layering)
    - [🎨 3. UI Murni Jetpack Compose & Material 3 (Zero DB Query in View)](#-3-ui-murni-jetpack-compose--material-3-zero-db-query-in-view)
-   - [🏢 4. Isolasi Kepemilikan Data & PostgreSQL RLS (Scoped Ownership)](#-4-isolasi-kepemilikan-data--postgresql-rls-scoped-ownership)
+   - [🏢 4. Isolasi Kepemilikan Data, PostgreSQL RLS & Eksekusi Migrasi CLI](#-4-isolasi-kepemilikan-data-postgresql-rls--eksekusi-migrasi-cli)
    - [⚡ 5. Strategi OCR Hybrid & Batasan Cloud AI (Local First)](#-5-strategi-ocr-hybrid--batasan-cloud-ai-local-first)
    - [💳 6. Standar Pembayaran QRISpy, Webhook & Idempotensi Langganan](#-6-standar-pembayaran-qrispy-webhook--idempotensi-langganan)
    - [🔒 7. Standar Keamanan OWASP, Private Storage & Zero-Secret](#-7-standar-keamanan-owasp-private-storage--zero-secret)
@@ -93,12 +93,23 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 
 ---
 
-### 🏢 4. Isolasi Kepemilikan Data & PostgreSQL RLS (Scoped Ownership)
+### 🏢 4. Isolasi Kepemilikan Data, PostgreSQL RLS & Eksekusi Migrasi CLI
 
 1. **Row Level Security (RLS) Wajib Aktif**: Seluruh tabel di Supabase (`public.*`) yang dapat diakses klien Android wajib memiliki RLS aktif berbasis `auth.uid() = user_id`.
 2. **Validasi Composite Foreign Key**: Relasi kepemilikan wajib menyertakan `user_id` (misal: `foreign key (vehicle_id, user_id) references vehicles(id, user_id)`) untuk mencegah referensi ID lintas akun (*BOLA/IDOR*).
 3. **Dilarang Percaya Client untuk Kolom Privileged**: Klien Android tidak memiliki hak untuk mengubah langsung status langganan (`subscriptions.status`), kuota AI, role administratif, atau mencatat transaksi pembayaran berhasil tanpa verifikasi server.
 4. **Pengujian Multi-Akun**: Setiap kebijakan RLS wajib diuji dengan minimal dua akun pengguna yang berbeda.
+5. **Eksekusi Migrasi Baru Wajib Manual via Supabase CLI**:
+   - Setiap kali membuat atau memodifikasi berkas migrasi di `supabase/migrations/`, AI Assistant dan pengembang **WAJIB** mengeksekusi/mendorong migrasi secara manual ke database remote via Supabase CLI:
+     ```powershell
+     cmd /c "npx -y supabase db push"
+     ```
+   - Dilarang keras berasumsi atau menganggap migrasi otomatis berjalan di database server tanpa verifikasi eksekusi nyata.
+   - Seluruh status migrasi lokal dan remote wajib divalidasi hingga sinkron 100% menggunakan:
+     ```powershell
+     cmd /c "npx -y supabase migration list"
+     ```
+   - Setiap berkas migrasi SQL baru wajib bersifat idempoten (`create or replace`, `if not exists`, `drop trigger if exists`) agar aman dieksekusi ulang tanpa merusak integritas data eksisting.
 
 ---
 
@@ -145,6 +156,7 @@ Sebuah fase atau fitur dinyatakan selesai (*Definition of Done*) jika dan hanya 
 - Seluruh unit test terkait lulus 100% tanpa kegagalan (`Zero Test Failure`);
 - Build debug berhasil dikompilasi (`assembleDebug`);
 - Desugaring API 26 terbukti aktif dan bebas crash;
+- Seluruh migrasi database baru telah dieksekusi manual ke remote via Supabase CLI (`cmd /c "npx -y supabase db push"`) dan terverifikasi sinkron 100% (`cmd /c "npx -y supabase migration list"`);
 - Tidak ada secret atau token yang terekspos di kode sumber maupun manifest;
 - Dokumentasi terkait dimutakhirkan.
 
@@ -155,6 +167,10 @@ Sebuah fase atau fitur dinyatakan selesai (*Definition of Done*) jika dan hanya 
 
 # Membangun APK debug
 .\gradlew.bat assembleDebug
+
+# Memeriksa dan mengeksekusi migrasi Supabase ke remote database
+cmd /c "npx -y supabase migration list"
+cmd /c "npx -y supabase db push"
 ```
 
 ---
@@ -283,7 +299,7 @@ Sebelum kode dinyatakan siap rilis (*production-ready*) atau beralih ke tahap be
 | **2** | **UX & Usability Bottleneck** | Double submit form, review scan struk, empty state, keyboard resize | Tombol loading spinner `disabled`, layar review wajib sebelum simpan, `adjustResize` aktif |
 | **3** | **OWASP Security** | Secret leak, akses lintas akun (BOLA/IDOR), manipulasi nominal plan | Zero-secret di APK, RLS `auth.uid() = user_id`, server-authoritative pricing |
 | **4** | **Scalability & Resource** | Query transaksi riwayat, pembacaan foto struk resolusi tinggi | Pagination limit/offset, kompresi foto lokal sebelum unggah |
-| **5** | **Database & Indexing** | Pencarian SPBU, filter kendaraan & tanggal transaksi | Indeks komposit pada `(user_id, transaction_at desc)` & `(vehicle_id, transaction_at desc)` |
+| **5** | **Database, Indexing & Migrations** | Pencarian SPBU, filter kendaraan & eksekusi skema migrasi | Indeks komposit pada `(user_id, transaction_at desc)` & eksekusi migrasi manual via Supabase CLI (`npx -y supabase db push`) |
 | **6** | **Memory Leaks & Bloat** | Siklus hidup kamera, detektor ML Kit, coroutine scope | Coroutine terikat `viewModelScope`, pelepasan resource image analyzer |
 | **7** | **Timeout & External Fallback** | AI cloud failure, payment gateway offline, internet lambat | ML Kit lokal tetap jalan, input transaksi manual tetap tersedia saat offline/AI down |
 | **8** | **Observability & Error Log** | Log debug aplikasi, jejak audit webhook | Redaksi kunci otentikasi via `AppConfig.redactedKey`, zero-secret di log |

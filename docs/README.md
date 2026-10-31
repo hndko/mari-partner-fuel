@@ -96,6 +96,8 @@ Metode ini **100% tanpa perlu install/login tool CLI** tambahan di terminal, lan
    - **Query 8**: Buka file `supabase/migrations/20261029000008_security_hardening_and_integrity.sql` -> Tempel & Tekan **Run**.
    - **Query 9**: Buka file `supabase/migrations/20261030000001_ephemeral_receipt_storage_policy.sql` -> Tempel & Tekan **Run**. *(Kebijakan retensi struk ephemeral: transaksi BBM disimpan murni berbasis string/angka di database tanpa menyimpan file foto struk permanen di cloud storage)*.
    - **Query 10**: Buka file `supabase/migrations/20261030000002_saas_admin_owner_dashboard.sql` -> Tempel & Tekan **Run**. *(Fungsi otoritatif analitik SaaS Owner, kolom role di tabel profiles, grafik pendaftar & mutasi status Pro manual)*.
+   - **Query 11**: Buka file `supabase/migrations/20261030000003_saas_owner_plan_and_tx_management.sql` -> Tempel & Tekan **Run**. *(Manajemen katalog harga paket SaaS & audit transaksi masuk)*.
+   - **Query 12**: Buka file `supabase/migrations/20261031000001_enforce_vehicle_quota_trigger.sql` -> Tempel & Tekan **Run**. *(Trigger proteksi kuota 2 kendaraan aktif paket Free di level database)*.
 
 > [!TIP]
 > **Mengangkat Akun Pemilik (SaaS Owner)**:
@@ -112,24 +114,27 @@ Metode ini **100% tanpa perlu install/login tool CLI** tambahan di terminal, lan
 ---
 
 #### ⚡ METODE 2 (Otomatis Sekali Jalan): Lewat Supabase CLI di Terminal
-Jika Anda ingin mengeksekusi ke-8 file migrasi sekaligus secara otomatis dari terminal laptop:
+Jika Anda ingin mengeksekusi seluruh 12 file migrasi sekaligus secara otomatis dari terminal laptop:
 
 1. Buka terminal PowerShell di folder proyek ini.
 2. Login ke akun Supabase Anda:
    ```powershell
-   supabase login
+   npx -y supabase login
    ```
    *(Browser akan terbuka otomatis untuk mengonfirmasi login dan membuat access token)*.
 3. Hubungkan proyek lokal dengan proyek Supabase remote Anda:
    ```powershell
-   supabase link --project-ref zcezyhgrblksfuxmszyz
+   npx -y supabase link --project-ref zcezyhgrblksfuxmszyz
    ```
    *(Masukkan Database Password yang Anda simpan saat membuat proyek)*.
-4. Dorong (*push*) seluruh 8 migrasi SQL yang sudah ada di folder `supabase/migrations/` sekaligus:
+4. Dorong (*push*) seluruh 12 migrasi SQL yang ada di folder `supabase/migrations/` sekaligus:
    ```powershell
-   supabase db push
+   npx -y supabase db push
    ```
-   *(Jangan jalankan perintah `supabase migration new` karena seluruh 8 berkas SQL migrasi sudah tersedia lengkap di repositori ini)*.
+5. Periksa status sinkronisasi migrasi:
+   ```powershell
+   npx -y supabase migration list
+   ```
 
 ---
 
