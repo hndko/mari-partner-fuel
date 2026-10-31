@@ -24,6 +24,7 @@ class CheckFeatureAccessUseCaseTest {
         }
 
         override suspend fun getCachedEntitlement(): UserEntitlement? = entitlement
+        override suspend fun requestDowngradeToFree(): AppResult<String> = AppResult.Success("Downgrade recorded")
         override fun clearCache() {}
     }
 

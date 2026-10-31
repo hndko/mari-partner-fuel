@@ -10,6 +10,7 @@ data class UserEntitlement(
     val status: String = "active",
     val expiresAt: Instant? = null,
     val autoRenew: Boolean = false,
+    val cancelAtPeriodEnd: Boolean = false,
     val maxVehicles: Int? = 2,
     val features: List<String> = emptyList(),
     val aiQuota: AiQuotaStatus = AiQuotaStatus()

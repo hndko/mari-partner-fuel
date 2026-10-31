@@ -60,7 +60,7 @@ class SubscriptionRepositoryImpl(
         if (!currentUserId.isNullOrBlank()) {
             try {
                 val subs = getPostgrest().from("subscriptions").select(
-                    Columns.raw("id, user_id, plan_id, status, starts_at, expires_at, auto_renew, provider, subscription_plans(*)")
+                    Columns.raw("id, user_id, plan_id, status, starts_at, expires_at, auto_renew, cancel_at_period_end, provider, subscription_plans(*)")
                 ) {
                     filter {
                         eq("user_id", currentUserId)
@@ -87,6 +87,7 @@ class SubscriptionRepositoryImpl(
                             status = activeSub.status,
                             expiresAt = expiresInstant,
                             autoRenew = activeSub.autoRenew,
+                            cancelAtPeriodEnd = activeSub.cancelAtPeriodEnd,
                             maxVehicles = plan.maxVehicles,
                             features = plan.getFeaturesList(),
                             aiQuota = AiQuotaStatus(
@@ -114,6 +115,7 @@ class SubscriptionRepositoryImpl(
                 val planName = jsonObj["plan_name"]?.jsonPrimitive?.contentOrNull ?: "Mari Free"
                 val expiresStr = jsonObj["expires_at"]?.jsonPrimitive?.contentOrNull
                 val expiresInstant = expiresStr?.let { runCatching { Instant.parse(it) }.getOrNull() }
+                val cancelAtPeriodEnd = jsonObj["cancel_at_period_end"]?.jsonPrimitive?.booleanOrNull ?: false
                 val maxVehicles = jsonObj["max_vehicles"]?.jsonPrimitive?.intOrNull
                 val aiQuotaLimit = jsonObj["ai_scan_quota"]?.jsonPrimitive?.intOrNull ?: 5
                 val features = jsonObj["features"]?.jsonArray?.mapNotNull { runCatching { it.jsonPrimitive.content }.getOrNull() } ?: emptyList()
@@ -126,6 +128,7 @@ class SubscriptionRepositoryImpl(
                     status = "active",
                     expiresAt = expiresInstant,
                     autoRenew = false,
+                    cancelAtPeriodEnd = cancelAtPeriodEnd,
                     maxVehicles = maxVehicles,
                     features = features,
                     aiQuota = AiQuotaStatus(
@@ -160,6 +163,7 @@ class SubscriptionRepositoryImpl(
                 status = dto.status,
                 expiresAt = expiresInstant,
                 autoRenew = dto.autoRenew,
+                cancelAtPeriodEnd = dto.cancelAtPeriodEnd,
                 maxVehicles = dto.maxVehicles,
                 features = dto.features,
                 aiQuota = AiQuotaStatus(
@@ -271,5 +275,34 @@ class SubscriptionRepositoryImpl(
                 description = "Hemat 17% dengan paket tahunan. Nikmati seluruh fitur Pro tanpa batas kendaraan."
             )
         )
+    }
+
+    override suspend fun requestDowngradeToFree(): AppResult<String> = withContext(dispatcher) {
+        val currentUserId = getAuth().currentUserOrNull()?.id
+            ?: return@withContext AppResult.Error(AppException.Authentication("Pengguna belum terautentikasi"))
+
+        try {
+            val params = buildJsonObject {
+                put("p_user_id", currentUserId)
+            }
+            val rpcResult = getPostgrest().rpc("request_subscription_downgrade", params)
+            val jsonElement = json.parseToJsonElement(rpcResult.data)
+            val jsonObj = jsonElement.jsonObject
+            val isSuccess = jsonObj["success"]?.jsonPrimitive?.booleanOrNull ?: false
+            val message = jsonObj["message"]?.jsonPrimitive?.contentOrNull
+                ?: jsonObj["error"]?.jsonPrimitive?.contentOrNull
+                ?: "Permintaan downgrade ke paket Free berhasil diproses."
+
+            if (isSuccess) {
+                clearCache()
+                getMyEntitlement(forceRefresh = true)
+                AppResult.Success(message)
+            } else {
+                val errorMsg = jsonObj["error"]?.jsonPrimitive?.contentOrNull ?: "Gagal memproses permohonan downgrade."
+                AppResult.Error(AppException.Unknown(errorMsg))
+            }
+        } catch (e: Exception) {
+            AppResult.Error(AppException.Network(e.message ?: "Terjadi kesalahan saat memproses permohonan downgrade", e))
+        }
     }
 }

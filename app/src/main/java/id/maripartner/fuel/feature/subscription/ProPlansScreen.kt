@@ -175,20 +175,27 @@ fun ProPlansScreen(
                     it.isFree || it.billingPeriod.equals(uiState.selectedBillingPeriod, ignoreCase = true)
                 }
 
+                val isUserPro = uiState.userEntitlement?.isPro == true
+                val currentPlanCode = uiState.userEntitlement?.planCode.orEmpty()
+
                 items(filteredPlans.size) { index ->
                     val plan = filteredPlans[index]
                     val isCurrentPlan = if (plan.isFree) {
-                        !(uiState.userEntitlement?.isPro ?: false)
+                        !isUserPro
                     } else {
-                        (uiState.userEntitlement?.isPro ?: false) &&
-                            uiState.userEntitlement?.planCode.equals(plan.code, ignoreCase = true)
+                        isUserPro && currentPlanCode.equals(plan.code, ignoreCase = true)
                     }
 
                     Box(modifier = Modifier.widthIn(max = 760.dp)) {
                         PlanCard(
                             plan = plan,
                             isCurrentPlan = isCurrentPlan,
-                            onSelect = { onNavigateToCheckout(plan.code) }
+                            isUserPro = isUserPro,
+                            currentPlanCode = currentPlanCode,
+                            onSelect = { onNavigateToCheckout(plan.code) },
+                            onDowngrade = { viewModel.onEvent(SubscriptionUiEvent.RequestDowngrade(plan)) },
+                            onRenew = { viewModel.onEvent(SubscriptionUiEvent.RequestRenewal(plan)) },
+                            onSwitchCycle = { viewModel.onEvent(SubscriptionUiEvent.RequestSwitchCycle(plan)) }
                         )
                     }
                 }
@@ -200,6 +207,87 @@ fun ProPlansScreen(
                     }
                 }
             }
+        }
+
+        // Dialog Konfirmasi Downgrade ke Free (Graceful Expiry & No Immediate Cut)
+        if (uiState.showDowngradeDialog) {
+            val planName = uiState.userEntitlement?.planName ?: "Mari Pro"
+            val expiresText = uiState.userEntitlement?.expiresAt?.let { DateUtils.formatDateTime(it) } ?: "akhir periode"
+            FuelSweetAlertDialog(
+                show = true,
+                type = SweetAlertType.WARNING,
+                title = "Aturan Downgrade ke Free",
+                message = "Anda saat ini memiliki langganan $planName aktif hingga $expiresText.\n\n" +
+                    "Jaminan Aturan Sistem:\n" +
+                    "• Hak Pro Anda TETAP AKTIF sepenuhnya hingga $expiresText tanpa diputus seketika.\n" +
+                    "• Setelah tanggal tersebut, akun bertransisi ke Paket Free (5 scan AI/bln & maks 2 kendaraan aktif).\n" +
+                    "• Seluruh data riwayat transaksi BBM Anda dijamin 100% aman dan tidak akan dihapus.\n" +
+                    "• Kendaraan ke-3 dan seterusnya akan diarsipkan secara aman tanpa kehilangan data.\n\n" +
+                    "Apakah Anda yakin ingin memproses downgrade?",
+                confirmText = "Ya, Downgrade",
+                dismissText = "Batal (Tetap Pro)",
+                onConfirm = { viewModel.onEvent(SubscriptionUiEvent.ConfirmDowngrade) },
+                onDismiss = { viewModel.onEvent(SubscriptionUiEvent.DismissDowngradeDialog) }
+            )
+        }
+
+        // Dialog Konfirmasi Perpanjangan Paket (Renewal Kumulatif)
+        if (uiState.showRenewalDialog) {
+            val target = uiState.targetPlan
+            val expiresText = uiState.userEntitlement?.expiresAt?.let { DateUtils.formatDateTime(it) } ?: "tanggal jatuh tempo"
+            FuelSweetAlertDialog(
+                show = true,
+                type = SweetAlertType.INFO,
+                title = "Perpanjang ${target?.name ?: "Paket Pro"}",
+                message = "Masa aktif Anda saat ini berlaku hingga $expiresText.\n\n" +
+                    "Sesuai aturan sistem, perpanjangan paket akan menambahkan masa aktif secara kumulatif dari tanggal tersebut. Sisa hari aktif Anda yang sedang berjalan tidak akan hilang.\n\n" +
+                    "Lanjutkan ke formulir pembayaran?",
+                confirmText = "Lanjut Pembayaran",
+                dismissText = "Batal",
+                onConfirm = {
+                    val code = uiState.targetPlan?.code ?: ""
+                    viewModel.onEvent(SubscriptionUiEvent.DismissRenewalDialog)
+                    onNavigateToCheckout(code)
+                },
+                onDismiss = { viewModel.onEvent(SubscriptionUiEvent.DismissRenewalDialog) }
+            )
+        }
+
+        // Dialog Konfirmasi Peralihan Siklus Penagihan
+        if (uiState.showSwitchCycleDialog) {
+            val target = uiState.targetPlan
+            val isUpgradeToYearly = target?.isYearly == true
+            FuelSweetAlertDialog(
+                show = true,
+                type = SweetAlertType.INFO,
+                title = if (isUpgradeToYearly) "Upgrade ke Paket Tahunan" else "Beralih ke Paket Bulanan",
+                message = if (isUpgradeToYearly) {
+                    "Anda akan beralih ke ${target?.name} (Hemat 17%).\n\nDurasi 1 tahun penuh akan ditambahkan ke sisa masa aktif Pro Anda saat ini.\n\nLanjutkan ke proses pembayaran?"
+                } else {
+                    "Anda akan beralih ke ${target?.name}.\n\nSiklus bulanan baru akan berlaku setelah masa aktif tahunan Anda yang sedang berjalan berakhir secara alami.\n\nLanjutkan ke proses pembayaran?"
+                },
+                confirmText = "Lanjut Pembayaran",
+                dismissText = "Batal",
+                onConfirm = {
+                    val code = uiState.targetPlan?.code ?: ""
+                    viewModel.onEvent(SubscriptionUiEvent.DismissSwitchCycleDialog)
+                    onNavigateToCheckout(code)
+                },
+                onDismiss = { viewModel.onEvent(SubscriptionUiEvent.DismissSwitchCycleDialog) }
+            )
+        }
+
+        // Alert Feedback Sukses Tindakan
+        uiState.actionSuccessMessage?.let { msg ->
+            FuelSweetAlertDialog(
+                show = true,
+                type = SweetAlertType.SUCCESS,
+                title = "Permintaan Berhasil",
+                message = msg,
+                confirmText = "Mengerti",
+                onConfirm = { viewModel.onEvent(SubscriptionUiEvent.DismissSuccessMessage) },
+                onDismiss = { viewModel.onEvent(SubscriptionUiEvent.DismissSuccessMessage) }
+            )
         }
 
         // Modal Segera Hadir via FuelSweetAlertDialog
@@ -420,7 +508,12 @@ private fun BillingPeriodSelector(
 private fun PlanCard(
     plan: SubscriptionPlan,
     isCurrentPlan: Boolean,
-    onSelect: () -> Unit
+    isUserPro: Boolean,
+    currentPlanCode: String,
+    onSelect: () -> Unit,
+    onDowngrade: () -> Unit,
+    onRenew: () -> Unit,
+    onSwitchCycle: () -> Unit
 ) {
     val isPro = plan.isPro
 
@@ -470,7 +563,9 @@ private fun PlanCard(
                     )
                 }
 
-                if (isPro) {
+                if (isCurrentPlan && isUserPro) {
+                    FuelStatusChip(text = "PAKET ANDA SAAT INI", type = FuelChipType.Success)
+                } else if (isPro) {
                     FuelStatusChip(text = "PALING FLEKSIBEL", type = FuelChipType.AiTag)
                 }
             }
@@ -493,14 +588,44 @@ private fun PlanCard(
                 )
             }
 
-            // CTA Button
+            // CTA Button berdasarkan status kepemilikan dan aturan siklus
             if (isCurrentPlan) {
+                if (isUserPro) {
+                    FuelPrimaryButton(
+                        text = "Perpanjang Masa Aktif",
+                        onClick = onRenew,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    FuelSecondaryButton(
+                        text = "Paket Anda Saat Ini",
+                        onClick = {},
+                        enabled = false,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            } else if (plan.isFree && isUserPro) {
                 FuelSecondaryButton(
-                    text = "Paket Anda Saat Ini",
-                    onClick = {},
-                    enabled = false,
+                    text = "Downgrade ke Paket Free",
+                    onClick = onDowngrade,
+                    enabled = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+            } else if (isUserPro && !plan.isFree) {
+                if (plan.isYearly) {
+                    FuelPrimaryButton(
+                        text = "Upgrade ke Tahunan (Hemat 17%)",
+                        onClick = onSwitchCycle,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    FuelSecondaryButton(
+                        text = "Beralih ke Bulanan",
+                        onClick = onSwitchCycle,
+                        enabled = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             } else if (isPro) {
                 FuelPrimaryButton(
                     text = "Pilih Paket Pro",

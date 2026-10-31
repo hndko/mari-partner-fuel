@@ -58,7 +58,11 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 1. **Senior Engineering Mindset**: Bertindak sebagai Senior Android Engineer, Security Auditor, dan Tech Lead. Selalu utamakan solusi jangka panjang, arsitektur bersih, dan minim dependensi redundan.
 2. **Nol Asumsi & Non-Halusinasi**: Selalu baca berkas langsung di sistem file sebelum melakukan edit atau memberikan rekomendasi. Dilarang berasumsi nama fungsi, versi library, atau skema tabel ada tanpa verifikasi nyata.
 3. **Preservasi Invarian Domain**: Jangan merusak logika domain bisnis (perhitungan rata-rata tertimbang biaya per liter, konsumsi km/liter, validasi angka odometer, saldo kuota AI, dan status langganan Pro).
-4. **Verifikasi Fungsional Nyata**: Dilarang mengklaim modul fungsional hanya karena ViewModel atau Composable sudah dibuat. Verifikasi kompilasi Gradle, unit test, dan validasi data secara riil.
+4. **Invarian Siklus Langganan (Renewal, Upgrade, & Downgrade)**:
+   - **Kumulatif Renewal**: Perpanjangan paket Pro yang sedang aktif wajib menambahkan durasi ke sisa masa aktif berjalan (`expires_at + duration`), bukan mengganti atau mereset tanggal.
+   - **Graceful Downgrade ke Free (No Immediate Revocation)**: Permohonan downgrade dari paket Pro ke Free tidak boleh memutus benefit seketika. Seluruh fitur Pro tetap aktif hingga masa berlaku yang telah dibayar (`expires_at`) berakhir secara alami (*cancel at period end*).
+   - **Zero Data Loss Guarantee**: Data historis transaksi BBM, odometer, dan log pengguna tidak boleh dihapus atau dikunci ketika akun berpindah ke paket Free. Kendaraan aktif yang melebihi batas paket Free (2 unit) wajib diarsipkan secara aman tanpa kehilangan riwayat pengeluarannya.
+5. **Verifikasi Fungsional Nyata**: Dilarang mengklaim modul fungsional hanya karena ViewModel atau Composable sudah dibuat. Verifikasi kompilasi Gradle, unit test, dan validasi data secara riil.
 
 ---
 
@@ -134,6 +138,22 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 3. **Return URL Bukan Bukti Bayar**: Redirect URL atau kembali dari WebView hanya memicu polling status; aktivasi Pro hanya terjadi setelah status `paid` diverifikasi oleh backend.
 4. **Idempotensi Webhook Mutlak**: Event webhook pembayaran diverifikasi dan dicatat pada tabel `payment_webhook_events`. Event duplikat tidak akan memperpanjang atau menggandakan status Pro.
 5. **Graceful Expiry**: Ketika langganan Pro berakhir, riwayat pengeluaran BBM dan data kendaraan pengguna **TIDAK BOLEH** dikunci atau dihapus. Akun bertransisi kembali ke batas Free Tier secara aman.
+6. **Aturan Perpanjangan (Renewal) Paket Aktif**:
+   - Jika pengguna memilih kembali paket yang sama saat langganan Pro masih berjalan, sistem menyajikan opsi "Perpanjang Masa Aktif".
+   - Sistem wajib menambahkan masa aktif secara kumulatif (`expires_at = current_expires_at + duration`). Hari aktif yang tersisa tidak boleh hangus atau di-reset.
+7. **Aturan Upgrade Paket (Bulanan ke Tahunan)**:
+   - Pengguna dengan paket aktif Bulanan dapat memilih paket Tahunan untuk upgrade dengan potongan hemat tahunan (17%).
+   - Aktivasi paket Tahunan akan mengakumulasikan durasi baru ke sisa masa aktif bulanan yang sedang berjalan.
+8. **Aturan Downgrade Paket (Pro ke Free)**:
+   - Kartu paket Free untuk pengguna Pro wajib menyajikan aksi "Downgrade ke Paket Free" yang interaktif.
+   - Mengklik tombol ini wajib memicu dialog konfirmasi edukatif (*Human Confirmation Gate*) yang menjelaskan secara transparan:
+     - Masa aktif Pro tetap dinikmati secara penuh sampai tanggal kedaluwarsa (`expires_at`).
+     - Kuota scan AI bulanan baru akan kembali ke 5 scan/bulan setelah masa aktif Pro berakhir.
+     - Batas kendaraan aktif baru akan dibatasi maksimal 2 unit setelah masa aktif berakhir; kendaraan selebihnya diarsipkan otomatis dengan aman tanpa kehilangan riwayat transaksi BBM.
+     - Seluruh riwayat transaksi pengeluaran BBM yang telah dicatat tersimpan permanen dan dijamin 100% aman (*Zero Data Loss*).
+   - Konfirmasi downgrade menandai status langganan pada backend dengan `cancel_at_period_end = true` dan `auto_renew = false`.
+9. **Aturan Peralihan Siklus Antar Paket Pro (Tahunan ke Bulanan)**:
+   - Jika pengguna Pro Tahunan memilih paket Bulanan, sistem memberikan edukasi bahwa siklus bulanan baru akan berlaku efektif setelah masa aktif tahunan berakhir, sehingga pengguna tidak dirugikan atas biaya tahunan yang telah dibayarkan di muka.
 
 ---
 

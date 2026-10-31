@@ -20,6 +20,7 @@ data class UserEntitlementDto(
     val status: String = "active",
     @SerialName("expires_at") val expiresAt: String? = null,
     @SerialName("auto_renew") val autoRenew: Boolean = false,
+    @SerialName("cancel_at_period_end") val cancelAtPeriodEnd: Boolean = false,
     @SerialName("max_vehicles") val maxVehicles: Int? = 2,
     val features: List<String> = emptyList(),
     @SerialName("ai_quota") val aiQuota: AiQuotaDto = AiQuotaDto()
@@ -34,6 +35,7 @@ data class SubscriptionRecordDto(
     @SerialName("starts_at") val startsAt: String? = null,
     @SerialName("expires_at") val expiresAt: String? = null,
     @SerialName("auto_renew") val autoRenew: Boolean = false,
+    @SerialName("cancel_at_period_end") val cancelAtPeriodEnd: Boolean = false,
     @SerialName("provider") val provider: String? = null,
     @SerialName("subscription_plans") val subscriptionPlan: SubscriptionPlanDto? = null
 )
