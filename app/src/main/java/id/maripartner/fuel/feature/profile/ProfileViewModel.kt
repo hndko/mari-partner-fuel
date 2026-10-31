@@ -2,9 +2,13 @@ package id.maripartner.fuel.feature.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import id.maripartner.fuel.MariPartnerFuelApp
 import id.maripartner.fuel.core.common.config.AppConfig
 import id.maripartner.fuel.core.common.result.AppResult
 import id.maripartner.fuel.core.common.util.DateUtils
+import id.maripartner.fuel.core.location.SpbuProximityManager
+import id.maripartner.fuel.core.security.BiometricAuthManager
+import id.maripartner.fuel.core.security.BiometricHardwareStatus
 import id.maripartner.fuel.data.repository.AuthRepositoryImpl
 import id.maripartner.fuel.data.repository.SubscriptionRepositoryImpl
 import id.maripartner.fuel.domain.repository.AuthRepository
@@ -37,6 +41,10 @@ class ProfileViewModel(
             is ProfileUiEvent.UpdateDisplayName -> updateDisplayName(event.newName)
             is ProfileUiEvent.LinkGoogle -> linkGoogle(event.idToken)
             is ProfileUiEvent.ToggleReminderNotification -> toggleReminder(event.enabled)
+            is ProfileUiEvent.ToggleBiometricLock -> toggleBiometric(event.enabled)
+            is ProfileUiEvent.SetLockTimeout -> setLockTimeout(event.minutes)
+            is ProfileUiEvent.ToggleSpbuReminder -> toggleSpbuReminder(event.enabled)
+            is ProfileUiEvent.UpdateLocationPermission -> _uiState.update { it.copy(hasLocationPermission = event.granted) }
             is ProfileUiEvent.SetEditDialogVisible -> _uiState.update { it.copy(showEditDialog = event.visible) }
             is ProfileUiEvent.SetLogoutDialogVisible -> _uiState.update { it.copy(showLogoutConfirmDialog = event.visible) }
             is ProfileUiEvent.DismissMessage -> _uiState.update { it.copy(errorMessage = null, successMessage = null) }
@@ -86,6 +94,13 @@ class ProfileViewModel(
                 is AppResult.Error -> { }
             }
 
+            val appContext = MariPartnerFuelApp.instance
+            val isBioSupported = BiometricAuthManager.canAuthenticate(appContext) == BiometricHardwareStatus.AVAILABLE
+            val isBioEnabled = BiometricAuthManager.isBiometricEnabled(appContext)
+            val lockTimeout = BiometricAuthManager.getTimeoutMinutes(appContext)
+            val isSpbuEnabled = SpbuProximityManager.isSpbuReminderEnabled(appContext)
+            val hasLocationPerm = SpbuProximityManager.hasLocationPermission(appContext)
+
             _uiState.update {
                 it.copy(
                     userProfile = profileObj,
@@ -96,6 +111,11 @@ class ProfileViewModel(
                     planExpiresAt = expiresStr,
                     isGoogleLinked = isGoogleLinked,
                     themePreference = themePref,
+                    isBiometricSupported = isBioSupported,
+                    isBiometricEnabled = isBioEnabled,
+                    lockTimeoutMinutes = lockTimeout,
+                    isSpbuReminderEnabled = isSpbuEnabled,
+                    hasLocationPermission = hasLocationPerm,
                     isLoading = false
                 )
             }
@@ -165,5 +185,38 @@ class ProfileViewModel(
 
     private fun toggleReminder(enabled: Boolean) {
         _uiState.update { it.copy(isReminderNotificationEnabled = enabled) }
+    }
+
+    private fun toggleBiometric(enabled: Boolean) {
+        val appContext = MariPartnerFuelApp.instance
+        BiometricAuthManager.setBiometricEnabled(appContext, enabled)
+        _uiState.update {
+            it.copy(
+                isBiometricEnabled = enabled,
+                successMessage = if (enabled) "Kunci Biometrik diaktifkan!" else "Kunci Biometrik dinonaktifkan."
+            )
+        }
+    }
+
+    private fun setLockTimeout(minutes: Int) {
+        val appContext = MariPartnerFuelApp.instance
+        BiometricAuthManager.setTimeoutMinutes(appContext, minutes)
+        _uiState.update {
+            it.copy(
+                lockTimeoutMinutes = minutes,
+                successMessage = "Waktu kunci otomatis diubah."
+            )
+        }
+    }
+
+    private fun toggleSpbuReminder(enabled: Boolean) {
+        val appContext = MariPartnerFuelApp.instance
+        SpbuProximityManager.setSpbuReminderEnabled(appContext, enabled)
+        _uiState.update {
+            it.copy(
+                isSpbuReminderEnabled = enabled,
+                successMessage = if (enabled) "Pengingat SPBU diaktifkan!" else "Pengingat SPBU dinonaktifkan."
+            )
+        }
     }
 }

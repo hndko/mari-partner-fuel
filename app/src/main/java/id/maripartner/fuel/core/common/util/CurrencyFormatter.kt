@@ -26,6 +26,11 @@ object CurrencyFormatter {
     }
 
     /**
+     * Alias resmi format Rupiah standar, misal: `Rp 50.000`
+     */
+    fun formatRupiah(amount: Long): String = formatIdr(amount)
+
+    /**
      * Memformat angka ke pemisah ribuan titik tanpa prefix 'Rp '.
      * Contoh: 25000L -> "25.000", 1500000L -> "1.500.000"
      */

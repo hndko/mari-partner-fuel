@@ -16,6 +16,11 @@ data class ProfileUiState(
     val isGoogleSignInConfigured: Boolean = false,
     val themePreference: String = "system",
     val isReminderNotificationEnabled: Boolean = true,
+    val isBiometricSupported: Boolean = false,
+    val isBiometricEnabled: Boolean = false,
+    val lockTimeoutMinutes: Int = 0,
+    val isSpbuReminderEnabled: Boolean = true,
+    val hasLocationPermission: Boolean = false,
     val isLoading: Boolean = false,
     val isUpdating: Boolean = false,
     val errorMessage: String? = null,
@@ -35,6 +40,10 @@ sealed interface ProfileUiEvent {
     data class UpdateDisplayName(val newName: String) : ProfileUiEvent
     data class LinkGoogle(val idToken: String) : ProfileUiEvent
     data class ToggleReminderNotification(val enabled: Boolean) : ProfileUiEvent
+    data class ToggleBiometricLock(val enabled: Boolean) : ProfileUiEvent
+    data class SetLockTimeout(val minutes: Int) : ProfileUiEvent
+    data class ToggleSpbuReminder(val enabled: Boolean) : ProfileUiEvent
+    data class UpdateLocationPermission(val granted: Boolean) : ProfileUiEvent
     data class SetEditDialogVisible(val visible: Boolean) : ProfileUiEvent
     data class SetLogoutDialogVisible(val visible: Boolean) : ProfileUiEvent
     data object DismissMessage : ProfileUiEvent

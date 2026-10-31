@@ -90,6 +90,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.PriceChange
+import id.maripartner.fuel.feature.dashboard.component.FuelBudgetCard
+import id.maripartner.fuel.feature.dashboard.component.FuelBudgetDialog
+import id.maripartner.fuel.feature.dashboard.component.FuelPriceRadarDialog
+import id.maripartner.fuel.feature.dashboard.component.NearbySpbuBanner
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
@@ -236,6 +242,17 @@ fun DashboardScreen(
                     totalVehicles = uiState.totalVehiclesCount
                 )
 
+                // 1.0 Detektor Otomatis Kehadiran di SPBU (Prioritas Geofence)
+                uiState.nearestSpbuResult?.let { nearest ->
+                    if (nearest.isWithinGeofence) {
+                        NearbySpbuBanner(
+                            result = nearest,
+                            onNavigateToScan = onNavigateToScan,
+                            onDismiss = { /* dismissed for this view session */ }
+                        )
+                    }
+                }
+
                 // 1.1 Banner Pengingat Masa Aktif Pro / Transisi ke Free Tier
                 if (uiState.showExpiryBanner) {
                     if (uiState.isExpiringSoon) {
@@ -267,14 +284,21 @@ fun DashboardScreen(
                 // 2. Hero Card: Ringkasan Pengeluaran & Metrik BBM Bulan Berjalan
                 HeroMonthlySpendingCard(summary = uiState.summary)
 
-                // 3. Action Hub: Menu Aksi Cepat & Kalkulator Perjalanan (Prioritas 2)
+                // 2.1 Pagu Anggaran BBM & Prediksi Tanggal Tua (Fitur Pagu Anggaran)
+                FuelBudgetCard(
+                    report = uiState.fuelBudgetReport,
+                    onSetBudgetClick = { viewModel.onEvent(DashboardUiEvent.SetShowBudgetDialog(true)) }
+                )
+
+                // 3. Action Hub: Menu Aksi Cepat, Kalkulator Perjalanan & Radar BBM
                 QuickActionHubSection(
                     pendingRemindersCount = uiState.pendingRemindersCount,
                     onNavigateToScan = onNavigateToScan,
                     onNavigateToManualInput = onNavigateToManualInput,
                     onNavigateToReminders = onNavigateToReminders,
                     onNavigateToAnalytics = onNavigateToAnalytics,
-                    onNavigateToTripCalculator = onNavigateToTripCalculator
+                    onNavigateToTripCalculator = onNavigateToTripCalculator,
+                    onOpenFuelPriceRadar = { viewModel.onEvent(DashboardUiEvent.SetShowFuelPriceRadar(true)) }
                 )
 
                 // 4. Kendaraan Utama / Ajakan Mendaftarkan Kendaraan
@@ -302,6 +326,20 @@ fun DashboardScreen(
         AnomalyDetailDialog(
             anomaly = uiState.fuelAnomalyResult!!,
             onDismiss = { showAnomalyDetailDialog = false }
+        )
+    }
+
+    if (uiState.showBudgetDialog) {
+        FuelBudgetDialog(
+            initialBudgetIdr = uiState.fuelBudgetReport?.budgetLimitIdr ?: 0L,
+            onDismiss = { viewModel.onEvent(DashboardUiEvent.SetShowBudgetDialog(false)) },
+            onSaveBudget = { newBudget -> viewModel.onEvent(DashboardUiEvent.SetMonthlyBudget(newBudget)) }
+        )
+    }
+
+    if (uiState.showFuelPriceRadarDialog) {
+        FuelPriceRadarDialog(
+            onDismiss = { viewModel.onEvent(DashboardUiEvent.SetShowFuelPriceRadar(false)) }
         )
     }
 }
@@ -532,7 +570,7 @@ private fun HeroMetricTile(
 }
 
 /**
- * 3. Bagian Action Hub: 5 Kartu Aksi & Pintasan Modern Termasuk Kalkulator Perjalanan
+ * 3. Bagian Action Hub: 6 Kartu Aksi & Pintasan Modern Termasuk Kalkulator Perjalanan & Radar Harga BBM
  */
 @Composable
 private fun QuickActionHubSection(
@@ -541,7 +579,8 @@ private fun QuickActionHubSection(
     onNavigateToManualInput: () -> Unit,
     onNavigateToReminders: () -> Unit,
     onNavigateToAnalytics: () -> Unit,
-    onNavigateToTripCalculator: () -> Unit
+    onNavigateToTripCalculator: () -> Unit,
+    onOpenFuelPriceRadar: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
@@ -572,7 +611,7 @@ private fun QuickActionHubSection(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ) {
                 Text(
-                    text = "5 Pintasan",
+                    text = "6 Pintasan",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 11.sp
@@ -650,23 +689,37 @@ private fun QuickActionHubSection(
             )
         }
 
-        // Baris ke-3: Kalkulator Biaya Perjalanan & Split Bill (Prioritas 2)
+        // Baris ke-3: Kalkulator Biaya Perjalanan & Radar Harga BBM Indonesia
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ActionCardItem(
-                title = "Kalkulator Perjalanan & Split Bill",
-                subtitle = "Estimasi kebutuhan liter, biaya BBM & patungan teman",
+                title = "Kalkulator Trip",
+                subtitle = "Estimasi liter & split bill patungan",
                 icon = Icons.Default.Route,
                 iconBgColor = Color(0xFFE0F2FE),
                 iconTintColor = Color(0xFF0284C7),
-                badgeText = "Trip & Patungan",
+                badgeText = "Trip & Bill",
                 badgeBgColor = Color(0xFFE0F2FE),
                 badgeTextColor = Color(0xFF0284C7),
                 isPrimary = false,
                 onClick = onNavigateToTripCalculator,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.weight(1f)
+            )
+
+            ActionCardItem(
+                title = "Radar Harga BBM",
+                subtitle = "Komparasi SPBU & hemat tangki",
+                icon = Icons.Default.PriceChange,
+                iconBgColor = Color(0xFFFEF3C7),
+                iconTintColor = Color(0xFFD97706),
+                badgeText = "Arbitrase",
+                badgeBgColor = Color(0xFFFEF3C7),
+                badgeTextColor = Color(0xFFD97706),
+                isPrimary = false,
+                onClick = onOpenFuelPriceRadar,
+                modifier = Modifier.weight(1f)
             )
         }
     }

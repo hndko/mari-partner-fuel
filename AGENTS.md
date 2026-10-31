@@ -255,19 +255,20 @@ mari-partner-fuel/
 │       │   │   │   │   ├── result/       # UiState, AppResult, AppException
 │       │   │   │   │   └── util/         # CurrencyFormatter, DateUtils
 │       │   │   │   ├── designsystem/
-│       │   │   │   │   ├── component/    # FuelButton, FuelStateView, FuelTopBar, FuelCard
+│       │   │   │   │   ├── component/    # FuelButton, FuelStateView, FuelTopBar, FuelCard, BiometricLockOverlay
 │       │   │   │   │   └── theme/        # Color, Type, Shape, Theme (Light & Dark)
+│       │   │   │   ├── location/         # SpbuDirectory, SpbuProximityManager (offline geofence ~250m)
 │       │   │   │   ├── navigation/       # NavRoute, BottomNavItem, AppBottomBar, AppNavHost
-│       │   │   │   └── security/         # TokenStorage, KeystoreManager
+│       │   │   │   └── security/         # BiometricAuthManager, KeystoreManager
 │       │   │   ├── data/
-│       │   │   │   ├── local/            # DataStore, Preferences, Cache
+│       │   │   │   ├── local/            # DataStore, Preferences (FuelBudgetPreferences), Cache
 │       │   │   │   ├── ocr/              # Google ML Kit Text Recognition Engine
 │       │   │   │   ├── remote/           # Supabase Client Provider, Edge Function Callers
 │       │   │   │   └── repository/       # Repository Implementations
 │       │   │   ├── domain/
-│       │   │   │   ├── model/            # Vehicle, FuelTransaction, SubscriptionPlan, etc.
+│       │   │   │   ├── model/            # Vehicle, FuelTransaction, FuelBudget, VehicleTcoResult, EcoDriverReport, etc.
 │       │   │   │   ├── repository/       # Repository Interfaces
-│       │   │   │   └── usecase/          # Pure Business Rules & Calculations
+│       │   │   │   └── usecase/          # Pure Business Rules (TCO, Eco-Score, Budget, Arbitrage, PDF Export)
 │       │   │   └── feature/
 │       │   │       ├── analytics/        # AnalyticsScreen, AnalyticsViewModel
 │       │   │       ├── auth/             # LoginScreen, RegisterScreen, AuthViewModel

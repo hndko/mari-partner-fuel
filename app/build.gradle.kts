@@ -165,6 +165,9 @@ dependencies {
     // Google Play Billing System
     implementation(libs.play.billing.ktx)
 
+    // Biometric Authentication (Fingerprint & Face Unlock)
+    implementation(libs.androidx.biometric)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

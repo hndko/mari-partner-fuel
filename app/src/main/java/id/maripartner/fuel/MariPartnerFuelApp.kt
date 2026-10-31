@@ -10,6 +10,7 @@ class MariPartnerFuelApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         setupNotificationChannels()
     }
 
@@ -36,14 +37,27 @@ class MariPartnerFuelApp : Application() {
                 description = "Notifikasi pengingat masa aktif Pro dan pembaruan paket"
             }
 
+            val spbuChannel = NotificationChannel(
+                SPBU_PROXIMITY_CHANNEL_ID,
+                "Detektor SPBU Terdekat",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Pengingat otomatis saat berada di dekat SPBU untuk scan struk BBM"
+            }
+
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
             notificationManager.createNotificationChannel(subChannel)
+            notificationManager.createNotificationChannel(spbuChannel)
         }
     }
 
     companion object {
+        lateinit var instance: MariPartnerFuelApp
+            private set
+
         const val FUEL_REMINDER_CHANNEL_ID = "fuel_service_reminders"
         const val SUBSCRIPTION_CHANNEL_ID = "subscription_status_alerts"
+        const val SPBU_PROXIMITY_CHANNEL_ID = "spbu_proximity_alerts"
     }
 }

@@ -61,6 +61,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.FileProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import id.maripartner.fuel.feature.analytics.component.DriverMarginDialog
+import id.maripartner.fuel.feature.analytics.component.EcoDriverCard
+import id.maripartner.fuel.feature.analytics.component.VehicleTcoCard
 import id.maripartner.fuel.core.common.result.UiState
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.designsystem.component.FuelCard
@@ -100,6 +108,14 @@ fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.exportedCertificateFile) {
+        uiState.exportedCertificateFile?.let { file ->
+            sharePdfCertificate(context, file)
+            viewModel.onEvent(AnalyticsUiEvent.ClearExportedCertificate)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -260,25 +276,42 @@ fun AnalyticsScreen(
                     }
 
                     is UiState.Empty -> {
-                        Box(
+                        Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(20.dp),
-                            contentAlignment = Alignment.Center
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                FuelEmptyState(
-                                    title = "Belum Ada Data Transaksi",
-                                    subtitle = "Tidak ditemukan catatan transaksi BBM pada periode ${uiState.selectedPeriod.label}. Mulai catat pengisian BBM untuk melihat visualisasi analitik.",
-                                    icon = Icons.Default.BarChart,
-                                    actionButtonText = "＋ Catat Transaksi BBM",
-                                    onActionClick = onNavigateToCreateTransaction
-                                )
-                            }
+                            FuelEmptyState(
+                                title = "Belum Ada Data Transaksi",
+                                subtitle = "Tidak ditemukan catatan transaksi BBM pada periode ${uiState.selectedPeriod.label}. Mulai catat pengisian BBM untuk melihat visualisasi analitik.",
+                                icon = Icons.Default.BarChart,
+                                actionButtonText = "＋ Catat Transaksi BBM",
+                                onActionClick = onNavigateToCreateTransaction
+                            )
+
+                            // Pintasan Cerdas Kalkulator Biaya Perjalanan (Prioritas 2)
+                            TripCalculatorShortcutCard(onNavigateToCalculator = onNavigateToTripCalculator)
+
+                            // D.1 Matriks Biaya Riil per Km (TCO) & Kalkulator Margin Pengemudi
+                            VehicleTcoCard(
+                                tco = uiState.vehicleTcoResult,
+                                isProUser = uiState.isProUser,
+                                onConfigureMarginClick = { viewModel.onEvent(AnalyticsUiEvent.SetShowTcoMarginDialog(true)) },
+                                onUpgradeProClick = onNavigateToProPlans
+                            )
+
+                            // D.2 Sertifikat Digital Eco-Driver & Gamifikasi Hijau
+                            EcoDriverCard(
+                                report = uiState.ecoDriverReport,
+                                isProUser = uiState.isProUser,
+                                isExporting = uiState.isExportingCertificate,
+                                onExportCertificateClick = { viewModel.onEvent(AnalyticsUiEvent.ExportEcoCertificate) },
+                                onUpgradeProClick = onNavigateToProPlans
+                            )
+
+                            Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
 
@@ -320,6 +353,23 @@ fun AnalyticsScreen(
                             // D. Estimasi Efisiensi BBM (km/L)
                             FuelEfficiencyCard(efficiencies = report.efficiencySummaries)
 
+                            // D.1 Matriks Biaya Riil per Km (TCO) & Kalkulator Margin Pengemudi
+                            VehicleTcoCard(
+                                tco = uiState.vehicleTcoResult,
+                                isProUser = uiState.isProUser,
+                                onConfigureMarginClick = { viewModel.onEvent(AnalyticsUiEvent.SetShowTcoMarginDialog(true)) },
+                                onUpgradeProClick = onNavigateToProPlans
+                            )
+
+                            // D.2 Sertifikat Digital Eco-Driver & Gamifikasi Hijau
+                            EcoDriverCard(
+                                report = uiState.ecoDriverReport,
+                                isProUser = uiState.isProUser,
+                                isExporting = uiState.isExportingCertificate,
+                                onExportCertificateClick = { viewModel.onEvent(AnalyticsUiEvent.ExportEcoCertificate) },
+                                onUpgradeProClick = onNavigateToProPlans
+                            )
+
                             // E. Smart AI Insight Card
                             SmartInsightCard(report = report)
 
@@ -331,6 +381,17 @@ fun AnalyticsScreen(
                 }
             }
         }
+    }
+
+    if (uiState.showTcoMarginDialog) {
+        DriverMarginDialog(
+            currentRateIdr = uiState.driverRevenueRateIdr,
+            onDismiss = { viewModel.onEvent(AnalyticsUiEvent.SetShowTcoMarginDialog(false)) },
+            onSaveRate = { rate ->
+                viewModel.onEvent(AnalyticsUiEvent.UpdateDriverRevenueRate(rate))
+                viewModel.onEvent(AnalyticsUiEvent.SetShowTcoMarginDialog(false))
+            }
+        )
     }
 }
 
@@ -1109,5 +1170,25 @@ private fun TripCalculatorShortcutCard(
                 color = MariPrimaryBlue
             )
         }
+    }
+}
+
+private fun sharePdfCertificate(context: Context, pdfFile: java.io.File) {
+    try {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            pdfFile
+        )
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val chooser = Intent.createChooser(shareIntent, "Bagikan Sertifikat Digital Eco-Driver")
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(chooser)
+    } catch (e: Exception) {
+        android.widget.Toast.makeText(context, "Gagal membagikan sertifikat: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
     }
 }

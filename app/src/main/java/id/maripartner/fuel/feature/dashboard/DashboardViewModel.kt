@@ -2,8 +2,11 @@ package id.maripartner.fuel.feature.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import id.maripartner.fuel.MariPartnerFuelApp
 import id.maripartner.fuel.core.common.result.AppResult
 import id.maripartner.fuel.core.common.util.DateUtils
+import id.maripartner.fuel.core.location.SpbuProximityManager
+import id.maripartner.fuel.data.local.FuelBudgetPreferences
 import id.maripartner.fuel.data.repository.AuthRepositoryImpl
 import id.maripartner.fuel.data.repository.FuelTransactionRepositoryImpl
 import id.maripartner.fuel.data.repository.MaintenanceReminderRepositoryImpl
@@ -18,6 +21,7 @@ import id.maripartner.fuel.domain.repository.MaintenanceReminderRepository
 import id.maripartner.fuel.domain.repository.SubscriptionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
 import id.maripartner.fuel.domain.usecase.analytics.DetectFuelConsumptionAnomalyUseCase
+import id.maripartner.fuel.domain.usecase.budget.CalculateFuelBudgetUseCase
 import id.maripartner.fuel.domain.usecase.dashboard.GetDashboardSummaryUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +42,8 @@ class DashboardViewModel(
     private val reminderRepository: MaintenanceReminderRepository = MaintenanceReminderRepositoryImpl(),
     private val authRepository: AuthRepository = AuthRepositoryImpl(),
     private val subscriptionRepository: SubscriptionRepository = SubscriptionRepositoryImpl(),
-    private val detectFuelConsumptionAnomalyUseCase: DetectFuelConsumptionAnomalyUseCase = DetectFuelConsumptionAnomalyUseCase()
+    private val detectFuelConsumptionAnomalyUseCase: DetectFuelConsumptionAnomalyUseCase = DetectFuelConsumptionAnomalyUseCase(),
+    private val calculateFuelBudgetUseCase: CalculateFuelBudgetUseCase = CalculateFuelBudgetUseCase()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -53,6 +58,10 @@ class DashboardViewModel(
             is DashboardUiEvent.Refresh -> loadDashboard(isRefresh = true)
             is DashboardUiEvent.ClearError -> _uiState.update { it.copy(errorMessage = null) }
             is DashboardUiEvent.DismissExpiryBanner -> _uiState.update { it.copy(showExpiryBanner = false) }
+            is DashboardUiEvent.SetShowBudgetDialog -> _uiState.update { it.copy(showBudgetDialog = event.show) }
+            is DashboardUiEvent.SetShowFuelPriceRadar -> _uiState.update { it.copy(showFuelPriceRadarDialog = event.show) }
+            is DashboardUiEvent.SetMonthlyBudget -> updateBudget(event.amountIdr)
+            is DashboardUiEvent.CheckNearbySpbu -> checkNearbySpbu()
         }
     }
 
@@ -151,6 +160,32 @@ class DashboardViewModel(
                 }
             } catch (_: Exception) { }
 
+            // 6. Hitung Pagu Anggaran BBM & Prediksi "Habis Sebelum Tanggal Tua"
+            val appContext = MariPartnerFuelApp.instance
+            val budgetLimit = FuelBudgetPreferences.getBudget(appContext, primaryVehicle?.id)
+            val thisMonthTransactions = when (val res = transactionRepository.getTransactions(filter = TransactionFilter(), limit = 100)) {
+                is AppResult.Success -> {
+                    val now = LocalDate.now()
+                    res.data.filter { tx ->
+                        val txDate = tx.transactionAt.atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                        txDate.month == now.month && txDate.year == now.year
+                    }
+                }
+                else -> emptyList()
+            }
+            val budgetReport = calculateFuelBudgetUseCase(
+                budgetLimitIdr = budgetLimit,
+                transactions = thisMonthTransactions,
+                currentDate = LocalDate.now()
+            )
+
+            // 7. Cek Deteksi SPBU Terdekat (on-device location & catalog)
+            val nearestSpbu = try {
+                SpbuProximityManager.checkProximity(appContext)
+            } catch (_: Exception) {
+                null
+            }
+
             _uiState.update {
                 it.copy(
                     summary = summary,
@@ -158,6 +193,8 @@ class DashboardViewModel(
                     totalVehiclesCount = totalVehicles,
                     pendingRemindersCount = pendingReminders,
                     fuelAnomalyResult = anomalyResult,
+                    fuelBudgetReport = budgetReport,
+                    nearestSpbuResult = nearestSpbu,
                     userName = displayName,
                     isProUser = isPro,
                     isExpiringSoon = isExpiringSoon,
@@ -170,6 +207,21 @@ class DashboardViewModel(
                     errorMessage = null
                 )
             }
+        }
+    }
+
+    private fun updateBudget(amountIdr: Long) {
+        val appContext = MariPartnerFuelApp.instance
+        FuelBudgetPreferences.setBudget(appContext, amountIdr, _uiState.value.primaryVehicle?.id)
+        _uiState.update { it.copy(showBudgetDialog = false) }
+        loadDashboard(isRefresh = true)
+    }
+
+    private fun checkNearbySpbu() {
+        viewModelScope.launch {
+            val appContext = MariPartnerFuelApp.instance
+            val nearest = SpbuProximityManager.checkProximity(appContext)
+            _uiState.update { it.copy(nearestSpbuResult = nearest) }
         }
     }
 }

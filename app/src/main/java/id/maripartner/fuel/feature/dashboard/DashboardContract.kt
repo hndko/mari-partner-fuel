@@ -1,7 +1,9 @@
 package id.maripartner.fuel.feature.dashboard
 
+import id.maripartner.fuel.core.location.NearestSpbuResult
 import id.maripartner.fuel.domain.model.DashboardSummary
 import id.maripartner.fuel.domain.model.FuelAnomalyResult
+import id.maripartner.fuel.domain.model.FuelBudgetReport
 import id.maripartner.fuel.domain.model.Vehicle
 
 /**
@@ -13,6 +15,10 @@ data class DashboardUiState(
     val totalVehiclesCount: Int = 0,
     val pendingRemindersCount: Int = 0,
     val fuelAnomalyResult: FuelAnomalyResult? = null,
+    val fuelBudgetReport: FuelBudgetReport? = null,
+    val nearestSpbuResult: NearestSpbuResult? = null,
+    val showBudgetDialog: Boolean = false,
+    val showFuelPriceRadarDialog: Boolean = false,
     val userName: String = "Pengemudi",
     val isProUser: Boolean = false,
     val isExpiringSoon: Boolean = false,
@@ -33,4 +39,8 @@ sealed interface DashboardUiEvent {
     data object Refresh : DashboardUiEvent
     data object ClearError : DashboardUiEvent
     data object DismissExpiryBanner : DashboardUiEvent
+    data class SetMonthlyBudget(val amountIdr: Long) : DashboardUiEvent
+    data class SetShowBudgetDialog(val show: Boolean) : DashboardUiEvent
+    data class SetShowFuelPriceRadar(val show: Boolean) : DashboardUiEvent
+    data object CheckNearbySpbu : DashboardUiEvent
 }
