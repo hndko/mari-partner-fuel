@@ -277,7 +277,8 @@ mari-partner-fuel/
 │       │   │       ├── receipt_scan/     # CameraScanScreen, ScanReviewScreen, OcrViewModel
 │       │   │       ├── splash/           # SplashScreen
 │       │   │       ├── subscription/     # ProPlansScreen, CheckoutScreen, QrisView
-│       │   │       ├── transactions/     # TransactionsScreen, TransactionFormScreen
+│       │   │       ├── transactions/     # TransactionsScreen, TransactionFormScreen, ExportChoiceDialog
+│       │   │       ├── trip/             # TripCalculatorScreen, TripCalculatorViewModel, TripCalculatorContract
 │       │   │       └── vehicles/         # VehiclesScreen, VehicleFormScreen
 │       │   └── res/
 │       │       ├── drawable/             # Vector icons & drawables

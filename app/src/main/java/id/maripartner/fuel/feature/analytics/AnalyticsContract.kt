@@ -3,6 +3,7 @@ package id.maripartner.fuel.feature.analytics
 import id.maripartner.fuel.core.common.result.UiState
 import id.maripartner.fuel.domain.model.AnalyticsPeriod
 import id.maripartner.fuel.domain.model.AnalyticsReport
+import id.maripartner.fuel.domain.model.FuelAnomalyResult
 import id.maripartner.fuel.domain.model.Vehicle
 import java.time.LocalDate
 
@@ -16,6 +17,8 @@ data class AnalyticsUiState(
     val customEndDate: LocalDate? = null,
     val selectedVehicleId: String? = null,
     val availableVehicles: List<Vehicle> = emptyList(),
+    val fuelAnomalyResult: FuelAnomalyResult? = null,
+    val isProUser: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null
 )

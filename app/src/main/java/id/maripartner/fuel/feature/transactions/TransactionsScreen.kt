@@ -2,6 +2,7 @@ package id.maripartner.fuel.feature.transactions
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,19 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
+import androidx.core.content.FileProvider
+import java.io.File
+import android.content.Context
+import android.content.Intent
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
@@ -87,6 +101,7 @@ import kotlinx.coroutines.launch
 fun TransactionsScreen(
     onNavigateToCreate: () -> Unit,
     onNavigateToDetail: (String) -> Unit = {},
+    onNavigateToProPlans: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TransactionsViewModel = viewModel()
 ) {
@@ -96,6 +111,8 @@ fun TransactionsScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var pendingCsvContent by remember { mutableStateOf<String?>(null) }
+    var showExportChoiceDialog by remember { mutableStateOf(false) }
+    var showProUpgradeDialog by remember { mutableStateOf(false) }
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
@@ -157,14 +174,8 @@ fun TransactionsScreen(
                 title = "Riwayat Pengeluaran BBM",
                 actions = {
                     IconButton(
-                        onClick = {
-                            viewModel.exportCsv { csvString ->
-                                pendingCsvContent = csvString
-                                val defaultFileName = "mari-partner-fuel-transaksi-${java.time.LocalDate.now()}.csv"
-                                createDocumentLauncher.launch(defaultFileName)
-                            }
-                        },
-                        enabled = !uiState.isExporting && uiState.transactions.isNotEmpty()
+                        onClick = { showExportChoiceDialog = true },
+                        enabled = !uiState.isExporting
                     ) {
                         if (uiState.isExporting) {
                             CircularProgressIndicator(
@@ -175,8 +186,8 @@ fun TransactionsScreen(
                         } else {
                             Icon(
                                 imageVector = Icons.Default.FileDownload,
-                                contentDescription = "Ekspor CSV",
-                                tint = if (uiState.transactions.isNotEmpty()) MariPrimaryBlue else MariMutedLight
+                                contentDescription = "Ekspor Laporan",
+                                tint = MariPrimaryBlue
                             )
                         }
                     }
@@ -556,6 +567,41 @@ fun TransactionsScreen(
             }
         }
     }
+
+    if (showExportChoiceDialog) {
+        ExportChoiceDialog(
+            isProUser = uiState.isProUser,
+            onDismiss = { showExportChoiceDialog = false },
+            onExportPdf = {
+                showExportChoiceDialog = false
+                if (uiState.isProUser) {
+                    viewModel.exportPdf(context = context) { pdfFile ->
+                        sharePdfDocument(context, pdfFile)
+                    }
+                } else {
+                    showProUpgradeDialog = true
+                }
+            },
+            onExportCsv = {
+                showExportChoiceDialog = false
+                viewModel.exportCsv { csvContent ->
+                    val fileName = "laporan_pengeluaran_bbm_${System.currentTimeMillis()}.csv"
+                    pendingCsvContent = csvContent
+                    createDocumentLauncher.launch(fileName)
+                }
+            }
+        )
+    }
+
+    if (showProUpgradeDialog) {
+        ProUpgradeExportPromoDialog(
+            onDismiss = { showProUpgradeDialog = false },
+            onUpgradeClick = {
+                showProUpgradeDialog = false
+                onNavigateToProPlans()
+            }
+        )
+    }
 }
 
 /**
@@ -742,5 +788,266 @@ private fun TransactionItemCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ExportChoiceDialog(
+    isProUser: Boolean,
+    onDismiss: () -> Unit,
+    onExportPdf: () -> Unit,
+    onExportCsv: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.FileDownload,
+                    contentDescription = null,
+                    tint = MariPrimaryBlue,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Ekspor Riwayat Transaksi",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Pilih format dokumen pengeluaran BBM yang ingin Anda hasilkan:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Option 1: PDF Resmi (Pro)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, if (isProUser) MariPrimaryBlue else Color(0xFFF59E0B).copy(alpha = 0.5f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onExportPdf() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF004D40).copy(alpha = 0.12f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Description,
+                                    contentDescription = null,
+                                    tint = Color(0xFF004D40),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "Dokumen PDF Resmi",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = if (isProUser) Color(0xFFDCFCE7) else Color(0xFFFEF3C7)
+                                ) {
+                                    Text(
+                                        text = if (isProUser) "PRO AKTIF" else "FITUR PRO",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (isProUser) Color(0xFF15803D) else Color(0xFFB45309)
+                                        ),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Laporan ber-kop resmi, ringkasan eksekutif, tabel transaksi rinci, dan tanda tangan pengesahan klaim/pajak.",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                // Option 2: CSV Mentah (Free)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, MariBorderLight),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onExportCsv() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MariPrimaryBlue.copy(alpha = 0.12f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.FileDownload,
+                                    contentDescription = null,
+                                    tint = MariPrimaryBlue,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "Tabel Data CSV",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0xFFF1F5F9)
+                                ) {
+                                    Text(
+                                        text = "GRATIS",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF475569)
+                                        ),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Format spreadsheet mentah standar (.csv) yang kompatibel dengan Microsoft Excel dan Google Sheets.",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ProUpgradeExportPromoDialog(
+    onDismiss: () -> Unit,
+    onUpgradeClick: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.WorkspacePremium,
+                    contentDescription = null,
+                    tint = Color(0xFFD97706),
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Fitur Eksklusif Mari Pro",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Ekspor Laporan PDF Formal Ber-Kop adalah fitur premium yang dirancang khusus untuk mempermudah klaim pengeluaran bahan bakar kantor (reimbursement) dan audit pajak.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFFEF3C7),
+                    border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Keunggulan Laporan PDF Resmi:",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Color(0xFF92400E))
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "• Kop resmi korporat & nomor dokumen sah\n• Ringkasan eksekutif finansial bulanan\n• Tabel pengeluaran rinci per kendaraan\n• Kolom tanda tangan pengesahan atasan",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                            color = Color(0xFF78350F)
+                        )
+                    }
+                }
+                Text(
+                    text = "Tingkatkan akun Anda ke Mari Pro untuk menikmati fitur ini dan kelola armada tanpa batas!",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onUpgradeClick,
+                colors = ButtonDefaults.buttonColors(containerColor = MariPrimaryBlue)
+            ) {
+                Text("Lihat Paket Pro")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Nanti Saja")
+            }
+        }
+    )
+}
+
+private fun sharePdfDocument(context: Context, pdfFile: File) {
+    try {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            pdfFile
+        )
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val chooser = Intent.createChooser(shareIntent, "Bagikan Laporan PDF Resmi")
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(chooser)
+    } catch (e: Exception) {
+        android.widget.Toast.makeText(context, "Gagal membagikan PDF: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
     }
 }

@@ -7,10 +7,14 @@ import id.maripartner.fuel.core.common.result.UiState
 import id.maripartner.fuel.data.repository.FuelTransactionRepositoryImpl
 import id.maripartner.fuel.data.repository.VehicleRepositoryImpl
 import id.maripartner.fuel.domain.model.AnalyticsPeriod
+import id.maripartner.fuel.domain.model.FuelAnomalyResult
+import id.maripartner.fuel.domain.model.TransactionFilter
 import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
 import id.maripartner.fuel.domain.usecase.analytics.CalculateFuelEfficiencyUseCase
+import id.maripartner.fuel.domain.usecase.analytics.DetectFuelConsumptionAnomalyUseCase
 import id.maripartner.fuel.domain.usecase.analytics.GetAnalyticsReportUseCase
+import id.maripartner.fuel.domain.usecase.subscription.GetMyEntitlementsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +31,9 @@ class AnalyticsViewModel(
     private val getAnalyticsReportUseCase: GetAnalyticsReportUseCase = GetAnalyticsReportUseCase(
         transactionRepository,
         CalculateFuelEfficiencyUseCase()
-    )
+    ),
+    private val detectFuelConsumptionAnomalyUseCase: DetectFuelConsumptionAnomalyUseCase = DetectFuelConsumptionAnomalyUseCase(),
+    private val getMyEntitlementsUseCase: GetMyEntitlementsUseCase = GetMyEntitlementsUseCase()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
@@ -82,6 +88,30 @@ class AnalyticsViewModel(
                 _uiState.update { it.copy(reportState = UiState.Loading) }
             }
 
+            // Cek status Pro pengguna
+            var isPro = false
+            try {
+                when (val ent = getMyEntitlementsUseCase()) {
+                    is AppResult.Success -> isPro = ent.data.isPro
+                    else -> {}
+                }
+            } catch (_: Exception) {}
+
+            // Deteksi Anomali Konsumsi BBM (Prioritas 3)
+            var anomalyResult: FuelAnomalyResult? = null
+            val targetVehicleId = currentState.selectedVehicleId ?: currentState.availableVehicles.firstOrNull()?.id
+            if (targetVehicleId != null) {
+                try {
+                    val txRes = transactionRepository.getTransactions(
+                        filter = TransactionFilter(vehicleId = targetVehicleId),
+                        limit = 50
+                    )
+                    if (txRes is AppResult.Success) {
+                        anomalyResult = detectFuelConsumptionAnomalyUseCase.detectAnomaly(targetVehicleId, txRes.data)
+                    }
+                } catch (_: Exception) {}
+            }
+
             val result = getAnalyticsReportUseCase(
                 period = currentState.selectedPeriod,
                 customStartDate = currentState.customStartDate,
@@ -101,6 +131,8 @@ class AnalyticsViewModel(
                     _uiState.update {
                         it.copy(
                             reportState = state,
+                            fuelAnomalyResult = anomalyResult,
+                            isProUser = isPro,
                             isRefreshing = false,
                             errorMessage = null
                         )
@@ -110,6 +142,8 @@ class AnalyticsViewModel(
                     _uiState.update {
                         it.copy(
                             reportState = UiState.Error(result.exception.message ?: "Gagal memuat analitik."),
+                            fuelAnomalyResult = anomalyResult,
+                            isProUser = isPro,
                             isRefreshing = false,
                             errorMessage = result.exception.message
                         )

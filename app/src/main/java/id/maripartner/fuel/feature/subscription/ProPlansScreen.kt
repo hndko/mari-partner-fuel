@@ -758,6 +758,9 @@ private fun PlanCard(
                     text = if (isPro) "Analitik lanjutan & komparasi multi-armada" else "Analitik dasar & efisiensi BBM (km/l)",
                     isIncluded = true
                 )
+                PlanFeatureItem(text = "Kalkulator biaya perjalanan & split bill patungan", isIncluded = true)
+                PlanFeatureItem(text = "Deteksi cerdas anomali konsumsi & kebocoran BBM", isIncluded = true)
+                PlanFeatureItem(text = "Ekspor laporan PDF formal ber-kop (klaim kantor & pajak)", isIncluded = isPro)
                 PlanFeatureItem(text = "Cloud AI Gemini Fallback prioritas tinggi", isIncluded = isPro)
                 PlanFeatureItem(text = "Ekspor data riwayat ke format CSV", isIncluded = true)
                 PlanFeatureItem(text = "Prioritas dukungan teknis", isIncluded = isPro)

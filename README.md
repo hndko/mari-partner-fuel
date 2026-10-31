@@ -62,6 +62,19 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
   - Kartu Tips Efisiensi BBM Harian (*Eco-Driving Insights*): Carousel tips cerdas yang dapat digeser (*swipable HorizontalPager*) dengan gesture sentuh, berpindah otomatis setiap 5 detik secara berkala, tombol aksi *Ganti Tips* dengan animasi halus, dan pagination dots interaktif.
   - Analitik efisiensi bahan bakar (km/liter) berbasis odometer berurutan.
 - 📜 **Riwayat & Pencarian**: Filter rentang waktu, filter kendaraan, dan pencarian SPBU secara real-time dengan debounce.
+- 📑 **Ekspor Laporan PDF Formal Ber-Kop (Corporate Reimbursement & Pajak) [Fitur Pro Eksklusif]**:
+  - Menghasilkan dokumen resmi format standar A4 via native Android `android.graphics.pdf.PdfDocument` (nol library/API berbayar).
+  - Menyajikan kop resmi korporat, nomor dokumen sah unik, ringkasan eksekutif finansial (total nominal, volume liter, rata-rata harga/liter), tabel rincian transaksi berurutan, dan kolom tanda tangan pengesahan atasan/klaim kantor.
+  - Dilengkapi dialog pilihan ekspor (PDF Resmi Pro vs CSV Gratis) serta dialog edukatif ajakan upgrade Pro jika akun masih Free Tier.
+- 🗺️ **Kalkulator Biaya Perjalanan & Bagi Tagihan (Trip Cost & Split Bill)**:
+  - Estimasi kebutuhan volume liter BBM, total biaya Rupiah, dan emisi jejak karbon $CO_2$ secara instan berdasarkan jarak perjalanan (km) dan efisiensi rata-rata riil armada kendaraan pengguna.
+  - Preset harga bahan bakar Indonesia terlengkap (Pertalite RON 90, Pertamax RON 92, Pertamax Turbo RON 98, Bio Solar CN 48, Dexlite CN 51, Pertamina Dex CN 53, Shell Super, BP 92) serta opsi harga kustom.
+  - Fitur Bagi Tagihan (*Split Bill*): Pembagian patungan biaya adil per orang dengan visual avatar dan stepper penumpang interaktif.
+  - Tombol aksi 1-tap *Bagikan Rincian ke Teman (WhatsApp)* dengan ringkasan teks rapi.
+- 🔍 **Detektor Cerdas Anomali Konsumsi & Indikasi Kebocoran BBM (AI Fuel Anomaly Detection)**:
+  - Algoritma analitik statistik on-device (Z-Score & perbandingan sequential odometer) untuk membandingkan konsumsi BBM terkini dengan baseline historis armada.
+  - Peringatan Cerdas Otomatis (*Smart Warning*): Terpicu jika efisiensi turun $\ge 20\%$ (indikasi tekanan ban kendor, busi kotor, atau oli jenuh) atau $\ge 35\%$ (Kritis: indikasi kebocoran saluran bahan bakar atau kerusakan injektor).
+  - Kartu alert interaktif pada Beranda (`DashboardScreen`) dan Analitik (`AnalyticsScreen`) dilengkapi modal panduan rekomendasi teknis mendalam.
 - 💎 **Paket Free & Pro Otoritatif (Server-Side Entitlement)**:
   - Katalog paket backend resmi: **Mari Free** (Rp 0, 2 kendaraan, 5 AI scans/bln), **Mari Pro Bulanan** (Rp 29.000, kendaraan tanpa batas, 100 AI scans/bln), dan **Mari Pro Tahunan** (Rp 290.000, hemat 17%).
   - Layanan backend `get-my-entitlements` sebagai Single Source of Truth (klien Android tidak dapat memalsukan status `is_pro`).

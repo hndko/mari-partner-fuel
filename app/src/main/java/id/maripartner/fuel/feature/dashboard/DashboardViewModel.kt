@@ -10,11 +10,14 @@ import id.maripartner.fuel.data.repository.MaintenanceReminderRepositoryImpl
 import id.maripartner.fuel.data.repository.SubscriptionRepositoryImpl
 import id.maripartner.fuel.data.repository.VehicleRepositoryImpl
 import id.maripartner.fuel.domain.model.DashboardSummary
+import id.maripartner.fuel.domain.model.FuelAnomalyResult
+import id.maripartner.fuel.domain.model.TransactionFilter
 import id.maripartner.fuel.domain.repository.AuthRepository
 import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.MaintenanceReminderRepository
 import id.maripartner.fuel.domain.repository.SubscriptionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
+import id.maripartner.fuel.domain.usecase.analytics.DetectFuelConsumptionAnomalyUseCase
 import id.maripartner.fuel.domain.usecase.dashboard.GetDashboardSummaryUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +37,8 @@ class DashboardViewModel(
     private val vehicleRepository: VehicleRepository = VehicleRepositoryImpl(),
     private val reminderRepository: MaintenanceReminderRepository = MaintenanceReminderRepositoryImpl(),
     private val authRepository: AuthRepository = AuthRepositoryImpl(),
-    private val subscriptionRepository: SubscriptionRepository = SubscriptionRepositoryImpl()
+    private val subscriptionRepository: SubscriptionRepository = SubscriptionRepositoryImpl(),
+    private val detectFuelConsumptionAnomalyUseCase: DetectFuelConsumptionAnomalyUseCase = DetectFuelConsumptionAnomalyUseCase()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -93,9 +97,10 @@ class DashboardViewModel(
                 }
             } catch (_: Exception) { }
 
-            // 3. Ambil data kendaraan aktif
+            // 3. Ambil data kendaraan aktif & evaluasi anomali konsumsi BBM
             var primaryVehicle = _uiState.value.primaryVehicle
             var totalVehicles = 0
+            var anomalyResult: FuelAnomalyResult? = null
             try {
                 val vehiclesFlow = vehicleRepository.getVehicles(includeArchived = false)
                 val vehiclesResult = vehiclesFlow.firstOrNull()
@@ -103,6 +108,15 @@ class DashboardViewModel(
                     val vehicles = vehiclesResult.data
                     totalVehicles = vehicles.size
                     primaryVehicle = vehicles.firstOrNull()
+                    if (primaryVehicle != null) {
+                        val txRes = transactionRepository.getTransactions(
+                            filter = TransactionFilter(vehicleId = primaryVehicle.id),
+                            limit = 50
+                        )
+                        if (txRes is AppResult.Success) {
+                            anomalyResult = detectFuelConsumptionAnomalyUseCase.detectAnomaly(primaryVehicle.id, txRes.data)
+                        }
+                    }
                 }
             } catch (_: Exception) { }
 
@@ -143,6 +157,7 @@ class DashboardViewModel(
                     primaryVehicle = primaryVehicle,
                     totalVehiclesCount = totalVehicles,
                     pendingRemindersCount = pendingReminders,
+                    fuelAnomalyResult = anomalyResult,
                     userName = displayName,
                     isProUser = isPro,
                     isExpiringSoon = isExpiringSoon,

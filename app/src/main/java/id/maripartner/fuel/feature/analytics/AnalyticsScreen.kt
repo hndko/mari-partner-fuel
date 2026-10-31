@@ -1,7 +1,9 @@
 package id.maripartner.fuel.feature.analytics
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,12 +28,15 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Dangerous
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -41,6 +46,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -69,12 +75,17 @@ import id.maripartner.fuel.core.designsystem.theme.MariAccentCyan
 import id.maripartner.fuel.core.designsystem.theme.MariBorderLight
 import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
 import id.maripartner.fuel.core.designsystem.theme.MariDanger
+import id.maripartner.fuel.core.designsystem.theme.MariDangerBg
 import id.maripartner.fuel.core.designsystem.theme.MariMutedLight
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
 import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import id.maripartner.fuel.core.designsystem.theme.MariTextLight
+import id.maripartner.fuel.core.designsystem.theme.MariWarning
+import id.maripartner.fuel.core.designsystem.theme.MariWarningBg
 import id.maripartner.fuel.domain.model.AnalyticsPeriod
 import id.maripartner.fuel.domain.model.AnalyticsReport
+import id.maripartner.fuel.domain.model.AnomalySeverity
+import id.maripartner.fuel.domain.model.FuelAnomalyResult
 import id.maripartner.fuel.domain.model.TimePeriodExpense
 import id.maripartner.fuel.domain.model.VehicleEfficiencySummary
 import id.maripartner.fuel.domain.model.VehicleSpendingSummary
@@ -83,6 +94,8 @@ import java.util.Locale
 @Composable
 fun AnalyticsScreen(
     onNavigateToCreateTransaction: () -> Unit = {},
+    onNavigateToTripCalculator: () -> Unit = {},
+    onNavigateToProPlans: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: AnalyticsViewModel = viewModel()
 ) {
@@ -280,6 +293,16 @@ fun AnalyticsScreen(
                         ) {
                             // A. 4-Card KPI Grid (Ringkasan Metrik Finansial)
                             AnalyticsKpiGrid(report = report)
+
+                            // Diagnosa Cerdas Anomali Efisiensi Konsumsi BBM (Prioritas 3)
+                            uiState.fuelAnomalyResult?.let { anomaly ->
+                                if (anomaly.hasAnomaly) {
+                                    AnalyticsAnomalyDiagnosisCard(anomaly = anomaly)
+                                }
+                            }
+
+                            // Pintasan Cerdas Kalkulator Biaya Perjalanan (Prioritas 2)
+                            TripCalculatorShortcutCard(onNavigateToCalculator = onNavigateToTripCalculator)
 
                             // B. Visualisasi Grafik Tren Pengeluaran (Bar Chart)
                             if (report.timeSeriesExpenses.isNotEmpty()) {
@@ -912,6 +935,179 @@ private fun SmartInsightCard(report: AnalyticsReport) {
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Kartu Diagnosa Cerdas Anomali Efisiensi Konsumsi BBM (Prioritas 3)
+ */
+@Composable
+private fun AnalyticsAnomalyDiagnosisCard(
+    anomaly: FuelAnomalyResult,
+    modifier: Modifier = Modifier
+) {
+    val isCritical = anomaly.severity == AnomalySeverity.CRITICAL
+    val bgColor = if (isCritical) MariDangerBg else MariWarningBg
+    val borderColor = if (isCritical) MariDanger.copy(alpha = 0.4f) else MariWarning.copy(alpha = 0.4f)
+    val titleColor = if (isCritical) MariDanger else Color(0xFFB45309)
+    val icon = if (isCritical) Icons.Default.Dangerous else Icons.Default.Warning
+
+    FuelCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(bgColor)
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = CircleShape,
+                        color = if (isCritical) MariDanger.copy(alpha = 0.15f) else MariWarning.copy(alpha = 0.2f),
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = if (isCritical) MariDanger else MariWarning,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = if (isCritical) "DETEKSI ANOMALI KRITIS" else "PERINGATAN EFISIENSI BBM",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp
+                            ),
+                            color = titleColor
+                        )
+                        Text(
+                            text = anomaly.title,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MariBrandNavy
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isCritical) MariDanger.copy(alpha = 0.2f) else MariWarning.copy(alpha = 0.25f)
+                ) {
+                    Text(
+                        text = if (isCritical) "KRITIS" else "WARNING",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            color = titleColor
+                        ),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = anomaly.message,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (anomaly.technicalRecommendations.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.White.copy(alpha = 0.8f),
+                    border = BorderStroke(1.dp, borderColor),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "Rekomendasi Tindakan Teknis:",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = titleColor
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        anomaly.technicalRecommendations.forEach { rec ->
+                            Text(
+                                text = "• $rec",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Kartu Pintasan Menuju Kalkulator Biaya Perjalanan (Prioritas 2)
+ */
+@Composable
+private fun TripCalculatorShortcutCard(
+    onNavigateToCalculator: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FuelCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onNavigateToCalculator)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MariPrimaryBlue.copy(alpha = 0.12f),
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Route,
+                        contentDescription = null,
+                        tint = MariPrimaryBlue,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Kalkulator Perjalanan & Split Bill",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MariBrandNavy
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Hitung estimasi kebutuhan bensin, biaya patungan antar rekan, dan jejak karbon perjalananmu.",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                    color = MariMutedLight
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = "Buka →",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = MariPrimaryBlue
+            )
         }
     }
 }

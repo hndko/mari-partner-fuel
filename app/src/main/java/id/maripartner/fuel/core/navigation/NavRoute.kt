@@ -39,6 +39,9 @@ sealed class NavRoute(val route: String) {
         fun createRoute(id: String? = null) = if (id != null) "reminder_form?id=$id" else "reminder_form"
     }
 
+    // Trip & Fuel Cost Calculator
+    data object TripCalculator : NavRoute("trip_calculator")
+
     // Pro Subscription & Checkout
     data object ProPlans : NavRoute("pro_plans")
     data object Checkout : NavRoute("checkout/{planId}") {

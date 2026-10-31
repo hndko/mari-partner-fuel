@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Dangerous
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -40,10 +41,13 @@ import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TireRepair
 import androidx.compose.material.icons.filled.TwoWheeler
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -100,7 +104,9 @@ import id.maripartner.fuel.core.designsystem.theme.MariSuccessBg
 import id.maripartner.fuel.core.designsystem.theme.MariWarning
 import id.maripartner.fuel.core.designsystem.theme.MariWarningBg
 import id.maripartner.fuel.core.notification.SubscriptionNotificationHelper
+import id.maripartner.fuel.domain.model.AnomalySeverity
 import id.maripartner.fuel.domain.model.DashboardSummary
+import id.maripartner.fuel.domain.model.FuelAnomalyResult
 import id.maripartner.fuel.domain.model.FuelTransaction
 import id.maripartner.fuel.domain.model.Vehicle
 import id.maripartner.fuel.domain.model.VehicleType
@@ -121,11 +127,13 @@ fun DashboardScreen(
     onNavigateToTransactionDetail: (String) -> Unit = {},
     onNavigateToVehicles: () -> Unit = {},
     onNavigateToAnalytics: () -> Unit = {},
+    onNavigateToTripCalculator: () -> Unit = {},
     viewModel: DashboardViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showAnomalyDetailDialog by remember { mutableStateOf(false) }
 
     // Trigger notifikasi sistem Android saat masa aktif Pro mendekati habis (<= 7 hari) atau baru beralih ke Free
     LaunchedEffect(uiState.isExpiringSoon, uiState.isRecentlyExpired, uiState.daysUntilExpiry) {
@@ -246,16 +254,27 @@ fun DashboardScreen(
                     }
                 }
 
+                // 1.2 Peringatan Cerdas Anomali Efisiensi Konsumsi BBM (Prioritas 3)
+                uiState.fuelAnomalyResult?.let { anomaly ->
+                    if (anomaly.hasAnomaly) {
+                        FuelAnomalyAlertCard(
+                            anomaly = anomaly,
+                            onConsultClick = { showAnomalyDetailDialog = true }
+                        )
+                    }
+                }
+
                 // 2. Hero Card: Ringkasan Pengeluaran & Metrik BBM Bulan Berjalan
                 HeroMonthlySpendingCard(summary = uiState.summary)
 
-                // 3. Action Hub: 4 Kartu Aksi Cepat Interaktif
+                // 3. Action Hub: Menu Aksi Cepat & Kalkulator Perjalanan (Prioritas 2)
                 QuickActionHubSection(
                     pendingRemindersCount = uiState.pendingRemindersCount,
                     onNavigateToScan = onNavigateToScan,
                     onNavigateToManualInput = onNavigateToManualInput,
                     onNavigateToReminders = onNavigateToReminders,
-                    onNavigateToAnalytics = onNavigateToAnalytics
+                    onNavigateToAnalytics = onNavigateToAnalytics,
+                    onNavigateToTripCalculator = onNavigateToTripCalculator
                 )
 
                 // 4. Kendaraan Utama / Ajakan Mendaftarkan Kendaraan
@@ -277,6 +296,13 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+
+    if (showAnomalyDetailDialog && uiState.fuelAnomalyResult != null) {
+        AnomalyDetailDialog(
+            anomaly = uiState.fuelAnomalyResult!!,
+            onDismiss = { showAnomalyDetailDialog = false }
+        )
     }
 }
 
@@ -506,7 +532,7 @@ private fun HeroMetricTile(
 }
 
 /**
- * 3. Bagian Action Hub: 4 Kartu Aksi & Pintasan Modern
+ * 3. Bagian Action Hub: 5 Kartu Aksi & Pintasan Modern Termasuk Kalkulator Perjalanan
  */
 @Composable
 private fun QuickActionHubSection(
@@ -514,7 +540,8 @@ private fun QuickActionHubSection(
     onNavigateToScan: () -> Unit,
     onNavigateToManualInput: () -> Unit,
     onNavigateToReminders: () -> Unit,
-    onNavigateToAnalytics: () -> Unit
+    onNavigateToAnalytics: () -> Unit,
+    onNavigateToTripCalculator: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
@@ -545,7 +572,7 @@ private fun QuickActionHubSection(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ) {
                 Text(
-                    text = "4 Pintasan",
+                    text = "5 Pintasan",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 11.sp
@@ -620,6 +647,26 @@ private fun QuickActionHubSection(
                 isPrimary = false,
                 onClick = onNavigateToAnalytics,
                 modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Baris ke-3: Kalkulator Biaya Perjalanan & Split Bill (Prioritas 2)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ActionCardItem(
+                title = "Kalkulator Perjalanan & Split Bill",
+                subtitle = "Estimasi kebutuhan liter, biaya BBM & patungan teman",
+                icon = Icons.Default.Route,
+                iconBgColor = Color(0xFFE0F2FE),
+                iconTintColor = Color(0xFF0284C7),
+                badgeText = "Trip & Patungan",
+                badgeBgColor = Color(0xFFE0F2FE),
+                badgeTextColor = Color(0xFF0284C7),
+                isPrimary = false,
+                onClick = onNavigateToTripCalculator,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -1699,4 +1746,136 @@ private fun SubscriptionRecentlyExpiredBanner(
             }
         }
     }
+}
+
+/**
+ * Kartu Peringatan Cerdas Anomali Efisiensi Konsumsi BBM & Indikasi Kebocoran (Prioritas 3)
+ */
+@Composable
+private fun FuelAnomalyAlertCard(
+    anomaly: FuelAnomalyResult,
+    onConsultClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isCritical = anomaly.severity == AnomalySeverity.CRITICAL
+    val bgColor = if (isCritical) MariDangerBg else MariWarningBg
+    val borderColor = if (isCritical) MariDanger.copy(alpha = 0.4f) else MariWarning.copy(alpha = 0.4f)
+    val titleColor = if (isCritical) MariDanger else Color(0xFFB45309)
+    val icon = if (isCritical) Icons.Default.Dangerous else Icons.Default.Warning
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = bgColor,
+        border = BorderStroke(1.dp, borderColor),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onConsultClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = if (isCritical) MariDanger.copy(alpha = 0.15f) else MariWarning.copy(alpha = 0.2f),
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isCritical) MariDanger else MariWarning,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = anomaly.title,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = titleColor
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = anomaly.message,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Ketuk untuk melihat rekomendasi teknis & diagnosa →",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = titleColor
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Dialog Rekomendasi Teknis Diagnosa BBM
+ */
+@Composable
+private fun AnomalyDetailDialog(
+    anomaly: FuelAnomalyResult,
+    onDismiss: () -> Unit
+) {
+    val isCritical = anomaly.severity == AnomalySeverity.CRITICAL
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (isCritical) Icons.Default.Dangerous else Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = if (isCritical) MariDanger else MariWarning,
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Diagnosa Efisiensi BBM",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = anomaly.message,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Rekomendasi Tindakan Teknis:",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        anomaly.technicalRecommendations.forEach { rec ->
+                            Text(
+                                text = "• $rec",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Mengerti")
+            }
+        }
+    )
 }

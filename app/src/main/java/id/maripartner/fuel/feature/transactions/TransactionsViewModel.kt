@@ -10,6 +10,14 @@ import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
 import id.maripartner.fuel.domain.usecase.transaction.GetTransactionsUseCase
 import id.maripartner.fuel.domain.usecase.vehicle.GetVehiclesUseCase
+import android.content.Context
+import id.maripartner.fuel.data.repository.SubscriptionRepositoryImpl
+import id.maripartner.fuel.domain.repository.SubscriptionRepository
+import id.maripartner.fuel.domain.usecase.export.ExportTransactionsCsvUseCase
+import id.maripartner.fuel.domain.usecase.export.ExportTransactionsPdfUseCase
+import id.maripartner.fuel.domain.usecase.subscription.GetMyEntitlementsUseCase
+import java.io.File
+import java.time.LocalDate
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,9 +32,11 @@ import kotlinx.coroutines.launch
 class TransactionsViewModel(
     private val transactionRepository: FuelTransactionRepository = FuelTransactionRepositoryImpl(),
     private val vehicleRepository: VehicleRepository = VehicleRepositoryImpl(),
+    private val getMyEntitlementsUseCase: GetMyEntitlementsUseCase = GetMyEntitlementsUseCase(),
     private val getTransactionsUseCase: GetTransactionsUseCase = GetTransactionsUseCase(transactionRepository),
     private val getVehiclesUseCase: GetVehiclesUseCase = GetVehiclesUseCase(vehicleRepository),
-    private val exportTransactionsCsvUseCase: id.maripartner.fuel.domain.usecase.export.ExportTransactionsCsvUseCase = id.maripartner.fuel.domain.usecase.export.ExportTransactionsCsvUseCase()
+    private val exportTransactionsCsvUseCase: ExportTransactionsCsvUseCase = ExportTransactionsCsvUseCase(),
+    private val exportTransactionsPdfUseCase: ExportTransactionsPdfUseCase = ExportTransactionsPdfUseCase()
 ) : ViewModel() {
 
     companion object {
@@ -44,6 +54,19 @@ class TransactionsViewModel(
         loadVehicles()
         loadTransactions(reset = true)
         observeSearchQuery()
+        checkProEntitlement()
+    }
+
+    private fun checkProEntitlement() {
+        viewModelScope.launch {
+            val result = getMyEntitlementsUseCase()
+            if (result is AppResult.Success<*>) {
+                val entitlement = result.data as? id.maripartner.fuel.domain.model.UserEntitlement
+                if (entitlement != null) {
+                    _uiState.update { it.copy(isProUser = entitlement.isPro) }
+                }
+            }
+        }
     }
 
     fun onEvent(event: TransactionUiEvent) {
@@ -164,6 +187,36 @@ class TransactionsViewModel(
                 }
                 is AppResult.Error -> {
                     _uiState.update { it.copy(errorMessage = "Gagal mengekspor data: ${result.exception.message}") }
+                }
+            }
+        }
+    }
+
+    /**
+     * Menghasilkan berkas PDF Laporan Resmi dari transaksi yang sesuai filter aktif.
+     */
+    fun exportPdf(context: Context, driverName: String = "Pemilik Akun", onReady: (File) -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isExporting = true) }
+            val currentFilter = _uiState.value.filter
+            val result = transactionRepository.getTransactions(currentFilter, limit = 1000, offset = 0)
+            _uiState.update { it.copy(isExporting = false) }
+
+            when (result) {
+                is AppResult.Success -> {
+                    val vehiclesMap = _uiState.value.availableVehicles.associateBy { it.id }
+                    val cacheDir = File(context.cacheDir, "reports")
+                    val file = File(cacheDir, "Laporan-BBM-MariPartnerFuel-${LocalDate.now()}.pdf")
+                    exportTransactionsPdfUseCase.exportToPdfFile(
+                        transactions = result.data,
+                        vehiclesMap = vehiclesMap,
+                        targetFile = file,
+                        driverName = driverName
+                    )
+                    onReady(file)
+                }
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(errorMessage = "Gagal mengekspor dokumen PDF: ${result.exception.message}") }
                 }
             }
         }

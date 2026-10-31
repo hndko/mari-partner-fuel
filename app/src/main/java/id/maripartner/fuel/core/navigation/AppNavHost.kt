@@ -39,6 +39,7 @@ import id.maripartner.fuel.feature.subscription.qris.QrisPaymentScreen
 import id.maripartner.fuel.feature.subscription.status.PaymentStatusScreen
 import id.maripartner.fuel.feature.transactions.TransactionFormScreen
 import id.maripartner.fuel.feature.transactions.TransactionsScreen
+import id.maripartner.fuel.feature.trip.TripCalculatorScreen
 import id.maripartner.fuel.feature.vehicles.VehicleFormScreen
 import id.maripartner.fuel.feature.vehicles.VehiclesScreen
 
@@ -160,6 +161,9 @@ fun AppNavHost(
                     },
                     onNavigateToAnalytics = {
                         navController.navigate(NavRoute.Analytics.route)
+                    },
+                    onNavigateToTripCalculator = {
+                        navController.navigate(NavRoute.TripCalculator.route)
                     }
                 )
             }
@@ -171,6 +175,9 @@ fun AppNavHost(
                     },
                     onNavigateToDetail = { id ->
                         navController.navigate(NavRoute.TransactionDetail.createRoute(id))
+                    },
+                    onNavigateToProPlans = {
+                        navController.navigate(NavRoute.ProPlans.route)
                     }
                 )
             }
@@ -179,6 +186,12 @@ fun AppNavHost(
                 AnalyticsScreen(
                     onNavigateToCreateTransaction = {
                         navController.navigate(NavRoute.TransactionForm.createRoute())
+                    },
+                    onNavigateToTripCalculator = {
+                        navController.navigate(NavRoute.TripCalculator.route)
+                    },
+                    onNavigateToProPlans = {
+                        navController.navigate(NavRoute.ProPlans.route)
                     }
                 )
             }
@@ -322,6 +335,16 @@ fun AppNavHost(
                     onNavigateBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
                     viewModel = remindersViewModel
+                )
+            }
+
+            // Kalkulator Biaya Perjalanan & Split Bill (Prioritas 2)
+            composable(NavRoute.TripCalculator.route) {
+                TripCalculatorScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToProPlans = {
+                        navController.navigate(NavRoute.ProPlans.route)
+                    }
                 )
             }
 

@@ -1,6 +1,7 @@
 package id.maripartner.fuel.feature.dashboard
 
 import id.maripartner.fuel.domain.model.DashboardSummary
+import id.maripartner.fuel.domain.model.FuelAnomalyResult
 import id.maripartner.fuel.domain.model.Vehicle
 
 /**
@@ -11,6 +12,7 @@ data class DashboardUiState(
     val primaryVehicle: Vehicle? = null,
     val totalVehiclesCount: Int = 0,
     val pendingRemindersCount: Int = 0,
+    val fuelAnomalyResult: FuelAnomalyResult? = null,
     val userName: String = "Pengemudi",
     val isProUser: Boolean = false,
     val isExpiringSoon: Boolean = false,
