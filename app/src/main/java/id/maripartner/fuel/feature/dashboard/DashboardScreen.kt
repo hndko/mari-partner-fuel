@@ -218,15 +218,11 @@ fun DashboardScreen(
                     onManageVehicles = onNavigateToVehicles
                 )
 
-                // 5. Transaksi Terbaru & Panduan Langkah Memulai Pencatatan
-                RecentTransactionsOrStarterGuide(
+                // 5. Transaksi Terbaru
+                RecentTransactionsSection(
                     transactions = uiState.summary.recentTransactions,
-                    primaryVehicle = uiState.primaryVehicle,
                     onViewAll = onNavigateToTransactions,
-                    onStartScan = onNavigateToScan,
-                    onManualInput = onNavigateToManualInput,
-                    onTransactionClick = onNavigateToTransactionDetail,
-                    onAddVehicle = onNavigateToVehicles
+                    onTransactionClick = onNavigateToTransactionDetail
                 )
 
                 // 6. Tips Cerdas Efisiensi BBM (Eco-Driving Insight)
@@ -883,17 +879,13 @@ private fun PrimaryVehicleOverviewSection(
 }
 
 /**
- * 5. Bagian Transaksi Terbaru & Pencatatan Pengisian Terkini di Beranda
+ * 5. Bagian Transaksi Terbaru di Beranda
  */
 @Composable
-private fun RecentTransactionsOrStarterGuide(
+private fun RecentTransactionsSection(
     transactions: List<FuelTransaction>,
-    primaryVehicle: Vehicle?,
     onViewAll: () -> Unit,
-    onStartScan: () -> Unit,
-    onManualInput: () -> Unit,
-    onTransactionClick: (String) -> Unit,
-    onAddVehicle: () -> Unit = {}
+    onTransactionClick: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Section Header
@@ -1118,14 +1110,10 @@ private fun RecentTransactionsOrStarterGuide(
                 }
             }
         } else {
-            // Panduan Langkah Cepat Memulai Pencatatan (Interactive Setup Journey)
-            val hasVehicle = primaryVehicle != null
-            val completedSteps = if (hasVehicle) 1 else 0
-            val progressFraction = completedSteps / 3f
-
+            // Tampilan Elegan & Bersih Saat Belum Ada Transaksi (Bebas Redundansi Tombol)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MariBorderLight),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -1133,303 +1121,44 @@ private fun RecentTransactionsOrStarterGuide(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(horizontal = 20.dp, vertical = 26.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Header: Label, Title, Progress Indicator
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "PANDUAN LANGKAH CEPAT",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        letterSpacing = 1.4.sp,
-                                        fontSize = 10.5.sp
-                                    ),
-                                    color = MariPrimaryBlue
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Cara Mudah Memulai Pencatatan",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-
-                            // Progress Pill
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = if (hasVehicle) MariSuccessBg else MariPrimaryBlue.copy(alpha = 0.08f),
-                                border = BorderStroke(
-                                    0.8.dp,
-                                    if (hasVehicle) MariSuccess.copy(alpha = 0.3f) else MariPrimaryBlue.copy(alpha = 0.25f)
-                                )
-                            ) {
-                                Text(
-                                    text = "$completedSteps dari 3 Selesai",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 10.5.sp
-                                    ),
-                                    color = if (hasVehicle) MariSuccess else MariPrimaryBlue,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        // Progress Bar
-                        LinearProgressIndicator(
-                            progress = { progressFraction },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = MariPrimaryBlue,
-                            trackColor = MariBorderLight
-                        )
-                    }
-
-                    // 3 Langkah Interaktif
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    Surface(
+                        shape = CircleShape,
+                        color = MariPrimaryBlue.copy(alpha = 0.08f),
+                        modifier = Modifier.size(52.dp)
                     ) {
-                        // Langkah 1: Hubungkan Kendaraan
-                        StarterStepRow(
-                            stepNumber = "1",
-                            isCompleted = hasVehicle,
-                            isActive = !hasVehicle,
-                            title = if (hasVehicle) "Kendaraan Terhubung" else "Daftarkan Kendaraan Anda",
-                            subtitle = if (hasVehicle) {
-                                "${primaryVehicle.name} • ${primaryVehicle.licensePlate?.takeIf { it.isNotBlank() } ?: primaryVehicle.vehicleType.displayName}"
-                            } else {
-                                "Tambahkan motor atau mobil Anda untuk memantau konsumsi BBM."
-                            },
-                            statusBadgeText = if (hasVehicle) "✓ Selesai" else "Langkah 1",
-                            statusBadgeBg = if (hasVehicle) MariSuccessBg else MaterialTheme.colorScheme.surfaceVariant,
-                            statusBadgeColor = if (hasVehicle) MariSuccess else MaterialTheme.colorScheme.onSurfaceVariant,
-                            actionContent = if (!hasVehicle) {
-                                {
-                                    OutlinedButton(
-                                        onClick = onAddVehicle,
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(text = "+ Tambah", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                                    }
-                                }
-                            } else null
-                        )
-
-                        HorizontalDivider(color = MariBorderLight.copy(alpha = 0.6f))
-
-                        // Langkah 2: Catat Pengisian BBM Perdana (Langkah Aktif!)
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = MariPrimaryBlue.copy(alpha = 0.04f),
-                            border = BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.2f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                StarterStepRow(
-                                    stepNumber = "2",
-                                    isCompleted = false,
-                                    isActive = true,
-                                    title = "Catat Pengisian BBM Perdana",
-                                    subtitle = "Scan struk SPBU dengan kamera AI atau catat manual nominal & odometer pengisian.",
-                                    statusBadgeText = "Siap Dicatat",
-                                    statusBadgeBg = MariPrimaryBlue.copy(alpha = 0.12f),
-                                    statusBadgeColor = MariPrimaryBlue
-                                )
-
-                                // Dual Action Buttons
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Button(
-                                        onClick = onStartScan,
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MariPrimaryBlue),
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 11.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.DocumentScanner,
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "Scan Struk AI",
-                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = Color.White
-                                            )
-                                        }
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = onManualInput,
-                                        shape = RoundedCornerShape(10.dp),
-                                        border = BorderStroke(1.2.dp, MariPrimaryBlue),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MariPrimaryBlue),
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 11.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.LocalGasStation,
-                                                contentDescription = null,
-                                                tint = MariPrimaryBlue,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "Catat Manual",
-                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = MariPrimaryBlue
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                                contentDescription = null,
+                                tint = MariPrimaryBlue,
+                                modifier = Modifier.size(26.dp)
+                            )
                         }
-
-                        HorizontalDivider(color = MariBorderLight.copy(alpha = 0.6f))
-
-                        // Langkah 3: Pantau Analitik & Efisiensi Otomatis
-                        StarterStepRow(
-                            stepNumber = "3",
-                            isCompleted = false,
-                            isActive = false,
-                            title = "Pantau Efisiensi & Biaya",
-                            subtitle = "Setelah 2x pengisian odometer, kalkulasi km/liter dan tren biaya bulanan otomatis aktif.",
-                            statusBadgeText = "Otomatis",
-                            statusBadgeBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                            statusBadgeColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
-                }
-            }
-        }
-    }
-}
 
-/**
- * Baris Item untuk Panduan Langkah Memulai
- */
-@Composable
-private fun StarterStepRow(
-    stepNumber: String,
-    isCompleted: Boolean,
-    isActive: Boolean,
-    title: String,
-    subtitle: String,
-    statusBadgeText: String,
-    statusBadgeBg: Color,
-    statusBadgeColor: Color,
-    actionContent: (@Composable () -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Step Icon / Check Indicator
-        Surface(
-            shape = RoundedCornerShape(10.dp),
-            color = when {
-                isCompleted -> MariSuccessBg
-                isActive -> MariPrimaryBlue
-                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            },
-            modifier = Modifier.size(34.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                if (isCompleted) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = MariSuccess,
-                        modifier = Modifier.size(18.dp)
-                    )
-                } else {
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
-                        text = stepNumber,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 13.sp
+                        text = "Belum Ada Riwayat Transaksi",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
                         ),
-                        color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                }
-            }
-        }
 
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Title & Subtitle Column
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = if (isActive || isCompleted) FontWeight.Bold else FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = statusBadgeBg
-                ) {
                     Text(
-                        text = statusBadgeText,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 9.sp
-                        ),
-                        color = statusBadgeColor,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                        text = "Gunakan tombol pada Menu Cepat di atas untuk mencatat pengisian BBM Anda.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        if (actionContent != null) {
-            Spacer(modifier = Modifier.width(8.dp))
-            actionContent()
         }
     }
 }

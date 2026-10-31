@@ -259,11 +259,6 @@ fun VehiclesScreen(
                                 onDelete = { vehicleToDelete = vehicle }
                             )
                         }
-
-                        // Add Vehicle Card di bagian akhir daftar sesuai desain referensi
-                        item {
-                            AddVehicleOutlineCard(onClick = onNavigateToAddVehicle)
-                        }
                     }
                 }
             }
@@ -707,54 +702,4 @@ private fun SpecificationBadge(
     }
 }
 
-/**
- * Kartu Tambah Kendaraan Baru (Dashed / Outline Style di akhir daftar)
- */
-@Composable
-private fun AddVehicleOutlineCard(onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color.Transparent,
-        border = BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.4f)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(MariPrimaryBlue.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = MariPrimaryBlue,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Tambah Kendaraan Baru",
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MariPrimaryBlue
-                    )
-                )
-                Text(
-                    text = "Catat kendaraan agar transaksi BBM lebih terorganisir.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MariMutedLight
-                )
-            }
-        }
-    }
-}
