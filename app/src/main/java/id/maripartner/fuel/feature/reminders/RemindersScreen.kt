@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarToday
@@ -711,7 +712,7 @@ private fun ReminderCardItem(
     val (chipType, chipText, chipIcon) = when (dueStatus) {
         ReminderDueStatus.OVERDUE -> Triple(FuelChipType.Danger, "Lewat Jatuh Tempo", Icons.Default.WarningAmber)
         ReminderDueStatus.DUE_SOON -> Triple(FuelChipType.Warning, "Segera Jatuh Tempo", Icons.Default.Info)
-        ReminderDueStatus.UPCOMING -> Triple(FuelChipType.Info, "Terjadwal", Icons.Default.EventNote)
+        ReminderDueStatus.UPCOMING -> Triple(FuelChipType.Info, "Terjadwal", Icons.AutoMirrored.Filled.EventNote)
         ReminderDueStatus.COMPLETED -> Triple(FuelChipType.Success, "Selesai", Icons.Default.CheckCircle)
     }
 

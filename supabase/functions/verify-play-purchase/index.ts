@@ -95,6 +95,15 @@ Deno.serve(async (req) => {
     const planCode = isYearly ? "pro_yearly" : "pro_monthly";
     const durationDays = isYearly ? 365 : 30;
 
+    // Ambil harga resmi dari subscription_plans untuk server-authoritative pricing
+    const { data: dbPlan } = await adminClient
+      .from("subscription_plans")
+      .select("price_idr, billing_period")
+      .eq("code", planCode)
+      .maybeSingle();
+
+    const verifiedAmount = dbPlan?.price_idr ?? (isYearly ? 290000 : 29000);
+
     const paymentRef = payload.payment_reference?.trim() || `MPF-PLAY-${Date.now().toString(36).toUpperCase()}`;
 
     // 4. Verifikasi Pembelian Resmi via Google Play Developer API
@@ -131,7 +140,7 @@ Deno.serve(async (req) => {
       provider: "google_play",
       payment_reference: paymentRef,
       provider_payment_id: payload.purchase_token,
-      amount_idr: isYearly ? 290000 : 29000,
+      amount_idr: verifiedAmount,
       currency: "IDR",
       status: "paid",
       product_id: payload.product_id,
