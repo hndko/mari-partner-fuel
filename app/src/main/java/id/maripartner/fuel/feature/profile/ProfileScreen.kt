@@ -468,8 +468,9 @@ fun ProfileScreen(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             val subSubtitle = if (uiState.isPro) {
-                                uiState.planExpiresAt?.let { "Masa aktif berlaku sampai: $it" }
-                                    ?: "Status Pro aktif dengan armada dan analitik tak terbatas."
+                                uiState.planExpiresAt?.let {
+                                    if (it.startsWith("Permanen")) "Masa aktif: $it" else "Masa aktif berlaku sampai: $it"
+                                } ?: "Status Pro aktif dengan armada dan analitik tak terbatas."
                             } else {
                                 "Tingkatkan ke Pro untuk kuota scan AI hingga 100x/bulan dan multi-kendaraan tanpa batas."
                             }

@@ -211,8 +211,15 @@ fun ProPlansScreen(
 
         // Dialog Konfirmasi Downgrade ke Free (Graceful Expiry & No Immediate Cut)
         if (uiState.showDowngradeDialog) {
-            val planName = uiState.userEntitlement?.planName ?: "Mari Pro"
-            val expiresText = uiState.userEntitlement?.expiresAt?.let { DateUtils.formatDateTime(it) } ?: "akhir periode"
+            val entitlement = uiState.userEntitlement
+            val planName = entitlement?.planName ?: "Mari Pro"
+            val expiry = entitlement?.expiresAt
+            val isPermanent = entitlement?.isPro == true && expiry == null
+            val expiresText = when {
+                isPermanent -> "Permanen (Seumur Hidup)"
+                expiry != null -> DateUtils.formatFullDate(expiry)
+                else -> "akhir periode"
+            }
             FuelSweetAlertDialog(
                 show = true,
                 type = SweetAlertType.WARNING,
@@ -234,7 +241,14 @@ fun ProPlansScreen(
         // Dialog Konfirmasi Perpanjangan Paket (Renewal Kumulatif)
         if (uiState.showRenewalDialog) {
             val target = uiState.targetPlan
-            val expiresText = uiState.userEntitlement?.expiresAt?.let { DateUtils.formatDateTime(it) } ?: "tanggal jatuh tempo"
+            val entitlement = uiState.userEntitlement
+            val expiry = entitlement?.expiresAt
+            val isPermanent = entitlement?.isPro == true && expiry == null
+            val expiresText = when {
+                isPermanent -> "Permanen (Seumur Hidup)"
+                expiry != null -> DateUtils.formatFullDate(expiry)
+                else -> "tanggal jatuh tempo"
+            }
             FuelSweetAlertDialog(
                 show = true,
                 type = SweetAlertType.INFO,
@@ -351,11 +365,17 @@ private fun UserStatusAndQuotaCard(entitlement: UserEntitlement) {
 
             if (entitlement.expiresAt != null) {
                 Text(
-                    text = "Masa aktif hingga: ${DateUtils.formatDateTime(entitlement.expiresAt)}",
+                    text = "Masa aktif hingga: ${DateUtils.formatFullDate(entitlement.expiresAt)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MariMutedLight
                 )
-            } else if (!entitlement.isPro) {
+            } else if (entitlement.isPro) {
+                Text(
+                    text = "Masa aktif: Permanen (Seumur Hidup)",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color(0xFF16A34A)
+                )
+            } else {
                 Text(
                     text = "Batas Free: Maksimal 2 kendaraan aktif & 5 scan AI per bulan.",
                     style = MaterialTheme.typography.bodySmall,

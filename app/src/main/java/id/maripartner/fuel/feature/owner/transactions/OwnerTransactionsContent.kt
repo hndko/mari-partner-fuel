@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
+import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelCard
 import id.maripartner.fuel.core.designsystem.component.FuelChipType
 import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
@@ -808,8 +809,8 @@ private fun TransactionItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val rawDate = tx.paidAt ?: tx.createdAt ?: "-"
-                val displayDate = if (rawDate.length >= 19) rawDate.take(19).replace("T", " ") else rawDate
+                val rawDate = tx.paidAt ?: tx.createdAt
+                val displayDate = DateUtils.formatIsoDateTime(rawDate)
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(

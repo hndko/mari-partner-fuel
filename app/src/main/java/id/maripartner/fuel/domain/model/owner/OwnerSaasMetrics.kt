@@ -105,12 +105,14 @@ data class GrantProResult(
     val success: Boolean = true,
     @SerialName("is_extended")
     val isExtended: Boolean = false,
+    @SerialName("is_permanent")
+    val isPermanent: Boolean = false,
     @SerialName("target_user_id")
     val targetUserId: String = "",
     @SerialName("new_expires_at")
     val newExpiresAt: String? = null,
     @SerialName("duration_days_added")
-    val durationDaysAdded: Int = 30,
+    val durationDaysAdded: Int? = 30,
     @SerialName("message")
     val message: String = ""
 )

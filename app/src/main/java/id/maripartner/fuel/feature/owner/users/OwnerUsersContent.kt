@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelChipType
 import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
@@ -661,7 +662,7 @@ private fun UserItemCard(
 
             // Expiry info if active Pro
             val expiry = user.expiresAt
-            if (user.isPro && !expiry.isNullOrBlank()) {
+            if (user.isPro) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -670,15 +671,19 @@ private fun UserItemCard(
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
                         contentDescription = null,
-                        tint = Color(0xFFD97706),
+                        tint = if (expiry.isNullOrBlank()) Color(0xFF16A34A) else Color(0xFFD97706),
                         modifier = Modifier.size(13.dp)
                     )
                     Text(
-                        text = "Masa aktif Pro s/d: ${expiry.take(10)}",
+                        text = if (expiry.isNullOrBlank()) {
+                            "Masa aktif Pro: Permanen (Seumur Hidup)"
+                        } else {
+                            "Masa aktif Pro s/d: ${DateUtils.formatIsoDate(expiry)}"
+                        },
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFFB45309)
+                            color = if (expiry.isNullOrBlank()) Color(0xFF15803D) else Color(0xFFB45309)
                         )
                     )
                 }

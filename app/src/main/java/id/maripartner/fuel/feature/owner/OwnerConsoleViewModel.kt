@@ -201,7 +201,11 @@ class OwnerConsoleViewModel(
                             isSubmittingGrant = false,
                             selectedUserForGrantPro = null,
                             successMessage = result.data.message.ifBlank {
-                                "Berhasil memberikan akses Pro kepada ${user.displayName} selama $days hari."
+                                if (days == 0) {
+                                    "Berhasil memberikan akses Pro Permanen (Seumur Hidup) kepada ${user.displayName}."
+                                } else {
+                                    "Berhasil memberikan akses Pro kepada ${user.displayName} selama $days hari."
+                                }
                             }
                         )
                     }

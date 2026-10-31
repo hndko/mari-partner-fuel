@@ -229,5 +229,17 @@ class OwnerConsoleModelAndContractTest {
         assertFalse(grantRes.isExtended)
         assertEquals("user-1", grantRes.targetUserId)
         assertEquals(30, grantRes.durationDaysAdded)
+
+        val permanentGrantRes = GrantProResult(
+            success = true,
+            isExtended = false,
+            isPermanent = true,
+            targetUserId = "user-2",
+            durationDaysAdded = 0,
+            message = "Status Pro Permanen (Seumur Hidup) berhasil diaktifkan."
+        )
+        assertTrue(permanentGrantRes.success)
+        assertTrue(permanentGrantRes.isPermanent)
+        assertEquals(0, permanentGrantRes.durationDaysAdded)
     }
 }

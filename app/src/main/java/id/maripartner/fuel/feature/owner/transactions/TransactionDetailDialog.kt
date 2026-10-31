@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
+import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelChipType
 import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
@@ -175,12 +176,10 @@ fun TransactionDetailDialog(
                 )
                 AuditDetailRow(label = "Metode / Gateway", value = "${tx.provider.uppercase()} Gateway")
 
-                val rawCreated = tx.createdAt ?: "-"
-                val displayCreated = if (rawCreated.length >= 19) rawCreated.take(19).replace("T", " ") else rawCreated
+                val displayCreated = DateUtils.formatIsoDateTime(tx.createdAt)
                 AuditDetailRow(label = "Waktu Pembuatan", value = displayCreated)
 
-                val rawPaid = tx.paidAt ?: "-"
-                val displayPaid = if (rawPaid.length >= 19) rawPaid.take(19).replace("T", " ") else rawPaid
+                val displayPaid = DateUtils.formatIsoDateTime(tx.paidAt)
                 AuditDetailRow(label = "Waktu Settlement", value = if (isPaid) displayPaid else "Belum Selesai")
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

@@ -103,6 +103,12 @@ fun GrantProDialog(
                     isSelected = selectedDays == 365,
                     onSelect = { onDaysChanged(365) }
                 )
+                DurationRadioOption(
+                    title = "Permanen (Seumur Hidup / Lifetime) ⭐",
+                    days = 0,
+                    isSelected = selectedDays == 0,
+                    onSelect = { onDaysChanged(0) }
+                )
 
                 OutlinedTextField(
                     value = notes,

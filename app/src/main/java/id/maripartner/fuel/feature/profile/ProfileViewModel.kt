@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.maripartner.fuel.core.common.config.AppConfig
 import id.maripartner.fuel.core.common.result.AppResult
+import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.data.repository.AuthRepositoryImpl
 import id.maripartner.fuel.data.repository.SubscriptionRepositoryImpl
 import id.maripartner.fuel.domain.repository.AuthRepository
@@ -76,7 +77,11 @@ class ProfileViewModel(
                     val ent = entitlementRes.data
                     isPro = ent.isPro
                     planName = ent.planName.ifBlank { if (ent.isPro) "Mari Pro" else "Mari Free" }
-                    expiresStr = ent.expiresAt?.toString()?.take(10)
+                    expiresStr = when {
+                        ent.isPro && ent.expiresAt == null -> "Permanen (Seumur Hidup)"
+                        ent.expiresAt != null -> DateUtils.formatFullDate(ent.expiresAt)
+                        else -> null
+                    }
                 }
                 is AppResult.Error -> { }
             }

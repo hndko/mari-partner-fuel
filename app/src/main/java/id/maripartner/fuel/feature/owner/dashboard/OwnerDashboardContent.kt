@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.maripartner.fuel.core.common.util.CurrencyFormatter
+import id.maripartner.fuel.core.common.util.DateUtils
 import id.maripartner.fuel.core.designsystem.component.FuelCard
 import id.maripartner.fuel.core.designsystem.component.FuelChipType
 import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
@@ -996,7 +997,7 @@ private fun RegistrationGrowthChartCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = growthData.firstOrNull()?.dateLabel.orEmpty(),
+                        text = growthData.firstOrNull()?.dateLabel?.let { DateUtils.formatIsoDate(it) }.orEmpty(),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1006,7 +1007,7 @@ private fun RegistrationGrowthChartCard(
                         color = MariPrimaryBlue
                     )
                     Text(
-                        text = growthData.lastOrNull()?.dateLabel.orEmpty(),
+                        text = growthData.lastOrNull()?.dateLabel?.let { DateUtils.formatIsoDate(it) }.orEmpty(),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
