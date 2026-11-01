@@ -8,14 +8,14 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
 
 - **Nama Aplikasi**: **Mari Partner Fuel** (AI-Powered Fuel Expense Tracker for Android)
 - **Versi Saat Ini**: `v2.0.8`
-- **Platform**: Android Native (Minimum SDK API 26 Android 8.0 Oreo, Target SDK API 35 Android 15)
-- **Bahasa & UI**: Kotlin 2.0.21, Jetpack Compose BOM 2024.10.00, Material 3
+- **Platform**: Monorepo: Android Native (`mobile/`, Min SDK 26 Android 8.0, Target SDK 35 Android 15) & Web SaaS / Landing Page (`web/`, Vue 3, Vite, Tailwind CSS 4)
+- **Bahasa & UI**: Kotlin 2.0.21, Jetpack Compose BOM 2024.10.00, Material 3, Vue 3.5, TypeScript
 - **Backend & Basis Data**: Supabase PostgreSQL 15+, Private Storage, Row Level Security (RLS), Edge Functions
 - **OCR & AI Strategy**: Google ML Kit Text Recognition (lokal) + Cloud AI Fallback via Edge Function
 - **Payment Gateway**: Dual-Track (Google Play Billing v7.1.1 untuk Play Store, QRISpy/Midtrans untuk Direct/Web)
 - **Dokumentasi Proyek**: [Panduan Setup Lengkap](docs/README.md)
 - **Histori Rilis**: `README.md`
-- **Sumber Versi Runtime**: `app/build.gradle.kts` (`versionName = "2.0.8"`, `versionCode = 19`)
+- **Sumber Versi Runtime**: `mobile/app/build.gradle.kts` (`versionName = "2.0.8"`, `versionCode = 19`)
 
 ---
 
@@ -63,6 +63,18 @@ Dokumen ini adalah sumber acuan hukum dan aturan rekayasa perangkat lunak tertin
    - **Graceful Downgrade ke Free (No Immediate Revocation)**: Permohonan downgrade dari paket Pro ke Free tidak boleh memutus benefit seketika. Seluruh fitur Pro tetap aktif hingga masa berlaku yang telah dibayar (`expires_at`) berakhir secara alami (*cancel at period end*).
    - **Zero Data Loss Guarantee**: Data historis transaksi BBM, odometer, dan log pengguna tidak boleh dihapus atau dikunci ketika akun berpindah ke paket Free. Kendaraan aktif yang melebihi batas paket Free (2 unit) wajib diarsipkan secara aman tanpa kehilangan riwayat pengeluarannya.
 5. **Verifikasi Fungsional Nyata**: Dilarang mengklaim modul fungsional hanya karena ViewModel atau Composable sudah dibuat. Verifikasi kompilasi Gradle, unit test, dan validasi data secara riil.
+6. **Monorepo Separation of Concerns & Driver-First Mobile**:
+   - Direktori `mobile/` difokuskan 100% murni untuk pengemudi dan pemilik armada end-user (*driver-first*). Seluruh kode administrasi internal, manajemen harga paket, dan pemantauan omset SaaS dihapus dari APK mobile.
+   - Direktori `web/` menyajikan Landing Page Publik kelas dunia (lengkap dengan direct download APK) dan SaaS Owner Console terpadu yang diproteksi otentikasi Supabase Auth khusus akun dengan role `owner`.
+7. **Klausul Wajib Konsistensi Lingkungan (.env & .env.example)**:
+   - Penamaan variabel lingkungan inti basis data Supabase **WAJIB 100% konsisten dan identik 1:1** antara `mobile/.env` dan `web/.env`:
+     - `SUPABASE_URL`
+     - `SUPABASE_ANON_KEY`
+   - Pada `web/vite.config.ts`, `envPrefix` wajib mengikutsertakan `['VITE_', 'SUPABASE_']` sehingga variabel basis data inti dapat dibaca langsung oleh Vite tanpa disparitas nama.
+   - Template `.env.example` di `mobile/` dan `web/` wajib selalu disinkronkan dan tidak boleh memuat secret server.
+8. **Otomasi Distribusi APK Berversi ke Web Public Downloads**:
+   - Task Gradle `copyApkToWebPublic` di `mobile/app/build.gradle.kts` secara otomatis menyalin file output APK ke `web/public/downloads/mari-partner-fuel-v{versionName}.apk` setiap kali build `assembleDebug` atau `assembleRelease` selesai.
+   - Website Landing Page secara dinamis membaca `VITE_APP_VERSION` dan `VITE_APP_APK_FILENAME` sehingga tautan unduhan selalu merujuk ke rilis APK paling mutakhir.
 
 ---
 
@@ -244,40 +256,46 @@ cmd /c "npx -y supabase db push"
 
 ```text
 mari-partner-fuel/
-├── app/
+├── mobile/                           # Modul Aplikasi Android Native (Kotlin + Compose)
+│   ├── app/
+│   │   ├── build.gradle.kts          # Injeksi BuildConfig, copyApkToWebPublic
+│   │   ├── proguard-rules.pro
+│   │   └── src/
+│   │       ├── main/java/id/maripartner/fuel/
+│   │       │   ├── core/             # common, designsystem, location, navigation, security
+│   │       │   ├── data/             # local, ocr, remote, repository
+│   │       │   ├── domain/           # model, repository, usecase
+│   │       │   └── feature/          # analytics, auth, dashboard, hud, profile, receipt_scan, subscription, transactions, vehicles
+│   │       └── res/
 │   ├── build.gradle.kts
-│   ├── proguard-rules.pro
-│   └── src/
-│       ├── main/
-│       │   ├── AndroidManifest.xml
-│       │   ├── java/id/maripartner/fuel/
-│       │   │   ├── MariPartnerFuelApp.kt
-│       │   │   ├── MainActivity.kt
-│       │   │   ├── core/
-│       │   │   │   ├── common/
-│       │   │   │   │   ├── config/       # AppConfig (injeksi aman BuildConfig)
-│       │   │   │   │   ├── result/       # UiState, AppResult, AppException
-│       │   │   │   │   └── util/         # CurrencyFormatter, DateUtils
-│       │   │   │   ├── designsystem/
-│       │   │   │   │   ├── component/    # FuelButton, FuelStateView, FuelTopBar, FuelCard, BiometricLockOverlay
-│       │   │   │   │   └── theme/        # Color, Type, Shape, Theme (Light & Dark)
-│       │   │   │   ├── location/         # SpbuDirectory, SpbuProximityManager (offline geofence ~250m)
-│       │   │   │   ├── navigation/       # NavRoute, BottomNavItem, AppBottomBar, AppNavHost, AuthGuard
-│       │   │   │   ├── security/         # BiometricAuthManager, KeystoreManager
-│       │   │   │   └── widget/           # MariFuelAppWidgetProvider (RemoteViews Android Home Screen Quick Widget)
-│       │   │   ├── data/
-│       │   │   │   ├── local/            # DataStore, Preferences (FuelBudgetPreferences), Cache
-│       │   │   │   ├── ocr/              # Google ML Kit Text Recognition Engine
-│       │   │   │   ├── remote/           # Supabase Client Provider, Edge Function Callers
-│       │   │   │   └── repository/       # Repository Implementations
-│       │   │   ├── domain/
-│       │   │   │   ├── model/            # Vehicle, FuelTransaction, FuelBudget, VehicleTcoResult, SpbuBenchmark, FuelShock, etc.
-│       │   │   │   ├── repository/       # Repository Interfaces
-│       │   │   │   └── usecase/          # Pure Business Rules (TCO, Eco-Score, Budget, SPBU Benchmark, Price Shock, Anti-Fraud)
-│       │   │   └── feature/
-│       │   │       ├── analytics/        # AnalyticsScreen, AnalyticsViewModel, SPBU Benchmark & Fuel Shock Cards
-│       │   │       ├── auth/             # LoginScreen, RegisterScreen, AuthViewModel
-│       │   │       ├── dashboard/        # DashboardScreen, DashboardViewModel
+│   ├── settings.gradle.kts
+│   ├── gradlew / gradlew.bat
+│   ├── run-app.bat
+│   ├── .env
+│   └── .env.example
+├── web/                              # Modul Web Vue 3 + Tailwind CSS 4 + Vite
+│   ├── public/
+│   │   └── downloads/                # Output APK otomatis: mari-partner-fuel-v2.0.8.apk
+│   ├── src/
+│   │   ├── components/layout/        # AdminLayout, AppSidebar, AppHeader
+│   │   ├── router/index.ts           # Rute '/', '/login', '/admin/*' + Auth Guard
+│   │   ├── services/supabase.ts      # Supabase Client & QRISpy live gateway caller
+│   │   └── views/
+│   │       ├── LandingPageView.vue   # Showcase fitur, paket harga, tombol direct APK download
+│   │       ├── LoginView.vue         # Login khusus Owner SaaS
+│   │       └── admin/                # Dashboard, Plans, Users, Transactions, Qrispy
+│   ├── .env                          # Konsisten 1:1 dengan mobile/.env
+│   ├── .env.example
+│   ├── package.json
+│   └── vite.config.ts                # envPrefix: ['VITE_', 'SUPABASE_']
+├── supabase/                         # Shared Backend Database & Edge Functions
+│   ├── migrations/
+│   └── functions/                    # cancel-payment, get-qrispy-merchant-data, payment-webhook
+├── docs/                             # Dokumentasi proyek & referensi
+├── README.md                         # Panduan Monorepo Utama
+├── run-app.bat                       # Root convenience launcher -> mobile/run-app.bat
+└── AGENTS.md                         # Hukum & Aturan Tertinggi Repositori
+```
 │       │   │       ├── hud/              # NightHudScreen (OLED Black HUD & Horizontal Windshield Reflector)
 │       │   │       ├── owner/            # OwnerConsoleScreen, multi-tab console (Dashboard, Plans, Users, Transactions)
 │       │   │       ├── profile/          # ProfileScreen, EditProfileScreen, ProfileViewModel

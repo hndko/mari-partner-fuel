@@ -197,18 +197,55 @@ Pencatatan manual pengeluaran BBM sering kali terlewat, struk fisik SPBU mudah m
 
 ---
 
-## 🏗️ Arsitektur & Pola Desain
+## 🏗️ Arsitektur & Pola Desain (Monorepo Architecture)
 
-Mari Partner Fuel menerapkan **Clean Architecture** berlapis tiga:
-1. **UI Layer (`app/src/main/java/id/maripartner/fuel/feature/`)**: Composable murni, ViewModel, immutable `UiState` (Idle, Loading, Success, Error, Empty), dan handling event.
-2. **Domain Layer (`domain/`)**: Pure Kotlin Use Cases (kalkulasi rata-rata tertimbang, efisiensi km/liter, validasi struk) bebas dependensi platform.
+Proyek ini menggunakan struktur **Monorepo** modern yang memisahkan aplikasi seluler klien dan platform web pemilik/distribusi secara bersih:
+
+```text
+mari-partner-fuel/
+├── mobile/                     # 📱 Android Native Application (Driver-First)
+│   ├── app/                    # Modul aplikasi Android (Compose M3, Clean MVVM)
+│   ├── gradlew.bat             # Gradle wrapper build system
+│   ├── run-app.bat             # Runner lokal otomatis ke HP/AVD
+│   ├── .env                    # Kredensial lokal Supabase (SUPABASE_URL & ANON_KEY)
+│   └── local.properties        # Path Android SDK
+├── web/                        # 🌐 Web Platform (Landing Page & SaaS Owner Console)
+│   ├── src/
+│   │   ├── views/
+│   │   │   ├── LandingPageView.vue   # Halaman publik showcase & 1-tap download APK
+│   │   │   ├── LoginView.vue         # Autentikasi aman akun Pemilik (Owner Auth)
+│   │   │   └── admin/                # Konsol Administrasi Bisnis SaaS (/admin/*)
+│   │   │       ├── DashboardOverviewView.vue  # KPI, MRR, rasio konversi & saldo QRISpy
+│   │   │       ├── PlansManagementView.vue    # Katalog harga paket & konfigurasi promo
+│   │   │       ├── UsersManagementView.vue    # Manajemen akun & Grant Pro manual
+│   │   │       ├── TransactionsAuditView.vue  # Audit mutasi database pembayaran
+│   │   │       └── QrispyGatewayLedgerView.vue # Ledger live saldo merchant QRISpy
+│   ├── public/downloads/       # Direktori publik penyimpanan file rilis APK otomatis
+│   ├── .env                    # Kredensial Supabase (1:1 konsisten dengan mobile)
+│   └── package.json            # Vue 3, Vite, Tailwind CSS, Lucide Icons, Supabase JS
+├── supabase/                   # ⚡ Backend Supabase (Database & Cloud Engine)
+│   ├── functions/              # Edge Functions (create-checkout, verify-qrispy-webhook, etc.)
+│   └── migrations/             # Migrasi SQL PostgreSQL 15+ & Row Level Security (RLS)
+├── docs/                       # 📚 Panduan setup teknis & dokumentasi sistem
+└── run-app.bat                 # Root convenience runner (delegasi ke mobile/run-app.bat)
+```
+
+### 📱 Android Application (`mobile/`)
+Menerapkan **Clean Architecture** berlapis tiga:
+1. **UI Layer (`mobile/app/src/main/java/id/maripartner/fuel/feature/`)**: Composable murni, ViewModel, immutable `UiState` (Idle, Loading, Success, Error, Empty), dan handling event.
+2. **Domain Layer (`domain/`)**: Pure Kotlin Use Cases (kalkulasi rata-rata tertimbang, efisiensi km/liter, validasi struk, TCO, radar harga BBM) bebas dependensi platform.
 3. **Data Layer (`data/`)**: Repository implementations, Supabase Client Data Source, Google ML Kit OCR engine, dan adapter pembayaran.
 
-```
+```text
 [UI Layer (Compose)] ──(Event)──► [ViewModel] ──► [Domain UseCase] ──► [Repository] ──► [Supabase / ML Kit]
          ▲                              │
          └────────(UiState Flow)────────┘
 ```
+
+### 🌐 Web Platform (`web/`)
+- **Landing Page Publik (`/`)**: Desain elegan bernuansa modern dark petrol teal & emerald dengan Hero showcase, Bento Grid keunggulan, tabel komparasi paket Free vs Pro, 3 langkah instalasi cepat, serta **tombol download 1-tap APK langsung** yang mengambil file dari `/downloads/mari-partner-fuel-v{version}.apk`.
+- **SaaS Owner Console (`/admin/*`)**: Konsol eksekutif multi-tab terproteksi Auth Guard yang memonitor omset kotor, MRR, jumlah pengguna, mutasi transaksi, audit gateway QRISpy, saldo merchant real-time, dan manajemen diskon promo harga paket langganan.
+- **Distribusi APK Otomatis**: Task Gradle `copyApkToWebPublic` di `mobile/app/build.gradle.kts` secara otomatis menyalin dan menamai artefak APK hasil kompilasi ke direktori `web/public/downloads/mari-partner-fuel-v{versionName}.apk` setiap kali build dijalankan.
 
 ---
 
@@ -264,53 +301,71 @@ git clone https://github.com/hndko/mari-partner-fuel.git
 cd mari-partner-fuel
 ```
 
-### 2. Konfigurasi `local.properties`
-Pastikan direktori Android SDK telah terdefinisi di `local.properties` (file ini otomatis diabaikan oleh Git):
+### 2. Setup Aplikasi Mobile (`mobile/`)
+Pastikan direktori Android SDK telah terdefinisi di `mobile/local.properties` (file ini otomatis diabaikan oleh Git):
 ```properties
 sdk.dir=C\:\\Users\\<Username>\\AppData\\Local\\Android\\Sdk
 ```
+Salin file konfigurasi lingkungan dari template:
+```powershell
+cp mobile/.env.example mobile/.env
+```
+Isi nilai `SUPABASE_URL` dan `SUPABASE_ANON_KEY` sesuai dashboard project Supabase Anda.
 
-### 3. Konfigurasi Kredensial Lingkungan (Opsional untuk Development)
-Salin contoh template [.env.example](.env.example):
-```bash
+### 3. Setup Platform Web & Owner Console (`web/`)
+Masuk ke direktori web, pasang dependensi Node.js, dan siapkan file lingkungan:
+```powershell
+cd web
+npm install
 cp .env.example .env
 ```
-Variabel publik `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dapat dimasukkan ke `local.properties` atau dibiarkan menggunakan placeholder saat pengujian lokal murni.
+> [!IMPORTANT]
+> **Konsistensi Kredensial**: Variabel `SUPABASE_URL` dan `SUPABASE_ANON_KEY` pada `web/.env` wajib 1:1 identik dengan yang ada di `mobile/.env`.
 
 ---
 
 ## 🧪 Perintah Testing & Build
 
-### ⚡ Menjalankan Aplikasi di HP / Emulator Tanpa Android Studio (Mode Ringan)
-Untuk menguji aplikasi langsung di smartphone fisik Android (USB/Wi-Fi) atau emulator AVD lokal (`test_avd`) tanpa membuka Android Studio yang berat di laptop:
+### ⚡ Menjalankan Aplikasi Mobile di HP / Emulator (Mode Ringan)
+Cukup jalankan script batch otomatis di root proyek:
 ```powershell
 .\run-app.bat
 ```
+*(Atau navigasi ke `mobile` dan jalankan `mobile\run-app.bat`)*
+
 Script batch otomatis ini akan:
 1. Mendeteksi lokasi Android SDK dan perangkat fisik Anda secara otomatis.
 2. Memberikan pilihan untuk menggunakan HP fisik (0% beban emulator di laptop) atau menyalakan AVD dengan parameter hemat RAM/CPU.
 3. Mengompilasi APK debug via Gradle daemon, memasangnya ke perangkat, dan membuka aplikasi secara instan.
 4. Menyediakan opsi pemantauan Logcat real-time khusus filter `id.maripartner.fuel`.
 
-### Menjalankan Unit Test (100% Lulus)
+### Menjalankan Unit Test Mobile (100% Lulus)
 ```powershell
+cd mobile
 .\gradlew.bat testDebugUnitTest
 ```
-Hasil uji: **137 tests lulus 100%** (29 test suites):
-- Benchmark performa & stress testing (`PerformanceAndStressTest` - 5 tests)
-- Hardening keamanan & integritas data (`SecurityHardeningAndIntegrityTest` - 8 tests)
-- Verifikasi skema DDL, migrasi & trigger SQL (`MigrationSqlTest` - 8 tests)
-- Alur Use Case & model pembayaran (`PaymentModelTest`, `PaymentDtoTest`, `PaymentUseCaseTest` - 11 tests)
-- Entitlement & penegakan kuota AI (`UserEntitlementTest`, `CheckFeatureAccessUseCaseTest`, `EntitlementDtoTest` - 14 tests)
-- Agregasi dashboard, efisiensi BBM km/L & ekspor CSV (`DashboardSummaryCalculationTest`, `CalculateFuelEfficiencyTest`, `ExportTransactionsCsvTest`, `MaintenanceReminderValidationTest` - 18 tests)
-- Pembacaan & parsing OCR struk ML Kit serta validasi transaksi (`ReceiptTextParserTest`, `AiExtractionDtoTest`, `FuelTransactionValidationTest`, `VehicleValidationTest` - 26 tests)
-- Autentikasi, navigasi & utilitas (`AuthUseCaseTest`, `AuthValidationTest`, `CurrencyFormatterTest`, `DateUtilsTest`, `NavigationTest`, `UiStateTest`, `AppConfigTest` - 47 tests).
 
-### Membangun APK Debug
+### Membangun APK Mobile & Distribusi Otomatis ke Web
 ```powershell
+cd mobile
 .\gradlew.bat assembleDebug
 ```
-Artefak APK keluaran: `app/build/outputs/apk/debug/app-debug.apk` (~23.1 MB).
+> [!TIP]
+> **Otomatisasi Distribusi APK**: Task Gradle kustom `copyApkToWebPublic` akan otomatis mendeteksi versi aplikasi (`versionName` di `build.gradle.kts`) dan menyalin file APK ke `web/public/downloads/mari-partner-fuel-v{versionName}.apk` sehingga langsung siap diunduh oleh pengunjung Landing Page web!
+
+### 🌐 Menjalankan & Membangun Platform Web
+```powershell
+cd web
+
+# Menjalankan local development server (Landing Page di http://localhost:5173/)
+npm run dev
+
+# Memeriksa type safety TypeScript & kompilasi produksi
+npm run build
+
+# Menjalankan preview hasil kompilasi produksi lokal
+npm run preview
+```
 
 ### Menjalankan Fitur Tahap 7 (Integrasi Pembayaran & Aktivasi Pro)
 1. **Pilihan Paket & Checkout (`/pro_plans` -> `/checkout/{planId}`)**:

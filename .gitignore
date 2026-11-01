@@ -1,14 +1,30 @@
-# Gradle
+# Gradle & Android Build (Root & Mobile)
 .gradle/
 .kotlin/
 build/
 app/build/
+mobile/.gradle/
+mobile/.kotlin/
+mobile/build/
+mobile/app/build/
 
-# Local configuration
+# Local configuration & Secrets (Zero-Secret Policy)
 local.properties
+mobile/local.properties
 .env
 .env.local
 .env.*.local
+mobile/.env
+mobile/.env.local
+mobile/.env.*.local
+web/.env
+web/.env.local
+web/.env.*.local
+
+# Web Dependencies & Build Artifacts
+web/node_modules/
+web/dist/
+web/.vite/
 
 # Android Studio / IntelliJ
 .idea/
@@ -35,4 +51,3 @@ Thumbs.db
 # Supabase CLI local cache & branches
 supabase/.temp/
 supabase/.branches/
-

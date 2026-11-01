@@ -6,10 +6,11 @@ Buku panduan ini memandu Anda melakukan penyiapan (*setup*) aplikasi **Mari Part
 
 ## ⏱️ Estimasi Waktu Setup: ~10 - 15 Menit
 
-Aplikasi ini menggunakan:
-- **Klien**: Android Native (Kotlin 2.0, Jetpack Compose, Material 3).
+Repositori ini menggunakan arsitektur **Monorepo** yang memisahkan aplikasi seluler pengemudi dan portal web pemilik:
+- **`mobile/`**: Aplikasi Android Native (Kotlin 2.0, Jetpack Compose, Material 3) khusus untuk pengemudi dan manajemen armada.
+- **`web/`**: Platform Web modern (Vue 3, Vite, Tailwind CSS) berisi **Landing Page Publik** (unduh APK 1-tap) dan **SaaS Owner Console** (`/admin/*`) untuk monitoring omset, saldo merchant QRISpy, mutasi gateway, serta konfigurasi promo harga paket.
 - **OCR Struk**: **Google ML Kit (On-Device)** — *Langsung aktif otomatis di ponsel tanpa perlu API key tambahan dan tanpa memotong kuota internet!*
-- **Backend & Database**: **Supabase (PostgreSQL & Storage)** — *Gratis, aman, dan online.*
+- **Backend & Database**: **Supabase (PostgreSQL 15+ & Storage)** — *Gratis, aman, dan online.*
 
 ---
 
@@ -172,25 +173,36 @@ Anda memerlukan 2 nilai dari Supabase untuk dimasukkan ke konfigurasi Android:
 
 ---
 
-## ⚙️ Langkah 3: Konfigurasi Kunci di Proyek Android (.env / local.properties)
+## ⚙️ Langkah 3: Konfigurasi Kunci di Proyek Mobile & Web (.env)
 
-Proyek ini telah dikonfigurasi untuk **secara otomatis membaca berkas `.env`** di root repositori (atau `local.properties`):
+Proyek ini telah dikonfigurasi untuk **secara otomatis membaca berkas `.env`** di modul `mobile/` dan `web/` (atau `mobile/local.properties`):
 
-1. Buka berkas `.env` (atau duplikasi dari `.env.example`).
-2. Masukkan URL dan Anon Key Supabase yang Anda peroleh pada Langkah 2.4:
+1. **Aplikasi Android (`mobile/.env`)**:
+   Salin `mobile/.env.example` menjadi `mobile/.env`, lalu masukkan URL dan Anon Key Supabase Anda:
+   ```properties
+   ## Konfigurasi Supabase Mari Partner Fuel (Android)
+   SUPABASE_URL=https://zcezyhgrblksfuxmszyz.supabase.co
+   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-```properties
-## Konfigurasi Supabase Mari Partner Fuel
-SUPABASE_URL=https://zcezyhgrblksfuxmszyz.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   ## Opsional: Google OAuth Web Client ID
+   GOOGLE_WEB_CLIENT_ID=
+   ```
 
-## Opsional: Google OAuth Web Client ID (Jika ingin mengaktifkan tombol Masuk dengan Google)
-GOOGLE_WEB_CLIENT_ID=
-```
+2. **Platform Web & SaaS Owner Console (`web/.env`)**:
+   Salin `web/.env.example` menjadi `web/.env`:
+   ```properties
+   ## Konfigurasi Supabase Mari Partner Fuel (Web)
+   SUPABASE_URL=https://zcezyhgrblksfuxmszyz.supabase.co
+   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-3. Simpan berkas `.env`.
+   ## Info Versi & Rilis APK
+   VITE_APP_VERSION=2.0.8
+   VITE_APP_APK_FILENAME=mari-partner-fuel-v2.0.8.apk
+   VITE_APP_APK_URL=/downloads/mari-partner-fuel-v2.0.8.apk
+   ```
 
-> 🔒 **Aman**: Berkas `.env` dan `local.properties` otomatis terdaftar di `.gitignore` dan tidak akan pernah ter-upload ke publik.
+> [!IMPORTANT]
+> **Aturan Konsistensi**: Variabel `SUPABASE_URL` dan `SUPABASE_ANON_KEY` pada `mobile/.env` dan `web/.env` wajib 1:1 identik dalam penamaan maupun isinya agar mobile dan web membaca database Supabase yang sama persis. Berkas `.env` otomatis diabaikan oleh `.gitignore` (Zero-Secret Policy).
 
 ---
 
@@ -378,12 +390,13 @@ Setelah aplikasi terbuka di layar smartphone Anda:
 
 ---
 
-### 6. Integrasi Saldo & Mutasi Gateway QRISpy di Owner Console
-- **Monitoring Saldo Real-Time**: Pada tab **Ringkasan (Dashboard)** Owner Console, tersedia kartu eksekutif **Saldo Aktif QRISpy** yang terhubung langsung ke `GET /api/payment/balance`.
-- **Dua Jalur Pembukuan di Tab Transaksi**: Tab **Transaksi** Owner Console dilengkapi segmented tab ganda:
-  - **Transaksi Database**: Audit transaksi pembayaran paket SaaS yang tersimpan di database Supabase lengkap dengan rincian user dan masa aktif.
-  - **Mutasi Gateway QRISpy**: Ledger transaksi real-time langsung dari server gateway QRISpy (`GET /api/payment/transactions?limit=20`) dengan status *PAID, PENDING, EXPIRED,* dan *CANCELLED*.
-- **Keamanan Zero-Secret**: Seluruh komunikasi ke endpoint gateway QRISpy diproses oleh Edge Function `get-qrispy-merchant-data` dengan otentikasi role Owner/Admin. Tidak ada secret atau token API gateway yang tersimpan di dalam APK Android.
+### 6. Integrasi Saldo & Mutasi Gateway QRISpy di Web Owner Console
+SaaS Owner Console kini hadir sebagai portal web terisolasi yang diakses via `cd web && npm run dev` (buka `http://localhost:5173/login` dan masuk dengan akun owner):
+- **Monitoring Saldo Real-Time**: Pada tab **Ringkasan (Dashboard)** Web Owner Console, tersedia kartu eksekutif **Saldo Aktif QRISpy** yang terhubung langsung ke `GET /api/payment/balance` dengan tombol refresh saldo instan.
+- **Dua Jalur Pembukuan & Audit Finansial**:
+  - **Audit Transaksi Database (`/admin/transactions`)**: Audit transaksi pembayaran paket SaaS yang tersimpan di database Supabase lengkap dengan rincian user dan masa aktif.
+  - **Ledger Mutasi Gateway QRISpy (`/admin/qrispy-ledger`)**: Ledger transaksi real-time langsung dari server gateway QRISpy (`GET /api/payment/transactions?limit=20`) dengan status *PAID, PENDING, EXPIRED,* dan *CANCELLED*.
+- **Keamanan Zero-Secret & Role Guard**: Seluruh komunikasi ke endpoint gateway QRISpy diproses oleh Edge Function `get-qrispy-merchant-data` dengan otentikasi role Owner/Admin. Tidak ada secret atau token API gateway yang tersimpan di klien browser maupun di dalam APK Android. Kunci `QRISPY_API_TOKEN` tetap 100% aman tersimpan di Supabase Edge Function Secrets.
 
 ---
 
