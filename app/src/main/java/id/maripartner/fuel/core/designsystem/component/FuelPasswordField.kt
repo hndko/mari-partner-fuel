@@ -1,5 +1,6 @@
 package id.maripartner.fuel.core.designsystem.component
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -16,9 +17,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
 
 /**
  * Komponen input kata sandi terstandar Material 3 dengan tombol icon eye untuk toggle show/hide password.
@@ -34,7 +37,8 @@ fun FuelPasswordField(
     supportingText: @Composable (() -> Unit)? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    shape: Shape = RoundedCornerShape(16.dp)
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -43,6 +47,7 @@ fun FuelPasswordField(
         onValueChange = onValueChange,
         label = { Text(label) },
         placeholder = placeholder?.let { { Text(it) } },
+        shape = shape,
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Lock,

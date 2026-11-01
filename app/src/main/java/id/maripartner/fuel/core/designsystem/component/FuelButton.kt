@@ -43,7 +43,8 @@ fun FuelPrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLoading: Boolean = false,
-    leadingIcon: ImageVector? = null
+    leadingIcon: ImageVector? = null,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp)
 ) {
     Button(
         onClick = onClick,
@@ -51,7 +52,7 @@ fun FuelPrimaryButton(
             .fillMaxWidth()
             .height(50.dp),
         enabled = enabled && !isLoading,
-        shape = RoundedCornerShape(10.dp),
+        shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
             contentColor = Color.White,
@@ -110,7 +111,8 @@ fun FuelSecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    leadingIcon: ImageVector? = null
+    leadingIcon: ImageVector? = null,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp)
 ) {
     OutlinedButton(
         onClick = onClick,
@@ -118,7 +120,7 @@ fun FuelSecondaryButton(
             .fillMaxWidth()
             .height(50.dp),
         enabled = enabled,
-        shape = RoundedCornerShape(10.dp),
+        shape = shape,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = MaterialTheme.colorScheme.surface,
