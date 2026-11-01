@@ -1,17 +1,23 @@
 package id.maripartner.fuel.feature.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -67,7 +73,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -136,81 +144,144 @@ fun ProfileScreen(
         }
     }
 
+    val gradientBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(
+                MariBrandNavy,
+                MariPrimaryBlue.copy(alpha = 0.95f),
+                MariPrimaryBlue
+            )
+        )
+    }
+
     Scaffold(
-        topBar = {
-            FuelTopBar(title = "Profil & Pengaturan")
-        },
+        containerColor = MaterialTheme.colorScheme.surface,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .background(MaterialTheme.colorScheme.background),
-            contentAlignment = Alignment.TopCenter
+                .background(MaterialTheme.colorScheme.surface)
         ) {
+            val screenHeight = maxHeight
+            val density = LocalDensity.current
+            var headerHeightDp by remember { mutableStateOf(280.dp) }
+
+            // Latar gradien atas
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(360.dp)
+                    .background(brush = gradientBrush)
+            )
+
+            val remainingCardMinHeight = (screenHeight - headerHeightDp + 36.dp).coerceAtLeast(320.dp)
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .widthIn(max = 760.dp)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Eyebrow & Judul Halaman
-                Column {
-                    Text(
-                        text = "AKUN SAYA",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.6.sp
-                        ),
-                        color = MariPrimaryBlue
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Profil & Pengaturan",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Kelola identitas akun, penautan Google, dan preferensi aplikasi.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // 1. Kartu Ringkasan Profil Pengguna (User Summary Card)
-                FuelCard {
+                // 1. Hero Gradient Header (Status Bar, Top Bar, Identitas Pengguna & Pro Status)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { size ->
+                            val measuredDp = with(density) { size.height.toDp() }
+                            if (measuredDp > 0.dp) {
+                                headerHeightDp = measuredDp
+                            }
+                        }
+                        .background(brush = gradientBrush)
+                        .statusBarsPadding()
+                        .padding(top = 10.dp, bottom = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .widthIn(max = 760.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Avatar Initial Lingkaran
-                        val initialLetter = uiState.displayName.take(1).uppercase().ifBlank { "P" }
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(Color(0xFFE4F2FF), Color(0xFFCBE5FF))
-                                    )
-                                )
+                        // Top Bar: Judul & Status Versi
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = initialLetter,
-                                style = MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 32.sp
-                                ),
-                                color = MariPrimaryBlue
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "AKUN SAYA",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.2.sp
+                                    ),
+                                    color = Color(0xFF67E8F9)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color.White.copy(alpha = 0.22f)
+                                ) {
+                                    Text(
+                                        text = "PROFIL",
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = Color.White.copy(alpha = 0.18f),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
+                            ) {
+                                Text(
+                                    text = "v${AppConfig.versionName} Resmi",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Avatar Lingkaran Elegan
+                        val initialLetter = uiState.displayName.take(1).uppercase().ifBlank { "P" }
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 8.dp,
+                            border = BorderStroke(3.dp, Color.White.copy(alpha = 0.85f)),
+                            modifier = Modifier.size(76.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(Color(0xFFE0F2FE), Color(0xFFBAE6FD))
+                                        )
+                                    )
+                            ) {
+                                Text(
+                                    text = initialLetter,
+                                    style = MaterialTheme.typography.headlineLarge.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 34.sp
+                                    ),
+                                    color = MariPrimaryBlue
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -219,15 +290,18 @@ fun ProfileScreen(
                         Text(
                             text = uiState.displayName,
                             style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 22.sp,
+                                color = Color.White
+                            )
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = uiState.email.ifBlank { "Akun Pengguna" },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 13.sp
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
@@ -243,30 +317,106 @@ fun ProfileScreen(
                                 } else {
                                     "Paket Pro Aktif"
                                 }
-                                FuelStatusChip(
-                                    text = proLabel,
-                                    type = FuelChipType.Success,
-                                    icon = Icons.Default.Diamond
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(Color(0xFFEAB308).copy(alpha = 0.25f))
+                                        .border(1.dp, Color(0xFFFDE047).copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                                        .padding(horizontal = 12.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Diamond,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFEF08A),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = proLabel,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             } else {
-                                FuelStatusChip(
-                                    text = "Paket Free",
-                                    type = FuelChipType.Info
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(Color.White.copy(alpha = 0.18f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+                                        .padding(horizontal = 12.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Paket Free",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Tombol Ubah / Edit Profil
-                        FuelSecondaryButton(
-                            text = "Ubah Profil Akun",
-                            onClick = onNavigateToEditProfile,
-                            leadingIcon = Icons.Default.Edit,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        // Tombol Ubah / Edit Profil Cepat
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.White,
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.clickable(onClick = onNavigateToEditProfile)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = null,
+                                    tint = MariPrimaryBlue,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Text(
+                                    text = "Ubah Profil Akun",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MariPrimaryBlue
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
+
+                // 2. Elevated White Rounded Sheet Container (Pengaturan & Preferensi)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-18).dp)
+                        .defaultMinSize(minHeight = remainingCardMinHeight),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 6.dp
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = remainingCardMinHeight),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .widthIn(max = 760.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(
+                                    top = 22.dp,
+                                    bottom = innerPadding.calculateBottomPadding() + 24.dp
+                                ),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
 
                 // 1b. Kartu Eksklusif Pemilik SaaS (Hanya Tampil untuk Owner / Admin)
                 if (uiState.isOwnerOrAdmin) {
@@ -742,14 +892,14 @@ fun ProfileScreen(
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                 )
                                 Text(
-                                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build 11)",
+                                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build 13)",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
 
-                        FuelStatusChip(text = "v2.0.0 Resmi", type = FuelChipType.Success)
+                        FuelStatusChip(text = "v${AppConfig.versionName} Resmi", type = FuelChipType.Success)
                     }
                 }
 
@@ -778,7 +928,7 @@ fun ProfileScreen(
 
                 // Footer Hak Cipta & Info Build
                 Text(
-                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build 11)\nAll Rights Reserved © 2026",
+                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build 13)\nAll Rights Reserved © 2026",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center,
@@ -789,6 +939,9 @@ fun ProfileScreen(
             }
         }
     }
+}
+}
+}
 
     // Modal Dialog: Kebijakan Privasi & Ketentuan Layanan (Data Safety Google Play)
     PrivacyPolicyDialog(

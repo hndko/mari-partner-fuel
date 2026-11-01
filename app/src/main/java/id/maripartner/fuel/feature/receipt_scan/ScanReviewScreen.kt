@@ -1,19 +1,28 @@
 package id.maripartner.fuel.feature.receipt_scan
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -36,6 +45,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
@@ -43,6 +53,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,8 +66,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -66,9 +81,11 @@ import id.maripartner.fuel.core.designsystem.component.FuelPrimaryButton
 import id.maripartner.fuel.core.designsystem.component.FuelSweetAlertDialog
 import id.maripartner.fuel.core.designsystem.component.FuelTextField
 import id.maripartner.fuel.core.designsystem.component.SweetAlertType
-import id.maripartner.fuel.core.designsystem.component.FuelTopBar
-import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 import id.maripartner.fuel.core.designsystem.component.ThousandSeparatorVisualTransformation
+import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
+import id.maripartner.fuel.core.designsystem.theme.MariMutedLight
+import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
+import id.maripartner.fuel.core.designsystem.theme.MariSuccess
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,24 +122,166 @@ fun ScanReviewScreen(
     val selectedVehicleName = state.availableVehicles.firstOrNull { it.id == state.selectedVehicleId }?.name
         ?: if (state.availableVehicles.isEmpty()) "Kendaraan belum tersedia" else "Pilih Kendaraan"
 
-    Scaffold(
-        topBar = {
-            FuelTopBar(
-                title = "Tinjau Hasil Scan Struk",
-                onNavigateBack = onNavigateBack
+    val gradientBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(
+                MariBrandNavy,
+                MariPrimaryBlue.copy(alpha = 0.95f),
+                MariPrimaryBlue
             )
-        },
+        )
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = modifier
+        modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
+            val screenHeight = maxHeight
+            val density = LocalDensity.current
+            var headerHeightDp by remember { mutableStateOf(160.dp) }
+
+            // Latar gradien atas
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp)
+                    .background(brush = gradientBrush)
+            )
+
+            val remainingCardMinHeight = (screenHeight - headerHeightDp + 36.dp).coerceAtLeast(320.dp)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // 1. Hero Gradient Header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { size ->
+                            val measuredDp = with(density) { size.height.toDp() }
+                            if (measuredDp > 0.dp) {
+                                headerHeightDp = measuredDp
+                            }
+                        }
+                        .background(brush = gradientBrush)
+                        .statusBarsPadding()
+                        .padding(top = 10.dp, bottom = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = 680.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            IconButton(
+                                onClick = onNavigateBack,
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.20f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Kembali",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color.White.copy(alpha = 0.16f))
+                                    .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF22C55E),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = "Human-in-the-Loop",
+                                    color = Color.White,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.size(44.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Text(
+                            text = "Tinjau Hasil Scan Struk",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 22.sp
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "Periksa dan koreksi data sebelum disimpan ke database transaksi",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 12.sp
+                            )
+                        )
+                    }
+                }
+
+                // 2. Elevated White Rounded Sheet Container (Formulir Review)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-18).dp)
+                        .defaultMinSize(minHeight = remainingCardMinHeight),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 6.dp
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = remainingCardMinHeight),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .widthIn(max = 680.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(
+                                    top = 22.dp,
+                                    bottom = innerPadding.calculateBottomPadding() + 24.dp
+                                ),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
             // 1. Banner Info Status Hasil Scan & Human-in-the-Loop
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -417,6 +576,10 @@ fun ScanReviewScreen(
             )
         }
     }
+}
+}
+}
+}
 
     // Modal Persetujuan Penggunaan AI Cloud
     FuelSweetAlertDialog(
