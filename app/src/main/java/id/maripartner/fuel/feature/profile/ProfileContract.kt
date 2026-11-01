@@ -30,6 +30,7 @@ data class ProfileUiState(
     val showDeleteAccountDialog: Boolean = false,
     val isDeletingAccount: Boolean = false,
     val showPrivacyPolicyDialog: Boolean = false,
+    val showSecurityEnrollDialog: Boolean = false,
     val isAccountDeleted: Boolean = false
 ) {
     val isOwnerOrAdmin: Boolean
@@ -52,6 +53,8 @@ sealed interface ProfileUiEvent {
     data class SetLogoutDialogVisible(val visible: Boolean) : ProfileUiEvent
     data class SetDeleteAccountDialogVisible(val visible: Boolean) : ProfileUiEvent
     data class SetPrivacyPolicyDialogVisible(val visible: Boolean) : ProfileUiEvent
+    data object DismissSecurityEnrollDialog : ProfileUiEvent
+    data object OpenDeviceSecuritySettings : ProfileUiEvent
     data object DeleteAccount : ProfileUiEvent
     data object DismissMessage : ProfileUiEvent
 }

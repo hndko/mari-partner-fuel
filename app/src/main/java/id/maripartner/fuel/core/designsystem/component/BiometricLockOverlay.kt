@@ -73,7 +73,7 @@ fun BiometricLockOverlay(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Akses Mari Partner Fuel diamankan dengan kunci biometrik perangkat Anda.",
+                    text = "Akses Mari Partner Fuel diamankan dengan Sidik Jari, Pengenalan Wajah, PIN, atau Pola perangkat Anda.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -82,9 +82,9 @@ fun BiometricLockOverlay(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 FuelPrimaryButton(
-                    text = "Buka Kunci Aplikasi",
+                    text = "Buka Kunci (Biometrik / PIN / Pola)",
                     onClick = onUnlockClick,
-                    modifier = Modifier.fillMaxWidth(0.85f),
+                    modifier = Modifier.fillMaxWidth(0.9f),
                     leadingIcon = Icons.Default.Fingerprint
                 )
             }

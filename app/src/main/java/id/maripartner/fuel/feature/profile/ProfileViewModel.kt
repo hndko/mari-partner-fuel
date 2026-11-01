@@ -49,6 +49,8 @@ class ProfileViewModel(
             is ProfileUiEvent.SetLogoutDialogVisible -> _uiState.update { it.copy(showLogoutConfirmDialog = event.visible) }
             is ProfileUiEvent.SetDeleteAccountDialogVisible -> _uiState.update { it.copy(showDeleteAccountDialog = event.visible) }
             is ProfileUiEvent.SetPrivacyPolicyDialogVisible -> _uiState.update { it.copy(showPrivacyPolicyDialog = event.visible) }
+            is ProfileUiEvent.DismissSecurityEnrollDialog -> _uiState.update { it.copy(showSecurityEnrollDialog = false) }
+            is ProfileUiEvent.OpenDeviceSecuritySettings -> openDeviceSecuritySettings()
             is ProfileUiEvent.DeleteAccount -> deleteAccount()
             is ProfileUiEvent.DismissMessage -> _uiState.update { it.copy(errorMessage = null, successMessage = null) }
         }
@@ -192,13 +194,33 @@ class ProfileViewModel(
 
     private fun toggleBiometric(enabled: Boolean) {
         val appContext = MariPartnerFuelApp.instance
+        if (enabled) {
+            val status = BiometricAuthManager.canAuthenticate(appContext)
+            if (status != BiometricHardwareStatus.AVAILABLE) {
+                // Perangkat belum mendaftarkan biometrik / PIN / Pola layar kunci
+                _uiState.update {
+                    it.copy(
+                        showSecurityEnrollDialog = true,
+                        isBiometricEnabled = false
+                    )
+                }
+                return
+            }
+        }
+
         BiometricAuthManager.setBiometricEnabled(appContext, enabled)
         _uiState.update {
             it.copy(
                 isBiometricEnabled = enabled,
-                successMessage = if (enabled) "Kunci Biometrik diaktifkan!" else "Kunci Biometrik dinonaktifkan."
+                successMessage = if (enabled) "Kunci Biometrik & Kunci Layar diaktifkan!" else "Kunci Keamanan dinonaktifkan."
             )
         }
+    }
+
+    private fun openDeviceSecuritySettings() {
+        _uiState.update { it.copy(showSecurityEnrollDialog = false) }
+        val appContext = MariPartnerFuelApp.instance
+        BiometricAuthManager.openSecuritySettings(appContext)
     }
 
     private fun setLockTimeout(minutes: Int) {

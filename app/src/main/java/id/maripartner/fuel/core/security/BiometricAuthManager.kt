@@ -1,8 +1,11 @@
 package id.maripartner.fuel.core.security
 
+import android.app.KeyguardManager
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
+import android.provider.Settings
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -35,12 +38,60 @@ object BiometricAuthManager {
             BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
         }
 
-        return when (biometricManager.canAuthenticate(authenticators)) {
-            BiometricManager.BIOMETRIC_SUCCESS -> BiometricHardwareStatus.AVAILABLE
+        val authResult = biometricManager.canAuthenticate(authenticators)
+        if (authResult == BiometricManager.BIOMETRIC_SUCCESS) {
+            return BiometricHardwareStatus.AVAILABLE
+        }
+
+        // Universal Fallback untuk perangkat yang memiliki PIN / Pola / Sandi aktif
+        // meskipun sensor biometrik fisik tidak tersedia (misal tablet murah / HP entry-level).
+        val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        val isDeviceSecure = keyguardManager?.isDeviceSecure == true
+
+        if (isDeviceSecure) {
+            return BiometricHardwareStatus.AVAILABLE
+        }
+
+        return when (authResult) {
             BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> BiometricHardwareStatus.NOT_ENROLLED
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE,
-            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> BiometricHardwareStatus.NO_HARDWARE
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
+                // Jika sensor biometrik tidak ada dan layar kunci perangkat juga belum diatur
+                BiometricHardwareStatus.NOT_ENROLLED
+            }
             else -> BiometricHardwareStatus.UNSUPPORTED
+        }
+    }
+
+    /**
+     * Membuka halaman pengaturan keamanan / biometrik Android secara andal
+     * agar pengguna dapat mendaftarkan PIN, Pola, Sandi, Sidik Jari, atau Wajah.
+     */
+    fun openSecuritySettings(context: Context) {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
+                putExtra(
+                    Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                )
+            }
+        } else {
+            Intent(Settings.ACTION_SECURITY_SETTINGS)
+        }
+
+        try {
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: Exception) {
+            try {
+                val fallbackIntent = Intent(Settings.ACTION_SECURITY_SETTINGS)
+                context.startActivity(fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (_: Exception) {
+                try {
+                    context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (_: Exception) {
+                    // Abaikan jika semua intent gagal diluncurkan
+                }
+            }
         }
     }
 

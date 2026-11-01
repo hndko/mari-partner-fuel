@@ -712,11 +712,11 @@ fun ProfileScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = "Kunci Aplikasi Biometrik",
+                                        text = "Kunci Biometrik & Kunci Layar",
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                     )
                                     Text(
-                                        text = "Gunakan Sidik Jari atau Wajah untuk membuka aplikasi",
+                                        text = "Amankan aplikasi dengan Sidik Jari, Pengenalan Wajah, PIN, atau Pola perangkat",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -971,6 +971,24 @@ fun ProfileScreen(
                 if (!uiState.isDeletingAccount) {
                     viewModel.onEvent(ProfileUiEvent.SetDeleteAccountDialogVisible(false))
                 }
+            }
+        )
+    }
+
+    // Modal Dialog: Edukasi Kunci Layar Belum Diatur (SweetAlert style)
+    if (uiState.showSecurityEnrollDialog) {
+        FuelSweetAlertDialog(
+            show = true,
+            type = SweetAlertType.INFO,
+            title = "Kunci Layar Belum Diatur",
+            message = "Untuk mengaktifkan kunci keamanan, silakan daftarkan Sidik Jari, Pengenalan Wajah, PIN, atau Pola di Pengaturan perangkat Anda terlebih dahulu.",
+            confirmText = "Buka Pengaturan HP",
+            dismissText = "Nanti Saja",
+            onConfirm = {
+                viewModel.onEvent(ProfileUiEvent.OpenDeviceSecuritySettings)
+            },
+            onDismiss = {
+                viewModel.onEvent(ProfileUiEvent.DismissSecurityEnrollDialog)
             }
         )
     }
