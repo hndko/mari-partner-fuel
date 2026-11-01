@@ -238,6 +238,25 @@ class AuthRepositoryImpl(
         return identities.any { it.provider.equals("google", ignoreCase = true) }
     }
 
+    override suspend fun deleteAccount(): AppResult<Unit> = withContext(dispatcher) {
+        try {
+            val user = auth.currentUserOrNull()
+                ?: return@withContext AppResult.Error(AppException.Authentication("Pengguna belum masuk."))
+
+            // Panggil RPC database untuk menghapus relasi data dan identitas auth di backend
+            SupabaseClientProvider.postgrest.rpc("delete_user_account")
+
+            // Bersihkan sesi lokal pada SDK Supabase
+            try {
+                auth.signOut()
+            } catch (_: Exception) {}
+
+            AppResult.Success(Unit)
+        } catch (e: Exception) {
+            AppResult.Error(mapAuthException(e))
+        }
+    }
+
     private fun mapToUserSession(user: UserInfo, session: SupabaseUserSession?): UserSession {
         val fullName = user.userMetadata?.get("full_name")?.toString()?.replace("\"", "")
         return UserSession(

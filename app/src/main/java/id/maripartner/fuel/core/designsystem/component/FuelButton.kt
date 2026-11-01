@@ -158,7 +158,8 @@ fun FuelDangerButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    leadingIcon: ImageVector? = null
+    leadingIcon: ImageVector? = null,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp)
 ) {
     Button(
         onClick = onClick,
@@ -166,7 +167,7 @@ fun FuelDangerButton(
             .fillMaxWidth()
             .height(48.dp),
         enabled = enabled,
-        shape = RoundedCornerShape(10.dp),
+        shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MariDangerBg,
             contentColor = MariDanger

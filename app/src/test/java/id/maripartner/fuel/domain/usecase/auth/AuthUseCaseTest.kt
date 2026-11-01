@@ -85,6 +85,13 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override fun isGoogleLinked(): Boolean = false
+
+    override suspend fun deleteAccount(): AppResult<Unit> {
+        if (shouldFail) return AppResult.Error(AppException.Network("Gagal menghapus akun"))
+        activeSession = null
+        authStateFlow.value = null
+        return AppResult.Success(Unit)
+    }
 }
 
 class AuthUseCaseTest {
@@ -180,5 +187,15 @@ class AuthUseCaseTest {
         val result = googleSignInUseCase("valid-google-id-token")
         assertTrue(result.isSuccess)
         assertEquals("google-user-123", (result as AppResult.Success).data.userId)
+    }
+
+    @Test
+    fun deleteAccount_clearsSessionAndSucceeds() = runBlocking {
+        fakeRepo.activeSession = UserSession(userId = "123", email = "test@test.com")
+        assertNotNull(fakeRepo.getCurrentSession())
+
+        val result = fakeRepo.deleteAccount()
+        assertTrue(result.isSuccess)
+        assertNull(fakeRepo.getCurrentSession())
     }
 }

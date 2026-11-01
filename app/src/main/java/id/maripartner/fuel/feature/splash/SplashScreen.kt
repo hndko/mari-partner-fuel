@@ -19,6 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import id.maripartner.fuel.core.common.config.AppConfig
 import kotlinx.coroutines.delay
 
 @Composable
@@ -64,6 +65,12 @@ fun SplashScreen(
                 modifier = Modifier.size(28.dp),
                 color = MaterialTheme.colorScheme.primary,
                 strokeWidth = 2.5.dp
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Mari Partner Fuel · v${AppConfig.versionName}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
         }
     }

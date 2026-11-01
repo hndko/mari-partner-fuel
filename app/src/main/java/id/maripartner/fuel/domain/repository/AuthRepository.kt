@@ -52,4 +52,9 @@ interface AuthRepository {
     ): AppResult<Unit>
 
     fun isGoogleLinked(): Boolean
+
+    /**
+     * Menghapus akun pengguna dan seluruh data terkait secara permanen (Google Play Policy & GDPR).
+     */
+    suspend fun deleteAccount(): AppResult<Unit>
 }

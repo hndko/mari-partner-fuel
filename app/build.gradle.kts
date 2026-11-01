@@ -53,8 +53,8 @@ android {
         applicationId = "id.maripartner.fuel"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.9.0"
+        versionCode = 11
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

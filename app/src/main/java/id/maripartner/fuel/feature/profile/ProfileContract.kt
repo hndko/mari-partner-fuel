@@ -26,7 +26,11 @@ data class ProfileUiState(
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val showEditDialog: Boolean = false,
-    val showLogoutConfirmDialog: Boolean = false
+    val showLogoutConfirmDialog: Boolean = false,
+    val showDeleteAccountDialog: Boolean = false,
+    val isDeletingAccount: Boolean = false,
+    val showPrivacyPolicyDialog: Boolean = false,
+    val isAccountDeleted: Boolean = false
 ) {
     val isOwnerOrAdmin: Boolean
         get() = userProfile?.isOwnerOrAdmin == true || email.equals("kyuoko13@gmail.com", ignoreCase = true)
@@ -46,5 +50,8 @@ sealed interface ProfileUiEvent {
     data class UpdateLocationPermission(val granted: Boolean) : ProfileUiEvent
     data class SetEditDialogVisible(val visible: Boolean) : ProfileUiEvent
     data class SetLogoutDialogVisible(val visible: Boolean) : ProfileUiEvent
+    data class SetDeleteAccountDialogVisible(val visible: Boolean) : ProfileUiEvent
+    data class SetPrivacyPolicyDialogVisible(val visible: Boolean) : ProfileUiEvent
+    data object DeleteAccount : ProfileUiEvent
     data object DismissMessage : ProfileUiEvent
 }

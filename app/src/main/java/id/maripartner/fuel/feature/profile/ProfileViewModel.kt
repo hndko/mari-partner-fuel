@@ -47,6 +47,9 @@ class ProfileViewModel(
             is ProfileUiEvent.UpdateLocationPermission -> _uiState.update { it.copy(hasLocationPermission = event.granted) }
             is ProfileUiEvent.SetEditDialogVisible -> _uiState.update { it.copy(showEditDialog = event.visible) }
             is ProfileUiEvent.SetLogoutDialogVisible -> _uiState.update { it.copy(showLogoutConfirmDialog = event.visible) }
+            is ProfileUiEvent.SetDeleteAccountDialogVisible -> _uiState.update { it.copy(showDeleteAccountDialog = event.visible) }
+            is ProfileUiEvent.SetPrivacyPolicyDialogVisible -> _uiState.update { it.copy(showPrivacyPolicyDialog = event.visible) }
+            is ProfileUiEvent.DeleteAccount -> deleteAccount()
             is ProfileUiEvent.DismissMessage -> _uiState.update { it.copy(errorMessage = null, successMessage = null) }
         }
     }
@@ -217,6 +220,33 @@ class ProfileViewModel(
                 isSpbuReminderEnabled = enabled,
                 successMessage = if (enabled) "Pengingat SPBU diaktifkan!" else "Pengingat SPBU dinonaktifkan."
             )
+        }
+    }
+
+    private fun deleteAccount() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeletingAccount = true, errorMessage = null) }
+
+            when (val result = authRepository.deleteAccount()) {
+                is AppResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isDeletingAccount = false,
+                            showDeleteAccountDialog = false,
+                            isAccountDeleted = true
+                        )
+                    }
+                }
+                is AppResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isDeletingAccount = false,
+                            showDeleteAccountDialog = false,
+                            errorMessage = result.exception.message ?: "Gagal menghapus akun. Silakan coba lagi."
+                        )
+                    }
+                }
+            }
         }
     }
 }

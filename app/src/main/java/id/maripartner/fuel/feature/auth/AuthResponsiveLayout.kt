@@ -33,7 +33,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +46,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.maripartner.fuel.core.common.config.AppConfig
 import id.maripartner.fuel.core.designsystem.component.MariPartnerRibbonM
+import id.maripartner.fuel.core.designsystem.component.PrivacyPolicyDialog
 import id.maripartner.fuel.core.designsystem.theme.MariAccentCyan
 import id.maripartner.fuel.core.designsystem.theme.MariBgLight
 import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
@@ -73,6 +78,8 @@ fun AuthResponsiveLayout(
             )
         )
     }
+
+    var showPrivacyDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = snackbarHost,
@@ -133,12 +140,13 @@ fun AuthResponsiveLayout(
                             Spacer(modifier = Modifier.size(38.dp))
                         }
 
-                        // Pill Badge Keamanan
+                        // Pill Badge Keamanan (Klik untuk Buka Kebijakan Privasi)
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(Color.White.copy(alpha = 0.16f))
                                 .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
+                                .clickable { showPrivacyDialog = true }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -283,10 +291,50 @@ fun AuthResponsiveLayout(
                         // Formulir Aksi Spesifik (Login / Register / Forgot Password)
                         content()
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Link Kebijakan Privasi
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Keamanan data dilindungi oleh ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MariMutedLight
+                            )
+                            Text(
+                                text = "Kebijakan Privasi",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable { showPrivacyDialog = true }
+                                    .padding(horizontal = 2.dp, vertical = 2.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Footer Versi Aplikasi
+                        Text(
+                            text = "Mari Partner Fuel · v${AppConfig.versionName}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MariMutedLight.copy(alpha = 0.75f),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
                 }
             }
         }
+
+        // Modal Dialog Kebijakan Privasi
+        PrivacyPolicyDialog(
+            show = showPrivacyDialog,
+            onDismiss = { showPrivacyDialog = false }
+        )
     }
 }

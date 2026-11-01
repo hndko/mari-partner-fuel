@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Release_Candidate-RC--1-blue?style=for-the-badge" alt="Release Candidate RC-1" />
   <img src="https://img.shields.io/badge/Production_Readiness-Ready_for_Closed_Testing-3ECF8E?style=for-the-badge" alt="Ready for Closed Testing" />
   <img src="https://img.shields.io/badge/AAB_Size-7.57_MB-blue?style=for-the-badge" alt="AAB Size 7.57 MB" />
-  <img src="https://img.shields.io/badge/Version-v1.9.0-blue?style=for-the-badge" alt="Version 1.9.0" />
+  <img src="https://img.shields.io/badge/Version-v2.0.0-blue?style=for-the-badge" alt="Version 2.0.0" />
 </p>
 
 ---

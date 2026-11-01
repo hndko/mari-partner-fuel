@@ -1,6 +1,7 @@
 package id.maripartner.fuel.feature.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Fingerprint
@@ -67,6 +69,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
@@ -88,6 +91,7 @@ import id.maripartner.fuel.core.designsystem.component.SweetAlertType
 import id.maripartner.fuel.core.designsystem.component.FuelTextField
 import id.maripartner.fuel.core.designsystem.component.FuelTextLink
 import id.maripartner.fuel.core.designsystem.component.FuelTopBar
+import id.maripartner.fuel.core.designsystem.component.PrivacyPolicyDialog
 import id.maripartner.fuel.core.designsystem.theme.MariBrandNavy
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
 import id.maripartner.fuel.core.designsystem.theme.MariSuccess
@@ -123,6 +127,12 @@ fun ProfileScreen(
         uiState.successMessage?.let { msg ->
             snackbarHostState.showSnackbar(msg)
             viewModel.onEvent(ProfileUiEvent.DismissMessage)
+        }
+    }
+
+    LaunchedEffect(uiState.isAccountDeleted) {
+        if (uiState.isAccountDeleted) {
+            onLogout()
         }
     }
 
@@ -664,19 +674,26 @@ fun ProfileScreen(
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                    // Row: Keamanan Data & Privasi
+                    // Row: Keamanan Data & Privasi (Klik untuk Buka Dialog Kebijakan Privasi)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                viewModel.onEvent(ProfileUiEvent.SetPrivacyPolicyDialogVisible(true))
+                            }
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Security,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = MariPrimaryBlue,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -686,12 +703,19 @@ fun ProfileScreen(
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                 )
                                 Text(
-                                    text = "PostgreSQL RLS & Ephemeral Storage (Nol berkas permanen)",
+                                    text = "Kebijakan Privasi, RLS & Ephemeral Storage (Ketuk untuk detail)",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Detail Privasi",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -708,7 +732,7 @@ fun ProfileScreen(
                             Icon(
                                 imageVector = Icons.Default.Info,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = MariPrimaryBlue,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -718,30 +742,59 @@ fun ProfileScreen(
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                 )
                                 Text(
-                                    text = "Mari Partner Fuel · v${AppConfig.versionName}",
+                                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build 11)",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
 
-                        FuelStatusChip(text = "Terbaru", type = FuelChipType.Neutral)
+                        FuelStatusChip(text = "v2.0.0 Resmi", type = FuelChipType.Success)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // 5. Tombol Keluar Akun (Destructive Action)
-                FuelDangerButton(
+                // 5. Tombol Keluar Akun
+                FuelSecondaryButton(
                     text = "Keluar dari Akun",
                     onClick = { viewModel.onEvent(ProfileUiEvent.SetLogoutDialogVisible(true)) },
-                    leadingIcon = Icons.AutoMirrored.Filled.Logout
+                    leadingIcon = Icons.AutoMirrored.Filled.Logout,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // 6. Tombol Hapus Akun & Data (Kepatuhan Wajib Google Play Store)
+                FuelDangerButton(
+                    text = if (uiState.isDeletingAccount) "Menghapus Akun..." else "Hapus Akun & Seluruh Data",
+                    onClick = { viewModel.onEvent(ProfileUiEvent.SetDeleteAccountDialogVisible(true)) },
+                    leadingIcon = Icons.Default.DeleteForever,
+                    enabled = !uiState.isDeletingAccount,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Footer Hak Cipta & Info Build
+                Text(
+                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build 11)\nAll Rights Reserved © 2026",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
+
+    // Modal Dialog: Kebijakan Privasi & Ketentuan Layanan (Data Safety Google Play)
+    PrivacyPolicyDialog(
+        show = uiState.showPrivacyPolicyDialog,
+        onDismiss = { viewModel.onEvent(ProfileUiEvent.SetPrivacyPolicyDialogVisible(false)) }
+    )
 
     // Modal Dialog: Konfirmasi Keluar Akun (SweetAlert style)
     if (uiState.showLogoutConfirmDialog) {
@@ -758,6 +811,30 @@ fun ProfileScreen(
             },
             onDismiss = {
                 viewModel.onEvent(ProfileUiEvent.SetLogoutDialogVisible(false))
+            }
+        )
+    }
+
+    // Modal Dialog: Konfirmasi Hapus Akun Permanen (Google Play Mandatory In-App Deletion)
+    if (uiState.showDeleteAccountDialog) {
+        FuelSweetAlertDialog(
+            show = true,
+            type = SweetAlertType.ERROR,
+            title = "Hapus Akun & Data?",
+            message = "Tindakan ini bersifat permanen dan tidak dapat dibatalkan. Seluruh riwayat transaksi BBM, armada kendaraan, pengingat servis, dan profil akun Anda akan dihapus secara permanen dari server.",
+            confirmText = if (uiState.isDeletingAccount) "Menghapus..." else "Hapus Akun Permanen",
+            dismissText = "Batal",
+            dismissOnBackPress = !uiState.isDeletingAccount,
+            dismissOnClickOutside = !uiState.isDeletingAccount,
+            onConfirm = {
+                if (!uiState.isDeletingAccount) {
+                    viewModel.onEvent(ProfileUiEvent.DeleteAccount)
+                }
+            },
+            onDismiss = {
+                if (!uiState.isDeletingAccount) {
+                    viewModel.onEvent(ProfileUiEvent.SetDeleteAccountDialogVisible(false))
+                }
             }
         )
     }
