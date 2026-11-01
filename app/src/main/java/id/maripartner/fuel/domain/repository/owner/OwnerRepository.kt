@@ -5,6 +5,7 @@ import id.maripartner.fuel.domain.model.owner.AdminUserSummary
 import id.maripartner.fuel.domain.model.owner.GrantProResult
 import id.maripartner.fuel.domain.model.owner.OwnerPaymentTx
 import id.maripartner.fuel.domain.model.owner.OwnerPlanItem
+import id.maripartner.fuel.domain.model.owner.QrispyMerchantData
 import id.maripartner.fuel.domain.model.owner.SaasAdminMetrics
 
 /**
@@ -52,4 +53,9 @@ interface OwnerRepository {
      * Mengambil daftar log transaksi pembayaran masuk untuk audit finansial pemilik.
      */
     suspend fun getPaymentTransactions(limit: Int = 50): AppResult<List<OwnerPaymentTx>>
+
+    /**
+     * Mengambil saldo merchant dan mutasi transaksi resmi langsung dari gateway QRISpy.
+     */
+    suspend fun getQrispyMerchantData(): AppResult<QrispyMerchantData>
 }

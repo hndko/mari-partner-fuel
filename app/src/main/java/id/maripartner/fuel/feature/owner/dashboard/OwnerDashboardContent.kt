@@ -33,15 +33,18 @@ import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PriceChange
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -67,6 +70,7 @@ import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
 import id.maripartner.fuel.domain.model.owner.DailyGrowthPoint
 import id.maripartner.fuel.domain.model.owner.PlanConversionStats
+import id.maripartner.fuel.domain.model.owner.QrispyMerchantData
 import id.maripartner.fuel.domain.model.owner.SaasAdminMetrics
 import id.maripartner.fuel.domain.model.owner.SaasKpi
 import id.maripartner.fuel.feature.owner.navigation.OwnerTab
@@ -77,6 +81,9 @@ fun OwnerDashboardContent(
     selectedTimeframe: String,
     onTimeframeChanged: (String) -> Unit,
     onNavigateToTab: (OwnerTab) -> Unit = {},
+    qrispyMerchantData: QrispyMerchantData? = null,
+    isLoadingQrispyData: Boolean = false,
+    onRefreshQrispyData: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -104,6 +111,16 @@ fun OwnerDashboardContent(
                 kpi = metrics.kpi,
                 conversionStats = metrics.conversionStats,
                 selectedTimeframe = selectedTimeframe
+            )
+        }
+
+        // 3b. Saldo Gateway Merchant QRISpy
+        item {
+            QrispyMerchantBalanceCard(
+                merchantData = qrispyMerchantData,
+                isLoading = isLoadingQrispyData,
+                onRefresh = onRefreshQrispyData,
+                onViewMutations = { onNavigateToTab(OwnerTab.TRANSACTIONS) }
             )
         }
 
@@ -1128,5 +1145,138 @@ private fun LegendItem(label: String, count: Long, color: Color) {
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+fun QrispyMerchantBalanceCard(
+    merchantData: QrispyMerchantData?,
+    isLoading: Boolean,
+    onRefresh: () -> Unit,
+    onViewMutations: () -> Unit
+) {
+    val balance = merchantData?.balance
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF0F172A)
+        ),
+        border = BorderStroke(1.dp, Color(0xFF1E293B))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF0284C7).copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "💳", fontSize = 18.sp)
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "SALDO GATEWAY QRISPY",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.5.sp,
+                                    color = Color(0xFF38BDF8)
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = "OFFICIAL API",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 8.sp,
+                                        color = Color(0xFF34D399)
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = balance?.merchantName?.ifBlank { "Mari Partner Fuel" } ?: "Mari Partner Fuel",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color(0xFF94A3B8),
+                                fontSize = 11.sp
+                            )
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = onRefresh,
+                    enabled = !isLoading,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            color = Color(0xFF38BDF8),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh Saldo",
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = CurrencyFormatter.formatRupiah(balance?.balanceIdr ?: 0L),
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                    letterSpacing = (-0.5).sp
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFF1E293B))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Mutasi gateway: ${merchantData?.transactions?.size ?: 0} transaksi tercatat",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Color(0xFF64748B),
+                        fontSize = 11.sp
+                    )
+                )
+
+                Text(
+                    text = "Lihat Mutasi ›",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = Color(0xFF38BDF8),
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    modifier = Modifier.clickable { onViewMutations() }
+                )
+            }
+        }
     }
 }

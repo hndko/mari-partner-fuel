@@ -138,7 +138,10 @@ fun OwnerConsoleScreen(
                             metrics = uiState.metrics,
                             selectedTimeframe = uiState.selectedTimeframe,
                             onTimeframeChanged = { viewModel.onEvent(OwnerConsoleUiEvent.ChangeTimeframe(it)) },
-                            onNavigateToTab = { viewModel.onEvent(OwnerConsoleUiEvent.SelectTab(it)) }
+                            onNavigateToTab = { viewModel.onEvent(OwnerConsoleUiEvent.SelectTab(it)) },
+                            qrispyMerchantData = uiState.qrispyMerchantData,
+                            isLoadingQrispyData = uiState.isLoadingQrispyData,
+                            onRefreshQrispyData = { viewModel.onEvent(OwnerConsoleUiEvent.RefreshQrispyMerchantData) }
                         )
                     }
                     OwnerTab.PLANS -> {
@@ -159,7 +162,12 @@ fun OwnerConsoleScreen(
                     }
                     OwnerTab.TRANSACTIONS -> {
                         OwnerTransactionsContent(
-                            transactions = uiState.transactions
+                            transactions = uiState.transactions,
+                            qrispyMerchantData = uiState.qrispyMerchantData,
+                            isLoadingQrispyData = uiState.isLoadingQrispyData,
+                            selectedTransactionTab = uiState.selectedTransactionTab,
+                            onSelectTransactionTab = { viewModel.onEvent(OwnerConsoleUiEvent.SelectTransactionTab(it)) },
+                            onRefreshQrispyData = { viewModel.onEvent(OwnerConsoleUiEvent.RefreshQrispyMerchantData) }
                         )
                     }
                 }

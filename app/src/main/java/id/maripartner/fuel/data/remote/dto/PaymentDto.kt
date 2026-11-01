@@ -64,3 +64,10 @@ data class PaymentStatusResponseDto(
     @SerialName("expires_at") val expiresAt: String? = null,
     val error: String? = null
 )
+
+@Serializable
+data class CancelPaymentResponseDto(
+    val success: Boolean,
+    val message: String? = null,
+    val error: String? = null
+)

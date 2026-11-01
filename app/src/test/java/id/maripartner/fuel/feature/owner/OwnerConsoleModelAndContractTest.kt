@@ -242,4 +242,47 @@ class OwnerConsoleModelAndContractTest {
         assertTrue(permanentGrantRes.isPermanent)
         assertEquals(0, permanentGrantRes.durationDaysAdded)
     }
+
+    @Test
+    fun qrispyMerchantData_modelPreservesAllAttributes() {
+        val balance = id.maripartner.fuel.domain.model.owner.QrispyMerchantBalance(
+            merchantId = "m-123",
+            merchantName = "Mari Partner Fuel",
+            balanceIdr = 1500000L,
+            currency = "IDR"
+        )
+        assertEquals("m-123", balance.merchantId)
+        assertEquals("Mari Partner Fuel", balance.merchantName)
+        assertEquals(1500000L, balance.balanceIdr)
+
+        val tx1 = id.maripartner.fuel.domain.model.owner.QrispyMerchantTransaction(
+            qrisId = "qris-abc-123",
+            amountIdr = 29000L,
+            status = "paid",
+            qrisImageUrl = "https://api.qrispy.id/image/123",
+            createdAt = "2026-11-01T10:00:00Z",
+            expiredAt = "2026-11-01T10:15:00Z",
+            paymentReference = "MPF-TEST-REF",
+            generatedVia = "api"
+        )
+        assertEquals("qris-abc-123", tx1.qrisId)
+        assertEquals(29000L, tx1.amountIdr)
+        assertEquals("paid", tx1.status)
+
+        val data = id.maripartner.fuel.domain.model.owner.QrispyMerchantData(
+            balance = balance,
+            transactions = listOf(tx1)
+        )
+        assertEquals(1, data.transactions.size)
+        assertEquals(1500000L, data.balance.balanceIdr)
+
+        // Verifikasi UiState memiliki integrasi QRISpy
+        val uiState = OwnerConsoleUiState(
+            qrispyMerchantData = data,
+            selectedTransactionTab = 1
+        )
+        assertEquals(1, uiState.selectedTransactionTab)
+        assertNotNull(uiState.qrispyMerchantData)
+        assertEquals(1500000L, uiState.qrispyMerchantData?.balance?.balanceIdr)
+    }
 }

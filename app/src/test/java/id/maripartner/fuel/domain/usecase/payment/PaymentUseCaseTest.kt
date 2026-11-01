@@ -54,6 +54,10 @@ class PaymentUseCaseTest {
         override suspend fun getPaymentHistory(): AppResult<List<PaymentStatus>> {
             return AppResult.Success(emptyList())
         }
+
+        override suspend fun cancelPayment(paymentReference: String): AppResult<Unit> {
+            return AppResult.Success(Unit)
+        }
     }
 
     @Test
@@ -89,5 +93,14 @@ class PaymentUseCaseTest {
         val status = (result as AppResult.Success).data
         assertTrue(status.isPaid)
         assertTrue(status.isPro)
+    }
+
+    @Test
+    fun cancelPayment_returnsSuccess() = runBlocking {
+        val repo = FakePaymentRepository()
+        val useCase = CancelPaymentUseCase(repo)
+
+        val result = useCase("MPF-TEST-REF")
+        assertTrue(result is AppResult.Success)
     }
 }

@@ -63,6 +63,7 @@ import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
 import id.maripartner.fuel.core.designsystem.theme.MariTextLight
 import id.maripartner.fuel.core.designsystem.theme.MariWarning
 import id.maripartner.fuel.domain.model.PaymentStatus
+import id.maripartner.fuel.domain.usecase.payment.CancelPaymentUseCase
 import id.maripartner.fuel.domain.usecase.payment.GetPaymentStatusUseCase
 import id.maripartner.fuel.domain.usecase.subscription.GetMyEntitlementsUseCase
 import kotlinx.coroutines.launch
@@ -76,7 +77,8 @@ fun QrisPaymentScreen(
     onNavigateBack: () -> Unit,
     onPaymentSuccess: (paymentReference: String) -> Unit,
     getPaymentStatusUseCase: GetPaymentStatusUseCase = remember { GetPaymentStatusUseCase() },
-    getMyEntitlementsUseCase: GetMyEntitlementsUseCase = remember { GetMyEntitlementsUseCase() }
+    getMyEntitlementsUseCase: GetMyEntitlementsUseCase = remember { GetMyEntitlementsUseCase() },
+    cancelPaymentUseCase: CancelPaymentUseCase = remember { CancelPaymentUseCase() }
 ) {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -84,6 +86,25 @@ fun QrisPaymentScreen(
     var paymentStatus by remember { mutableStateOf<PaymentStatus?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var isCheckingStatus by remember { mutableStateOf(false) }
+    var isCancelling by remember { mutableStateOf(false) }
+    var showCancelConfirmDialog by remember { mutableStateOf(false) }
+
+    fun cancelOrder() {
+        isCancelling = true
+        coroutineScope.launch {
+            when (val res = cancelPaymentUseCase(paymentReference)) {
+                is AppResult.Success -> {
+                    isCancelling = false
+                    snackbarHostState.showSnackbar("Transaksi pembayaran QRIS berhasil dibatalkan.")
+                    onNavigateBack()
+                }
+                is AppResult.Error -> {
+                    isCancelling = false
+                    snackbarHostState.showSnackbar("Gagal membatalkan: ${res.exception.message}")
+                }
+            }
+        }
+    }
 
     fun checkStatus() {
         isCheckingStatus = true
@@ -360,6 +381,13 @@ fun QrisPaymentScreen(
                         )
 
                         FuelSecondaryButton(
+                            text = if (isCancelling) "Membatalkan Transaksi..." else "Batalkan Transaksi Pembayaran",
+                            onClick = { showCancelConfirmDialog = true },
+                            enabled = !isCheckingStatus && !isCancelling,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        FuelSecondaryButton(
                             text = "Kembali ke Beranda",
                             onClick = onNavigateBack,
                             modifier = Modifier.fillMaxWidth()
@@ -367,6 +395,44 @@ fun QrisPaymentScreen(
                     }
                 }
             }
+        }
+
+        if (showCancelConfirmDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { if (!isCancelling) showCancelConfirmDialog = false },
+                title = {
+                    Text(
+                        text = "Batalkan Pembayaran QRIS?",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Kode QRIS akan dinonaktifkan di sistem gateway dan pesanan ini akan dibatalkan.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            showCancelConfirmDialog = false
+                            cancelOrder()
+                        },
+                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Ya, Batalkan", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { showCancelConfirmDialog = false }
+                    ) {
+                        Text("Lanjutkan Bayar")
+                    }
+                }
+            )
         }
     }
 }

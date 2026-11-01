@@ -21,7 +21,13 @@ Aplikasi ini menggunakan:
    - [3.1 Cara Konfigurasi "Masuk dengan Google" (Google Sign-In OAuth)](#31-cara-konfigurasi-masuk-dengan-google-google-sign-in-oauth)
 4. [🚀 Langkah 4: Menjalankan Aplikasi (Paling Ringan & Praktis)](#-langkah-4-menjalankan-aplikasi-paling-ringan--praktis)
 5. [📱 Langkah 5: Uji Coba Fitur Aplikasi](#-langkah-5-uji-coba-fitur-aplikasi)
-6. [🌟 Langkah 6 (Opsional): Pengaturan AI Cloud & Pembayaran](#-langkah-6-opsional-pengaturan-ai-cloud--pembayaran)
+6. [🌟 Langkah 6: Pengaturan Kunci Server, Webhook QRISpy & Gateway Mutasi](#-langkah-6-opsional-pengaturan-kunci-server-supabase-service-role-gemini-ai--qrispy)
+   - [6.1 Supabase Service Role Key](#1-supabase_service_role_key-superadmin-database-key)
+   - [6.2 Gemini AI Key](#2-gemini_api_key-ai-cloud-fallback-google)
+   - [6.3 QRISpy API Token](#3-qrispy_api_token-payment-gateway-qris-dinamis)
+   - [6.4 Setup Webhook QRISpy & Verifikasi Tanda Tangan (HMAC-SHA256)](#4-qrispy_webhook_secret--konfigurasi-webhook-notifikasi-otomatis)
+   - [6.5 Pembatalan Manual Transaksi QRIS](#5-pembatalan-manual-transaksi-qris-sebelum-masa-berlaku-15-menit)
+   - [6.6 Integrasi Saldo & Mutasi Gateway QRISpy di Owner Console](#6-integrasi-saldo--mutasi-gateway-qrispy-di-owner-console)
 7. [❓ Tanya Jawab & Kendala Umum (Troubleshooting)](#-tanya-jawab--kendala-umum-troubleshooting)
 
 ---
@@ -333,16 +339,51 @@ Setelah aplikasi terbuka di layar smartphone Anda:
 ---
 
 ### 3. `QRISPY_API_TOKEN` (Payment Gateway QRIS Dinamis)
-- **Fungsi**: Digunakan untuk membuat barcode QRIS dinamis otomatis instan saat pengguna ingin berlangganan paket Pro bulanan/tahunan pada versi direct APK/web.
+- **Fungsi**: Digunakan untuk membuat barcode QRIS dinamis otomatis instan saat pengguna ingin berlangganan paket Pro bulanan/tahunan pada versi direct APK/web, membatalkan transaksi, dan menarik mutasi saldo merchant.
 - **Cara Mendapatkannya**:
   1. Buka situs resmi penyedia QRIS: [https://qrispy.id](https://qrispy.id).
   2. Daftarkan akun merchant Anda dan login.
   3. Buka menu **Integrasi API** / **API Tokens**.
-  4. Klik **Generate Token** / **Buat Token Baru**, lalu salin token API tersebut.
+  4. Klik **Generate Token** / **Buat Token Baru**, lalu salin token API tersebut (berawalan `cki_...`).
   5. Pasang ke Supabase Edge Functions Secrets:
      ```bash
-     supabase secrets set QRISPY_API_TOKEN="token_anda"
+     npx supabase secrets set QRISPY_API_TOKEN="cki_token_anda"
      ```
+
+---
+
+### 4. `QRISPY_WEBHOOK_SECRET` & Konfigurasi Webhook Notifikasi Otomatis
+- **Fungsi**: Digunakan oleh Edge Function `payment-webhook` untuk memvalidasi keaslian notifikasi pembayaran masuk dari server QRISpy menggunakan verifikasi tanda tangan kriptografis HMAC-SHA256 (`X-Qrispy-Signature`). Dengan ini, status paket Pro pengguna aktif seketika (1-2 detik) setelah pembayaran berhasil tanpa perlu verifikasi manual.
+- **Langkah Setup di Dashboard QRISpy**:
+  1. Login ke Dashboard [https://qrispy.id](https://qrispy.id).
+  2. Buka menu **API Docs** (atau **Pengaturan** / **Webhooks**).
+  3. Pada kolom **Webhook URL**, masukkan endpoint Edge Function resmi Mari Partner Fuel:
+     ```text
+     https://zcezyhgrblksfuxmszyz.supabase.co/functions/v1/payment-webhook
+     ```
+  4. Pada baris **Webhook Secret**, klik **Show** lalu salin secret key tersebut.
+  5. Simpan secret tersebut ke Supabase Secrets via terminal:
+     ```powershell
+     cmd /c "npx -y supabase secrets set QRISPY_WEBHOOK_SECRET=whsec_secret_anda"
+     ```
+  6. Di dashboard QRISpy, klik tombol **Save Settings**.
+  7. *(Opsional)* Tekan tombol **Test Webhook** untuk memastikan koneksi antara QRISpy dan Supabase berjalan lancar.
+
+---
+
+### 5. Pembatalan Manual Transaksi QRIS (Sebelum Masa Berlaku 15 Menit)
+- Pengguna yang telah men-generate barcode pembayaran QRIS diberikan opsi **"Batalkan Transaksi Pembayaran"** pada layar checkout jika ingin berganti paket atau metode.
+- Pembatalan ini memicu konfirmasi pengguna (*Human Gate*) dan memanggil Edge Function `cancel-payment` yang mengeksekusi pembatalan resmi ke gateway QRISpy via `POST /api/payment/qris/{qrisId}/cancel` dengan header `X-API-Token`.
+- Status transaksi di basis data otomatis beralih menjadi `'cancelled'` dan pengguna dapat kembali memilih paket baru secara instan.
+
+---
+
+### 6. Integrasi Saldo & Mutasi Gateway QRISpy di Owner Console
+- **Monitoring Saldo Real-Time**: Pada tab **Ringkasan (Dashboard)** Owner Console, tersedia kartu eksekutif **Saldo Aktif QRISpy** yang terhubung langsung ke `GET /api/payment/balance`.
+- **Dua Jalur Pembukuan di Tab Transaksi**: Tab **Transaksi** Owner Console dilengkapi segmented tab ganda:
+  - **Transaksi Database**: Audit transaksi pembayaran paket SaaS yang tersimpan di database Supabase lengkap dengan rincian user dan masa aktif.
+  - **Mutasi Gateway QRISpy**: Ledger transaksi real-time langsung dari server gateway QRISpy (`GET /api/payment/transactions?limit=20`) dengan status *PAID, PENDING, EXPIRED,* dan *CANCELLED*.
+- **Keamanan Zero-Secret**: Seluruh komunikasi ke endpoint gateway QRISpy diproses oleh Edge Function `get-qrispy-merchant-data` dengan otentikasi role Owner/Admin. Tidak ada secret atau token API gateway yang tersimpan di dalam APK Android.
 
 ---
 

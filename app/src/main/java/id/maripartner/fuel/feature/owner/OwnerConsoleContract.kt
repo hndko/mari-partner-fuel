@@ -4,6 +4,7 @@ import id.maripartner.fuel.domain.model.owner.AdminUserSummary
 import id.maripartner.fuel.domain.model.owner.OwnerPaymentTx
 import id.maripartner.fuel.domain.model.owner.OwnerPlanItem
 import id.maripartner.fuel.domain.model.FuelBrandPrice
+import id.maripartner.fuel.domain.model.owner.QrispyMerchantData
 import id.maripartner.fuel.domain.model.owner.SaasAdminMetrics
 import id.maripartner.fuel.feature.owner.navigation.OwnerTab
 
@@ -40,7 +41,10 @@ data class OwnerConsoleUiState(
     val fuelPrices: List<FuelBrandPrice> = emptyList(),
     val selectedFuelPriceForEdit: FuelBrandPrice? = null,
     val editFuelPricePerLiterIdr: String = "",
-    val isSubmittingFuelPriceEdit: Boolean = false
+    val isSubmittingFuelPriceEdit: Boolean = false,
+    val qrispyMerchantData: QrispyMerchantData? = null,
+    val isLoadingQrispyData: Boolean = false,
+    val selectedTransactionTab: Int = 0
 ) {
     val filteredUsers: List<AdminUserSummary>
         get() = if (searchQuery.isBlank()) {
@@ -87,6 +91,10 @@ sealed interface OwnerConsoleUiEvent {
     data object DismissEditFuelPriceDialog : OwnerConsoleUiEvent
     data class ChangeEditFuelPrice(val price: String) : OwnerConsoleUiEvent
     data object SubmitEditFuelPrice : OwnerConsoleUiEvent
+
+    // Event Saldo & Mutasi QRISpy
+    data object RefreshQrispyMerchantData : OwnerConsoleUiEvent
+    data class SelectTransactionTab(val index: Int) : OwnerConsoleUiEvent
 
     data object DismissMessages : OwnerConsoleUiEvent
 }

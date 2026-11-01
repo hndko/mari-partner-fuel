@@ -1,5 +1,6 @@
 package id.maripartner.fuel.feature.owner.transactions
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,10 +29,12 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -41,6 +44,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -64,6 +71,8 @@ import id.maripartner.fuel.core.designsystem.component.FuelChipType
 import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
 import id.maripartner.fuel.domain.model.owner.OwnerPaymentTx
+import id.maripartner.fuel.domain.model.owner.QrispyMerchantData
+import id.maripartner.fuel.domain.model.owner.QrispyMerchantTransaction
 import java.util.Locale
 
 /**
@@ -74,6 +83,11 @@ import java.util.Locale
 @Composable
 fun OwnerTransactionsContent(
     transactions: List<OwnerPaymentTx>,
+    qrispyMerchantData: QrispyMerchantData? = null,
+    isLoadingQrispyData: Boolean = false,
+    selectedTransactionTab: Int = 0,
+    onSelectTransactionTab: (Int) -> Unit = {},
+    onRefreshQrispyData: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
@@ -141,10 +155,145 @@ fun OwnerTransactionsContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Header Banner Eksekutif: Audit Mutasi Finansial
+        // 0. Segmented Tab Sumber Data (Database vs QRISpy Gateway)
         item {
-            TransactionsHeaderBanner()
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFF0F172A),
+                border = BorderStroke(1.dp, Color(0xFF1E293B)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.padding(4.dp)) {
+                    val tabs = listOf(
+                        "Transaksi Database (${transactions.size})" to 0,
+                        "Mutasi Gateway QRISpy (${qrispyMerchantData?.transactions?.size ?: 0})" to 1
+                    )
+                    tabs.forEach { (label, index) ->
+                        val isSelected = selectedTransactionTab == index
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) MariPrimaryBlue else Color.Transparent)
+                                .clickable { onSelectTransactionTab(index) }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 11.sp
+                                ),
+                                color = if (isSelected) Color.White else Color(0xFF94A3B8)
+                            )
+                        }
+                    }
+                }
+            }
         }
+
+        if (selectedTransactionTab == 1) {
+            // Header Saldo Merchant
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                    border = BorderStroke(1.dp, Color(0xFF1E293B))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "SALDO AKTIF QRISPY",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp,
+                                        letterSpacing = 0.5.sp,
+                                        color = Color(0xFF38BDF8)
+                                    )
+                                )
+                                Text(
+                                    text = qrispyMerchantData?.balance?.merchantName?.ifBlank { "Mari Partner Fuel" } ?: "Mari Partner Fuel",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF94A3B8), fontSize = 11.sp)
+                                )
+                            }
+                            IconButton(
+                                onClick = onRefreshQrispyData,
+                                enabled = !isLoadingQrispyData,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                if (isLoadingQrispyData) {
+                                    CircularProgressIndicator(
+                                        strokeWidth = 2.dp,
+                                        color = Color(0xFF38BDF8),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Refresh",
+                                        tint = Color(0xFF94A3B8),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = CurrencyFormatter.formatRupiah(qrispyMerchantData?.balance?.balanceIdr ?: 0L),
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        )
+                    }
+                }
+            }
+
+            val gatewayList = qrispyMerchantData?.transactions.orEmpty()
+            if (gatewayList.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                        border = BorderStroke(1.dp, Color(0xFF1E293B))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(text = "💳", fontSize = 32.sp)
+                            Text(
+                                text = "Belum Ada Mutasi QRISpy",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color.White)
+                            )
+                            Text(
+                                text = "Transaksi QRIS yang digenerate oleh pengguna akan tampil langsung dari gateway di sini.",
+                                style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF94A3B8), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(gatewayList, key = { it.qrisId.ifBlank { it.paymentReference } }) { item ->
+                    QrispyMerchantTxCard(tx = item)
+                }
+            }
+        } else {
+            // 1. Header Banner Eksekutif: Audit Mutasi Finansial
+            item {
+                TransactionsHeaderBanner()
+            }
 
         // 2. Strip Ringkasan 3-KPI: Total Lunas, Pending, dan Settlement Rate
         item {
@@ -326,6 +475,7 @@ fun OwnerTransactionsContent(
                 )
             }
         }
+        } // Menutup blok if (selectedTransactionTab == 1) ... else
 
         item {
             Spacer(modifier = Modifier.height(32.dp))
@@ -923,6 +1073,186 @@ private fun EmptyTransactionsCard(
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text("Reset Pencarian & Filter")
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Kartu Item Mutasi Gateway QRISpy langsung dari API.
+ */
+@Composable
+fun QrispyMerchantTxCard(
+    tx: QrispyMerchantTransaction,
+    modifier: Modifier = Modifier
+) {
+    val isPaid = tx.status.equals("paid", ignoreCase = true)
+    val isPending = tx.status.equals("pending", ignoreCase = true)
+    val isExpired = tx.status.equals("expired", ignoreCase = true)
+    val isCancelled = tx.status.equals("cancelled", ignoreCase = true)
+
+    FuelCard(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Header Row: Status Icon, QRIS ID / Ref, Status Chip
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                when {
+                                    isPaid -> Color(0xFFDCFCE7)
+                                    isPending -> Color(0xFFFEF3C7)
+                                    else -> Color(0xFFF1F5F9)
+                                }
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = when {
+                                    isPaid -> Color(0xFF16A34A).copy(alpha = 0.3f)
+                                    isPending -> Color(0xFFD97706).copy(alpha = 0.3f)
+                                    else -> Color(0xFF94A3B8).copy(alpha = 0.3f)
+                                },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                    ) {
+                        Icon(
+                            imageVector = when {
+                                isPaid -> Icons.Default.CheckCircle
+                                isPending -> Icons.Default.HourglassTop
+                                isExpired -> Icons.Default.Info
+                                else -> Icons.Default.Cancel
+                            },
+                            contentDescription = null,
+                            tint = when {
+                                isPaid -> Color(0xFF16A34A)
+                                isPending -> Color(0xFFD97706)
+                                isExpired -> Color(0xFF64748B)
+                                else -> Color(0xFFDC2626)
+                            },
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = if (tx.paymentReference.isNotBlank()) tx.paymentReference else tx.qrisId.take(16),
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            ),
+                            maxLines = 1
+                        )
+                        Text(
+                            text = "QRIS ID: ${tx.qrisId.take(12)}... • Via ${tx.generatedVia.uppercase()}",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color(0xFF94A3B8),
+                                fontSize = 11.sp
+                            ),
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = when {
+                        isPaid -> Color(0xFF10B981).copy(alpha = 0.2f)
+                        isPending -> Color(0xFFF59E0B).copy(alpha = 0.2f)
+                        isExpired -> Color(0xFF64748B).copy(alpha = 0.2f)
+                        else -> Color(0xFFEF4444).copy(alpha = 0.2f)
+                    },
+                    border = BorderStroke(
+                        1.dp,
+                        when {
+                            isPaid -> Color(0xFF10B981).copy(alpha = 0.4f)
+                            isPending -> Color(0xFFF59E0B).copy(alpha = 0.4f)
+                            isExpired -> Color(0xFF64748B).copy(alpha = 0.4f)
+                            else -> Color(0xFFEF4444).copy(alpha = 0.4f)
+                        }
+                    )
+                ) {
+                    Text(
+                        text = when {
+                            isPaid -> "PAID"
+                            isPending -> "PENDING"
+                            isExpired -> "EXPIRED"
+                            isCancelled -> "CANCELLED"
+                            else -> tx.status.uppercase()
+                        },
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 10.sp,
+                            color = when {
+                                isPaid -> Color(0xFF34D399)
+                                isPending -> Color(0xFFFBBF24)
+                                isExpired -> Color(0xFF94A3B8)
+                                else -> Color(0xFFF87171)
+                            }
+                        ),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = Color(0xFF1E293B), thickness = 1.dp)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Nominal dan Timestamp
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "NOMINAL TRANSAKSI",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF94A3B8)
+                        )
+                    )
+                    Text(
+                        text = CurrencyFormatter.formatRupiah(tx.amountIdr),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = if (isPaid) Color(0xFF34D399) else Color.White
+                        )
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "DIBUAT PADA",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF94A3B8)
+                        )
+                    )
+                    Text(
+                        text = if (tx.createdAt.isNotBlank()) tx.createdAt.take(19).replace("T", " ") else "-",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.sp,
+                            color = Color(0xFFCBD5E1)
+                        )
+                    )
                 }
             }
         }

@@ -2,6 +2,7 @@ package id.maripartner.fuel.data.repository
 
 import id.maripartner.fuel.core.common.result.AppException
 import id.maripartner.fuel.core.common.result.AppResult
+import id.maripartner.fuel.data.remote.dto.CancelPaymentResponseDto
 import id.maripartner.fuel.data.remote.dto.CheckoutRequestDto
 import id.maripartner.fuel.data.remote.dto.CheckoutResponseDto
 import id.maripartner.fuel.data.remote.dto.PaymentStatusRequestDto
@@ -153,6 +154,23 @@ class PaymentRepositoryImpl(
             AppResult.Success(history)
         } catch (e: Exception) {
             AppResult.Error(AppException.Network("Gagal memuat riwayat transaksi: ${e.message}", e))
+        }
+    }
+
+    override suspend fun cancelPayment(paymentReference: String): AppResult<Unit> = withContext(dispatcher) {
+        try {
+            val requestDto = PaymentStatusRequestDto(paymentReference = paymentReference)
+            val httpResponse = getFunctions().invoke("cancel-payment", body = requestDto)
+            val text = httpResponse.bodyAsText()
+            val response = json.decodeFromString<CancelPaymentResponseDto>(text)
+
+            if (!response.success) {
+                return@withContext AppResult.Error(AppException.Network(response.error ?: "Gagal membatalkan transaksi pembayaran"))
+            }
+
+            AppResult.Success(Unit)
+        } catch (e: Exception) {
+            AppResult.Error(AppException.Network("Gagal membatalkan transaksi: ${e.message}", e))
         }
     }
 }

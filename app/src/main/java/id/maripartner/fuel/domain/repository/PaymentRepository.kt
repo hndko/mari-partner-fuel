@@ -15,4 +15,5 @@ interface PaymentRepository {
     ): AppResult<Boolean>
     suspend fun getPaymentStatus(paymentReference: String): AppResult<PaymentStatus>
     suspend fun getPaymentHistory(): AppResult<List<PaymentStatus>>
+    suspend fun cancelPayment(paymentReference: String): AppResult<Unit>
 }

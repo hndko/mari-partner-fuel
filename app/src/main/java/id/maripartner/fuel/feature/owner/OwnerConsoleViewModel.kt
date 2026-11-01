@@ -159,6 +159,12 @@ class OwnerConsoleViewModel(
             is OwnerConsoleUiEvent.SubmitEditFuelPrice -> {
                 submitEditFuelPrice()
             }
+            is OwnerConsoleUiEvent.SelectTransactionTab -> {
+                _uiState.update { it.copy(selectedTransactionTab = event.index) }
+            }
+            is OwnerConsoleUiEvent.RefreshQrispyMerchantData -> {
+                loadQrispyMerchantData()
+            }
             is OwnerConsoleUiEvent.DismissMessages -> {
                 _uiState.update { it.copy(errorMessage = null, successMessage = null) }
             }
@@ -170,6 +176,26 @@ class OwnerConsoleViewModel(
         loadPlans()
         loadTransactions()
         loadFuelPrices()
+        loadQrispyMerchantData()
+    }
+
+    private fun loadQrispyMerchantData() {
+        _uiState.update { it.copy(isLoadingQrispyData = true) }
+        viewModelScope.launch {
+            when (val res = repository.getQrispyMerchantData()) {
+                is AppResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            qrispyMerchantData = res.data,
+                            isLoadingQrispyData = false
+                        )
+                    }
+                }
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(isLoadingQrispyData = false) }
+                }
+            }
+        }
     }
 
     private fun loadFuelPrices() {

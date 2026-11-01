@@ -3,14 +3,19 @@ package id.maripartner.fuel.data.repository.owner
 import android.util.Log
 import id.maripartner.fuel.core.common.result.AppException
 import id.maripartner.fuel.core.common.result.AppResult
+import id.maripartner.fuel.data.remote.dto.QrispyMerchantDataResponseDto
 import id.maripartner.fuel.data.remote.supabase.SupabaseClientProvider
 import id.maripartner.fuel.domain.model.owner.GrantProResult
 import id.maripartner.fuel.domain.model.owner.OwnerPaymentTx
 import id.maripartner.fuel.domain.model.owner.OwnerPlanItem
+import id.maripartner.fuel.domain.model.owner.QrispyMerchantBalance
+import id.maripartner.fuel.domain.model.owner.QrispyMerchantData
+import id.maripartner.fuel.domain.model.owner.QrispyMerchantTransaction
 import id.maripartner.fuel.domain.model.owner.SaasAdminMetrics
 import id.maripartner.fuel.domain.repository.owner.OwnerRepository
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -140,6 +145,44 @@ class OwnerRepositoryImpl(
             AppResult.Success(response.transactions)
         } catch (e: Exception) {
             AppResult.Error(sanitizeException(e, "Gagal memuat log transaksi pembayaran"))
+        }
+    }
+
+    override suspend fun getQrispyMerchantData(): AppResult<QrispyMerchantData> = withContext(dispatcher) {
+        try {
+            val httpResponse = SupabaseClientProvider.functions.invoke("get-qrispy-merchant-data")
+            val text = httpResponse.bodyAsText()
+            val dto = json.decodeFromString<QrispyMerchantDataResponseDto>(text)
+
+            if (!dto.success) {
+                return@withContext AppResult.Error(AppException.Network(dto.error ?: "Gagal mengambil data merchant QRISpy"))
+            }
+
+            val data = dto.data ?: return@withContext AppResult.Error(AppException.Network("Data merchant tidak ditemukan"))
+
+            val balance = QrispyMerchantBalance(
+                merchantId = data.balance.merchantId,
+                merchantName = data.balance.merchantName,
+                balanceIdr = data.balance.balance,
+                currency = data.balance.currency
+            )
+
+            val txList = data.transactions.map {
+                QrispyMerchantTransaction(
+                    qrisId = it.qrisId,
+                    amountIdr = it.amount,
+                    status = it.status,
+                    qrisImageUrl = it.qrisImageUrl,
+                    createdAt = it.createdAt,
+                    expiredAt = it.expiredAt,
+                    paymentReference = it.paymentReference,
+                    generatedVia = it.generatedVia
+                )
+            }
+
+            AppResult.Success(QrispyMerchantData(balance = balance, transactions = txList))
+        } catch (e: Exception) {
+            AppResult.Error(sanitizeException(e, "Gagal mengambil data merchant QRISpy"))
         }
     }
 
