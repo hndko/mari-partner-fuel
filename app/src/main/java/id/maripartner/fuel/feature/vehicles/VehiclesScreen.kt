@@ -7,10 +7,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,11 +22,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -97,6 +100,7 @@ fun VehiclesScreen(
     onNavigateToAddVehicle: () -> Unit,
     onNavigateToEditVehicle: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToAddTransaction: (() -> Unit)? = null,
     viewModel: VehiclesViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -155,331 +159,320 @@ fun VehiclesScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surface)
         ) {
+            val screenHeight = maxHeight
+            val density = LocalDensity.current
+            var headerHeightDp by remember { mutableStateOf(260.dp) }
+            val remainingSheetMinHeight = (screenHeight - headerHeightDp + 36.dp).coerceAtLeast(400.dp)
+
             // Latar gradien atas jika di-pull down / overscroll
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(320.dp)
+                    .height(340.dp)
                     .background(brush = gradientBrush)
             )
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding() + 80.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = innerPadding.calculateBottomPadding() + 80.dp)
             ) {
                 // 1. Hero Gradient Header (Status Bar, Top Bar, Total Armada, Badges, Tambah Cepat)
-                item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { size ->
+                            val measuredDp = with(density) { size.height.toDp() }
+                            if (measuredDp > 0.dp) {
+                                headerHeightDp = measuredDp
+                            }
+                        }
+                        .background(brush = gradientBrush)
+                        .statusBarsPadding()
+                        .padding(top = 10.dp, bottom = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = 760.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                    ) {
+                        // Top Bar: Judul Halaman & Tombol Refresh (Glassmorphism)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Kendaraan Saya",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = 22.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Garasi armada & pantau konsumsi BBM",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color.White.copy(alpha = 0.82f),
+                                        fontSize = 12.sp
+                                    )
+                                )
+                            }
+
+                            // Tombol Segarkan Glassmorphism
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.18f))
+                                    .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                                    .clickable { viewModel.onEvent(VehicleUiEvent.Refresh) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Muat Ulang Data",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        // Hero KPI Armada
+                        Text(
+                            text = "TOTAL ARMADA TERDAFTAR",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.sp
+                            ),
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${uiState.vehicles.size} Unit",
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White,
+                                    fontSize = 28.sp
+                                )
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.White,
+                                shadowElevation = 4.dp,
+                                modifier = Modifier.clickable(onClick = onNavigateToAddVehicle)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = MariPrimaryBlue,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Tambah",
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = MariPrimaryBlue
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Badges: Unit Aktif & Unit Diarsipkan
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color.White.copy(alpha = 0.16f))
+                                    .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DirectionsCar,
+                                    contentDescription = null,
+                                    tint = Color(0xFF22C55E),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Text(
+                                    text = "${uiState.vehicles.count { !it.isArchived }} Aktif",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color.White.copy(alpha = 0.16f))
+                                    .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Archive,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Text(
+                                    text = "${uiState.vehicles.count { it.isArchived }} Diarsipkan",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 2. Elevated White Rounded Sheet Container (wraps EVERYTHING below header)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-18).dp)
+                        .defaultMinSize(minHeight = remainingSheetMinHeight),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 6.dp
+                ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(brush = gradientBrush)
-                            .statusBarsPadding()
-                            .padding(top = 10.dp, bottom = 32.dp),
-                        contentAlignment = Alignment.Center
+                            .defaultMinSize(minHeight = remainingSheetMinHeight),
+                        contentAlignment = Alignment.TopCenter
                     ) {
                         Column(
                             modifier = Modifier
                                 .widthIn(max = 760.dp)
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
+                                .padding(horizontal = 20.dp, vertical = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Top Bar: Judul Halaman & Tombol Refresh (Glassmorphism)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "Kendaraan Saya",
-                                        style = MaterialTheme.typography.titleLarge.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            fontSize = 22.sp
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "Garasi armada & pantau konsumsi BBM",
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            color = Color.White.copy(alpha = 0.82f),
-                                            fontSize = 12.sp
-                                        )
-                                    )
-                                }
+                            // 1. Bento 2-Kolom Ringkasan Garasi Kendaraan
+                            GarageBentoOverview(vehicles = uiState.vehicles)
 
-                                // Tombol Segarkan Glassmorphism
-                                Box(
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.18f))
-                                        .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-                                        .clickable { viewModel.onEvent(VehicleUiEvent.Refresh) },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = "Muat Ulang Data",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(18.dp))
-
-                            // Hero KPI Armada
-                            Text(
-                                text = "TOTAL ARMADA TERDAFTAR",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    letterSpacing = 1.sp
-                                ),
-                                color = Color.White.copy(alpha = 0.85f)
+                            // 2. Kontrol Pencarian & Filter Tab
+                            VehicleFilterSection(
+                                searchQuery = searchQuery,
+                                onSearchQueryChange = { searchQuery = it },
+                                activeTab = uiState.filterTab,
+                                onTabSelected = { viewModel.onEvent(VehicleUiEvent.SetFilterTab(it)) },
+                                activeCount = uiState.vehicles.count { !it.isArchived },
+                                archivedCount = uiState.vehicles.count { it.isArchived },
+                                totalCount = uiState.vehicles.size
                             )
 
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(2.dp))
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "${uiState.vehicles.size} Unit",
-                                    style = MaterialTheme.typography.headlineLarge.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White,
-                                        fontSize = 28.sp
-                                    )
-                                )
+                            Text(
+                                text = "Daftar Armada (${displayedVehicles.size})",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
 
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = Color.White,
-                                    shadowElevation = 4.dp,
-                                    modifier = Modifier.clickable(onClick = onNavigateToAddVehicle)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            // 3. Status Konten: Loading, Empty, atau Daftar Kendaraan
+                            when {
+                                uiState.isLoading && uiState.vehicles.isEmpty() -> {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 32.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = null,
-                                            tint = MariPrimaryBlue,
-                                            modifier = Modifier.size(16.dp)
+                                        CircularProgressIndicator(
+                                            color = MariPrimaryBlue,
+                                            strokeWidth = 3.dp,
+                                            modifier = Modifier.size(36.dp)
                                         )
                                         Text(
-                                            text = "Tambah",
-                                            style = MaterialTheme.typography.labelMedium.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                color = MariPrimaryBlue
-                                            )
+                                            text = "Memuat daftar kendaraan…",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MariMutedLight
                                         )
                                     }
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.height(14.dp))
+                                displayedVehicles.isEmpty() -> {
+                                    val isSearching = searchQuery.isNotBlank()
+                                    val title = if (isSearching) {
+                                        "Kendaraan Tidak Ditemukan"
+                                    } else {
+                                        when (uiState.filterTab) {
+                                            VehicleFilterTab.ACTIVE -> "Belum Ada Kendaraan Aktif"
+                                            VehicleFilterTab.ARCHIVED -> "Belum Ada Kendaraan Diarsipkan"
+                                            VehicleFilterTab.ALL -> "Belum Ada Kendaraan"
+                                        }
+                                    }
+                                    val subtitle = if (isSearching) {
+                                        "Tidak ditemukan kendaraan yang cocok dengan kata kunci '$searchQuery'."
+                                    } else {
+                                        when (uiState.filterTab) {
+                                            VehicleFilterTab.ACTIVE -> "Tambahkan kendaraan aktif Anda untuk mulai mencatat pengeluaran BBM."
+                                            VehicleFilterTab.ARCHIVED -> "Kendaraan yang Anda arsipkan dari garasi akan tampil di sini."
+                                            VehicleFilterTab.ALL -> "Daftar kendaraan Anda masih kosong. Tambahkan kendaraan pertama sekarang."
+                                        }
+                                    }
 
-                            // Badges: Unit Aktif & Unit Diarsipkan
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .background(Color.White.copy(alpha = 0.16f))
-                                        .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
-                                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DirectionsCar,
-                                        contentDescription = null,
-                                        tint = Color(0xFF22C55E),
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Text(
-                                        text = "${uiState.vehicles.count { !it.isArchived }} Aktif",
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .background(Color.White.copy(alpha = 0.16f))
-                                        .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
-                                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Archive,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Text(
-                                        text = "${uiState.vehicles.count { it.isArchived }} Diarsipkan",
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold
+                                    FuelEmptyState(
+                                        title = title,
+                                        subtitle = subtitle,
+                                        icon = Icons.Default.DirectionsCar,
+                                        actionButtonText = if (!isSearching && uiState.filterTab != VehicleFilterTab.ARCHIVED) {
+                                            "＋ Tambah Kendaraan Baru"
+                                        } else null,
+                                        onActionClick = if (!isSearching && uiState.filterTab != VehicleFilterTab.ARCHIVED) {
+                                            onNavigateToAddVehicle
+                                        } else null,
+                                        modifier = Modifier.padding(vertical = 32.dp)
                                     )
                                 }
-                            }
-                        }
-                    }
-                }
 
-                // 2. Elevated White Rounded Sheet Container (Pencarian & Tab Filter)
-                item {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset(y = (-18).dp),
-                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 6.dp
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .widthIn(max = 760.dp)
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 18.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                VehicleFilterSection(
-                                    searchQuery = searchQuery,
-                                    onSearchQueryChange = { searchQuery = it },
-                                    activeTab = uiState.filterTab,
-                                    onTabSelected = { viewModel.onEvent(VehicleUiEvent.SetFilterTab(it)) },
-                                    activeCount = uiState.vehicles.count { !it.isArchived },
-                                    archivedCount = uiState.vehicles.count { it.isArchived },
-                                    totalCount = uiState.vehicles.size
-                                )
-
-                                Spacer(modifier = Modifier.height(2.dp))
-
-                                Text(
-                                    text = "Daftar Armada (${displayedVehicles.size})",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // 3. Status Konten: Loading, Empty, atau Daftar Kendaraan
-                when {
-                    uiState.isLoading && uiState.vehicles.isEmpty() -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .offset(y = (-18).dp)
-                                    .height(260.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    CircularProgressIndicator(
-                                        color = MariPrimaryBlue,
-                                        strokeWidth = 3.dp,
-                                        modifier = Modifier.size(36.dp)
-                                    )
-                                    Text(
-                                        text = "Memuat daftar kendaraan…",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MariMutedLight
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    displayedVehicles.isEmpty() -> {
-                        item {
-                            val isSearching = searchQuery.isNotBlank()
-                            val title = if (isSearching) {
-                                "Kendaraan Tidak Ditemukan"
-                            } else {
-                                when (uiState.filterTab) {
-                                    VehicleFilterTab.ACTIVE -> "Belum Ada Kendaraan Aktif"
-                                    VehicleFilterTab.ARCHIVED -> "Belum Ada Kendaraan Diarsipkan"
-                                    VehicleFilterTab.ALL -> "Belum Ada Kendaraan"
-                                }
-                            }
-                            val subtitle = if (isSearching) {
-                                "Tidak ditemukan kendaraan yang cocok dengan kata kunci '$searchQuery'."
-                            } else {
-                                when (uiState.filterTab) {
-                                    VehicleFilterTab.ACTIVE -> "Tambahkan kendaraan aktif Anda untuk mulai mencatat pengeluaran BBM."
-                                    VehicleFilterTab.ARCHIVED -> "Kendaraan yang Anda arsipkan dari garasi akan tampil di sini."
-                                    VehicleFilterTab.ALL -> "Daftar kendaraan Anda masih kosong. Tambahkan kendaraan pertama sekarang."
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .offset(y = (-18).dp)
-                            ) {
-                                FuelEmptyState(
-                                    title = title,
-                                    subtitle = subtitle,
-                                    icon = Icons.Default.DirectionsCar,
-                                    actionButtonText = if (!isSearching && uiState.filterTab != VehicleFilterTab.ARCHIVED) {
-                                        "＋ Tambah Kendaraan Baru"
-                                    } else null,
-                                    onActionClick = if (!isSearching && uiState.filterTab != VehicleFilterTab.ARCHIVED) {
-                                        onNavigateToAddVehicle
-                                    } else null,
-                                    modifier = Modifier.padding(vertical = 32.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    else -> {
-                        items(
-                            items = displayedVehicles,
-                            key = { it.id }
-                        ) { vehicle ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .offset(y = (-18).dp)
-                                    .padding(horizontal = 20.dp, vertical = 6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
-                                    VehicleCard(
-                                        vehicle = vehicle,
-                                        onEdit = { onNavigateToEditVehicle(vehicle.id) },
-                                        onArchive = { vehicleToArchive = vehicle },
-                                        onDelete = { vehicleToDelete = vehicle }
-                                    )
+                                else -> {
+                                    displayedVehicles.forEach { vehicle ->
+                                        VehicleCard(
+                                            vehicle = vehicle,
+                                            onEdit = { onNavigateToEditVehicle(vehicle.id) },
+                                            onArchive = { vehicleToArchive = vehicle },
+                                            onDelete = { vehicleToDelete = vehicle },
+                                            onAddTransaction = { onNavigateToAddTransaction?.invoke() ?: onNavigateToAddVehicle() }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -697,7 +690,239 @@ private fun VehicleFilterSection(
 }
 
 /**
- * Kartu Kendaraan Individual — Sesuai Desain Resmi Mari Partner Fuel
+ * Bento 2-Kolom Ringkasan Garasi Kendaraan
+ */
+@Composable
+private fun GarageBentoOverview(
+    vehicles: List<Vehicle>,
+    modifier: Modifier = Modifier
+) {
+    val activeCount = vehicles.count { !it.isArchived }
+    val archivedCount = vehicles.count { it.isArchived }
+    val totalCount = vehicles.size
+
+    // BBM Paling Dominan di Garasi
+    val dominantFuel = remember(vehicles) {
+        vehicles
+            .mapNotNull { it.defaultFuelType?.trim() }
+            .filter { it.isNotBlank() }
+            .groupingBy { it }
+            .eachCount()
+            .maxByOrNull { it.value }?.key ?: "Pertalite"
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        // Bento 1: Armada Siap Jalan
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFF8FAFC),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFEFF6FF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DirectionsCar,
+                            contentDescription = null,
+                            tint = Color(0xFF1D4ED8),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Text(
+                        text = "Siap Jalan",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF64748B),
+                            fontSize = 11.sp
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "$activeCount dari $totalCount Unit",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF0F172A),
+                        fontSize = 15.sp
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = if (totalCount == 0) "Garasi kosong" else if (archivedCount == 0) "100% armada aktif" else "$archivedCount unit diarsip",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Color(0xFF16A34A),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 11.sp
+                    )
+                )
+            }
+        }
+
+        // Bento 2: Bahan Bakar Utama Garasi
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFF8FAFC),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFF0FDF4)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalGasStation,
+                            contentDescription = null,
+                            tint = Color(0xFF15803D),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Text(
+                        text = "BBM Utama",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF64748B),
+                            fontSize = 11.sp
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                RealisticFuelBadge(fuelType = dominantFuel)
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Text(
+                    text = "Pilihan favorit garasi",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Color(0xFF64748B),
+                        fontSize = 11.sp
+                    ),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Badge Plat Nomor Khas Indonesia (Hitam pekat, border slate, teks putih tebal dengan baut samping)
+ */
+@Composable
+private fun IndonesianLicensePlateBadge(
+    licensePlate: String?,
+    modifier: Modifier = Modifier
+) {
+    val plateText = if (!licensePlate.isNullOrBlank()) licensePlate.uppercase() else "TANPA PLAT"
+    val isRealPlate = !licensePlate.isNullOrBlank()
+
+    Surface(
+        shape = RoundedCornerShape(5.dp),
+        color = if (isRealPlate) Color(0xFF0F172A) else Color(0xFF334155),
+        border = BorderStroke(1.dp, Color(0xFF475569)),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            // Titik Baut Perak Kiri
+            Box(
+                modifier = Modifier
+                    .size(3.5.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF94A3B8))
+            )
+
+            Text(
+                text = plateText,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.2.sp,
+                    fontSize = 10.5.sp,
+                    color = if (isRealPlate) Color.White else Color(0xFFCBD5E1)
+                )
+            )
+
+            // Titik Baut Perak Kanan
+            Box(
+                modifier = Modifier
+                    .size(3.5.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF94A3B8))
+            )
+        }
+    }
+}
+
+/**
+ * Badge Bahan Bakar Realistis
+ */
+@Composable
+private fun RealisticFuelBadge(
+    fuelType: String?,
+    modifier: Modifier = Modifier
+) {
+    if (fuelType.isNullOrBlank()) return
+    val (bgColor, textColor) = when {
+        fuelType.contains("Pertamax", ignoreCase = true) || fuelType.contains("Turbo", ignoreCase = true) || fuelType.contains("V-Power", ignoreCase = true) ->
+            Color(0xFFEFF6FF) to Color(0xFF1D4ED8)
+        fuelType.contains("Pertalite", ignoreCase = true) ->
+            Color(0xFFF0FDF4) to Color(0xFF15803D)
+        fuelType.contains("Solar", ignoreCase = true) || fuelType.contains("Dex", ignoreCase = true) || fuelType.contains("Diesel", ignoreCase = true) ->
+            Color(0xFFFEFCE8) to Color(0xFFA16207)
+        else ->
+            Color(0xFFF1F5F9) to Color(0xFF475569)
+    }
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = bgColor,
+        modifier = modifier
+    ) {
+        Text(
+            text = fuelType,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp,
+                color = textColor
+            ),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+    }
+}
+
+/**
+ * Kartu Kendaraan Individual — Sesuai Desain Resmi Mari Partner Fuel v2.0.4
  */
 @Composable
 private fun VehicleCard(
@@ -705,6 +930,7 @@ private fun VehicleCard(
     onEdit: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
+    onAddTransaction: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val vehicleIcon: ImageVector = when (vehicle.vehicleType) {
@@ -725,7 +951,7 @@ private fun VehicleCard(
                 .fillMaxWidth()
                 .padding(18.dp)
         ) {
-            // Header: Icon + Info Kendaraan + Status Chip
+            // Header: Icon + Info Kendaraan + Plat Nomor Khas + Status Chip
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -758,26 +984,34 @@ private fun VehicleCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = buildString {
-                            append(vehicle.licensePlate ?: "Tanpa Plat")
-                            if (vehicle.productionYear != null) {
-                                append(" • ${vehicle.productionYear}")
-                            }
-                            append(" • ${vehicle.vehicleType.displayName}")
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MariMutedLight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        IndonesianLicensePlateBadge(licensePlate = vehicle.licensePlate)
+
+                        Text(
+                            text = buildString {
+                                if (vehicle.productionYear != null) {
+                                    append("• ${vehicle.productionYear} ")
+                                }
+                                append("• ${vehicle.vehicleType.displayName}")
+                            },
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MariMutedLight,
+                                fontSize = 11.5.sp
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 if (vehicle.isArchived) {
-                    FuelStatusChip(text = "Diarsipkan", type = FuelChipType.Neutral)
+                    FuelStatusChip(text = "Arsip", type = FuelChipType.Neutral)
                 } else {
                     FuelStatusChip(text = "Aktif", type = FuelChipType.Success)
                 }
@@ -854,17 +1088,42 @@ private fun VehicleCard(
             HorizontalDivider(color = MariBorderLight)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Action Buttons Row (Edit, Arsip, Hapus)
+            // Footer Action Row (＋ Catat BBM di kiri, Edit/Arsip/Hapus di kanan)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (vehicle.isArchived) "Tidak aktif untuk transaksi baru" else "Siap digunakan",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MariMutedLight
-                )
+                // Tombol Cepat: ＋ Catat BBM
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MariPrimaryBlue.copy(alpha = 0.08f),
+                    border = BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.25f)),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onAddTransaction() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = MariPrimaryBlue,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = "Catat BBM",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            ),
+                            color = MariPrimaryBlue
+                        )
+                    }
+                }
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),

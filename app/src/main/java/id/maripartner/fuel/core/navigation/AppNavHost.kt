@@ -246,6 +246,9 @@ fun AppNavHost(
                         },
                         onNavigateToEditVehicle = { id ->
                             navController.navigate(NavRoute.VehicleForm.createRoute(id))
+                        },
+                        onNavigateToAddTransaction = {
+                            navController.navigate(NavRoute.TransactionForm.createRoute())
                         }
                     )
                 }

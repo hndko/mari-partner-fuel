@@ -8,10 +8,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,14 +24,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -40,6 +46,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.core.content.FileProvider
 import java.io.File
+import java.util.Locale
 import android.content.Context
 import android.content.Intent
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
@@ -114,7 +121,7 @@ fun TransactionsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val listState = rememberLazyListState()
+    val scrollState = rememberScrollState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var pendingCsvContent by remember { mutableStateOf<String?>(null) }
@@ -145,9 +152,7 @@ fun TransactionsScreen(
     // Pagination trigger saat scroll mendekati ujung daftar
     val shouldLoadMore by remember {
         derivedStateOf {
-            val totalItems = listState.layoutInfo.totalItemsCount
-            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            totalItems > 0 && lastVisibleItem >= totalItems - 3
+            scrollState.maxValue > 0 && scrollState.value >= scrollState.maxValue - 400
         }
     }
 
@@ -190,34 +195,45 @@ fun TransactionsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surface)
         ) {
+            val screenHeight = maxHeight
+            val density = LocalDensity.current
+            var headerHeightDp by remember { mutableStateOf(280.dp) }
+            val remainingSheetMinHeight = (screenHeight - headerHeightDp + 36.dp).coerceAtLeast(400.dp)
+
             // Latar gradien atas jika di-pull down / overscroll
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(320.dp)
+                    .height(340.dp)
                     .background(brush = gradientBrush)
             )
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding() + 80.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(bottom = innerPadding.calculateBottomPadding() + 80.dp)
             ) {
                 // 1. Hero Gradient Header (Status Bar, Top Bar, Total Pengeluaran, Volume/Count Badges)
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(brush = gradientBrush)
-                            .statusBarsPadding()
-                            .padding(top = 10.dp, bottom = 32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { size ->
+                            val measuredDp = with(density) { size.height.toDp() }
+                            if (measuredDp > 0.dp) {
+                                headerHeightDp = measuredDp
+                            }
+                        }
+                        .background(brush = gradientBrush)
+                        .statusBarsPadding()
+                        .padding(top = 10.dp, bottom = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                         Column(
                             modifier = Modifier
                                 .widthIn(max = 760.dp)
@@ -438,189 +454,177 @@ fun TransactionsScreen(
                             }
                         }
                     }
-                }
 
-                // 2. Elevated White Rounded Sheet Container (Pencarian & Filter)
-                item {
-                    Surface(
+                // 2. Elevated White Rounded Sheet Container (wraps EVERYTHING below header)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-18).dp)
+                        .defaultMinSize(minHeight = remainingSheetMinHeight),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 6.dp
+                ) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .offset(y = (-18).dp),
-                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 6.dp
+                            .defaultMinSize(minHeight = remainingSheetMinHeight),
+                        contentAlignment = Alignment.TopCenter
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
+                        Column(
+                            modifier = Modifier
+                                .widthIn(max = 760.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .widthIn(max = 760.dp)
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 18.dp)
-                            ) {
-                                // Kolom Pencarian Cepat (Soft Pill GoPay Style)
-                                TextField(
-                                    value = uiState.filter.query,
-                                    onValueChange = { viewModel.onEvent(TransactionUiEvent.QueryChanged(it)) },
-                                    placeholder = {
-                                        Text(
-                                            text = "Cari SPBU, jenis BBM, nominal...",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color(0xFF94A3B8)
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Search,
-                                            contentDescription = "Cari",
-                                            tint = Color(0xFF64748B)
-                                        )
-                                    },
-                                    trailingIcon = {
-                                        if (uiState.filter.query.isNotBlank()) {
-                                            IconButton(onClick = { viewModel.onEvent(TransactionUiEvent.QueryChanged("")) }) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Clear,
-                                                    contentDescription = "Hapus Pencarian",
-                                                    tint = Color(0xFF64748B)
-                                                )
-                                            }
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(24.dp),
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = Color(0xFFF1F5F9),
-                                        unfocusedContainerColor = Color(0xFFF8FAFC),
-                                        focusedIndicatorColor = Color.Transparent,
-                                        unfocusedIndicatorColor = Color.Transparent,
-                                        disabledIndicatorColor = Color.Transparent
-                                    ),
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
+                            // 1. Bento 2-Kolom Analitik Finansial
+                            TransactionBentoSection(
+                                totalExpense = totalExpense,
+                                totalVolume = totalVolume,
+                                transactions = uiState.transactions
+                            )
 
-                                // Baris Filter Kendaraan (Soft Capsule Pills)
-                                if (uiState.availableVehicles.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        item {
-                                            val isAllSelected = uiState.filter.vehicleId == null
-                                            Surface(
-                                                shape = RoundedCornerShape(20.dp),
-                                                color = if (isAllSelected) MariPrimaryBlue.copy(alpha = 0.12f) else Color(0xFFF1F5F9),
-                                                border = if (isAllSelected) BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.4f)) else null,
-                                                modifier = Modifier.clickable { viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(null)) }
-                                            ) {
-                                                Text(
-                                                    text = "Semua Kendaraan",
-                                                    style = MaterialTheme.typography.labelMedium.copy(
-                                                        fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium,
-                                                        color = if (isAllSelected) MariPrimaryBlue else Color(0xFF475569)
-                                                    ),
-                                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                                                )
-                                            }
+                            // Kolom Pencarian Cepat (Soft Pill GoPay Style)
+                            TextField(
+                                value = uiState.filter.query,
+                                onValueChange = { viewModel.onEvent(TransactionUiEvent.QueryChanged(it)) },
+                                placeholder = {
+                                    Text(
+                                        text = "Cari SPBU, jenis BBM, nominal...",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFF94A3B8)
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "Cari",
+                                        tint = Color(0xFF64748B)
+                                    )
+                                },
+                                trailingIcon = {
+                                    if (uiState.filter.query.isNotBlank()) {
+                                        IconButton(onClick = { viewModel.onEvent(TransactionUiEvent.QueryChanged("")) }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Clear,
+                                                contentDescription = "Hapus Pencarian",
+                                                tint = Color(0xFF64748B)
+                                            )
                                         }
-                                        items(uiState.availableVehicles) { vehicle ->
-                                            val isSelected = uiState.filter.vehicleId == vehicle.id
-                                            Surface(
-                                                shape = RoundedCornerShape(20.dp),
-                                                color = if (isSelected) MariPrimaryBlue.copy(alpha = 0.12f) else Color(0xFFF1F5F9),
-                                                border = if (isSelected) BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.4f)) else null,
-                                                modifier = Modifier.clickable {
-                                                    val newId = if (isSelected) null else vehicle.id
-                                                    viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(newId))
-                                                }
+                                    }
+                                },
+                                shape = RoundedCornerShape(24.dp),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color(0xFFF1F5F9),
+                                    unfocusedContainerColor = Color(0xFFF8FAFC),
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    disabledIndicatorColor = Color.Transparent
+                                ),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            // Baris Filter Kendaraan (Soft Capsule Pills)
+                            if (uiState.availableVehicles.isNotEmpty()) {
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    item {
+                                        val isAllSelected = uiState.filter.vehicleId == null
+                                        Surface(
+                                            shape = RoundedCornerShape(20.dp),
+                                            color = if (isAllSelected) MariPrimaryBlue.copy(alpha = 0.12f) else Color(0xFFF1F5F9),
+                                            border = if (isAllSelected) BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.4f)) else null,
+                                            modifier = Modifier.clickable { viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(null)) }
+                                        ) {
+                                            Text(
+                                                text = "Semua Kendaraan",
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isAllSelected) MariPrimaryBlue else Color(0xFF475569)
+                                                ),
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                            )
+                                        }
+                                    }
+                                    items(uiState.availableVehicles) { vehicle ->
+                                        val isSelected = uiState.filter.vehicleId == vehicle.id
+                                        Surface(
+                                            shape = RoundedCornerShape(20.dp),
+                                            color = if (isSelected) MariPrimaryBlue.copy(alpha = 0.12f) else Color(0xFFF1F5F9),
+                                            border = if (isSelected) BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.4f)) else null,
+                                            modifier = Modifier.clickable {
+                                                val newId = if (isSelected) null else vehicle.id
+                                                viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(newId))
+                                            }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
-                                                Row(
-                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.DirectionsCar,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(15.dp),
-                                                        tint = if (isSelected) MariPrimaryBlue else Color(0xFF64748B)
+                                                Icon(
+                                                    imageVector = Icons.Default.DirectionsCar,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(15.dp),
+                                                    tint = if (isSelected) MariPrimaryBlue else Color(0xFF64748B)
+                                                )
+                                                Text(
+                                                    text = vehicle.name,
+                                                    style = MaterialTheme.typography.labelMedium.copy(
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (isSelected) MariPrimaryBlue else Color(0xFF475569)
                                                     )
-                                                    Text(
-                                                        text = vehicle.name,
-                                                        style = MaterialTheme.typography.labelMedium.copy(
-                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                            color = if (isSelected) MariPrimaryBlue else Color(0xFF475569)
-                                                        )
-                                                    )
-                                                }
+                                                )
                                             }
                                         }
                                     }
                                 }
-
-                                // Info Header Jumlah Transaksi
-                                Spacer(modifier = Modifier.height(14.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Semua Catatan (${uiState.transactions.size})",
-                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = uiState.filter.sortOrder.displayName,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                        color = MariPrimaryBlue
-                                    )
-                                }
                             }
-                        }
-                    }
-                }
 
-                // 3. Status Konten: Loading, Empty, atau Grouped Activity List Card
-                when {
-                    uiState.isLoading && uiState.transactions.isEmpty() -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .offset(y = (-18).dp)
-                                    .padding(vertical = 48.dp),
-                                contentAlignment = Alignment.Center
+                            // Info Header Jumlah Transaksi
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    CircularProgressIndicator(
-                                        color = MariPrimaryBlue,
-                                        strokeWidth = 3.dp
-                                    )
-                                    Text(
-                                        text = "Memuat riwayat transaksi...",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MariMutedLight
-                                    )
-                                }
+                                Text(
+                                    text = "Aktivitas Transaksi (${uiState.transactions.size})",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = uiState.filter.sortOrder.displayName,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                    color = MariPrimaryBlue
+                                )
                             }
-                        }
-                    }
 
-                    uiState.transactions.isEmpty() -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .offset(y = (-18).dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
+                            // Status Konten: Loading, Empty, atau Pengelompokan Bulan
+                            when {
+                                uiState.isLoading && uiState.transactions.isEmpty() -> {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 48.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = MariPrimaryBlue,
+                                            strokeWidth = 3.dp
+                                        )
+                                        Text(
+                                            text = "Memuat riwayat transaksi...",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MariMutedLight
+                                        )
+                                    }
+                                }
+
+                                uiState.transactions.isEmpty() -> {
                                     if (uiState.filter.isFilterActive) {
                                         FuelEmptyState(
                                             title = "Tidak Ada Hasil Pencarian",
@@ -643,65 +647,111 @@ fun TransactionsScreen(
                                         )
                                     }
                                 }
-                            }
-                        }
-                    }
 
-                    else -> {
-                        // Grouped Activity List Card ala GoPay
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .offset(y = (-18).dp)
-                                    .padding(horizontal = 20.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
-                                    Surface(
-                                        shape = RoundedCornerShape(20.dp),
-                                        color = Color.White,
-                                        shadowElevation = 2.dp,
-                                        border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.05f)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Column(modifier = Modifier.fillMaxWidth()) {
-                                            uiState.transactions.forEachIndexed { index, transaction ->
-                                                val vehicle = uiState.availableVehicles.firstOrNull { it.id == transaction.vehicleId }
-                                                TransactionRowItem(
-                                                    transaction = transaction,
-                                                    vehicleName = vehicle?.name ?: "Kendaraan",
-                                                    licensePlate = vehicle?.licensePlate,
-                                                    onClick = { onNavigateToDetail(transaction.id) }
-                                                )
-                                                if (index < uiState.transactions.lastIndex) {
-                                                    HorizontalDivider(
-                                                        color = Color.Black.copy(alpha = 0.05f),
-                                                        thickness = 0.8.dp,
-                                                        modifier = Modifier.padding(start = 76.dp, end = 16.dp)
+                                else -> {
+                                    // Pengelompokan Transaksi per Bulan dengan Sub-Total Finansial
+                                    val groupedByMonth = uiState.transactions.groupBy { tx ->
+                                        val zdt = tx.transactionAt.atZone(DateUtils.ZONE_JAKARTA)
+                                        val monthName = zdt.month.getDisplayName(java.time.format.TextStyle.FULL, Locale("id", "ID"))
+                                        "$monthName ${zdt.year}"
+                                    }
+
+                                    groupedByMonth.forEach { (monthYear, txList) ->
+                                        val monthTotal = txList.sumOf { it.totalAmountIdr }
+                                        val monthCount = txList.size
+
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            // Header Bulan & Sub-Total
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = monthYear,
+                                                        style = MaterialTheme.typography.titleSmall.copy(
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = MariTextLight,
+                                                            fontSize = 15.sp
+                                                        )
                                                     )
+                                                    Surface(
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        color = MariPrimaryBlue.copy(alpha = 0.10f)
+                                                    ) {
+                                                        Text(
+                                                            text = "$monthCount Pengisian",
+                                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                                fontWeight = FontWeight.SemiBold,
+                                                                fontSize = 11.sp,
+                                                                color = MariPrimaryBlue
+                                                            ),
+                                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                Text(
+                                                    text = "Total: ${CurrencyFormatter.formatIdr(monthTotal)}",
+                                                    style = MaterialTheme.typography.labelMedium.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MariTextLight,
+                                                        fontSize = 13.sp
+                                                    )
+                                                )
+                                            }
+
+                                            // Card Daftar Transaksi Bulan Ini
+                                            Surface(
+                                                shape = RoundedCornerShape(20.dp),
+                                                color = Color.White,
+                                                shadowElevation = 2.dp,
+                                                border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.05f)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Column(modifier = Modifier.fillMaxWidth()) {
+                                                    txList.forEachIndexed { index, transaction ->
+                                                        val vehicle = uiState.availableVehicles.firstOrNull { it.id == transaction.vehicleId }
+                                                        TransactionRowItem(
+                                                            transaction = transaction,
+                                                            vehicleName = vehicle?.name ?: "Kendaraan",
+                                                            licensePlate = vehicle?.licensePlate,
+                                                            onClick = { onNavigateToDetail(transaction.id) }
+                                                        )
+                                                        if (index < txList.lastIndex) {
+                                                            HorizontalDivider(
+                                                                color = Color.Black.copy(alpha = 0.05f),
+                                                                thickness = 0.8.dp,
+                                                                modifier = Modifier.padding(start = 76.dp, end = 16.dp)
+                                                            )
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                            }
-                        }
 
-                        if (uiState.isLoadingMore) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .offset(y = (-18).dp)
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = MariPrimaryBlue,
-                                        strokeWidth = 2.dp
-                                    )
+                                    if (uiState.isLoadingMore) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                color = MariPrimaryBlue,
+                                                strokeWidth = 2.dp
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -709,7 +759,6 @@ fun TransactionsScreen(
                 }
             }
         }
-    }
 
     if (showExportChoiceDialog) {
         ExportChoiceDialog(
@@ -743,6 +792,266 @@ fun TransactionsScreen(
                 showProUpgradeDialog = false
                 onNavigateToProPlans()
             }
+        )
+    }
+}
+}
+
+/**
+ * Bento 2-Kolom Analitik Finansial & Konsumsi BBM
+ */
+@Composable
+private fun TransactionBentoSection(
+    totalExpense: Long,
+    totalVolume: Double,
+    transactions: List<FuelTransaction>,
+    modifier: Modifier = Modifier
+) {
+    val dominantStation = remember(transactions) {
+        transactions.mapNotNull { it.stationName?.takeIf { s -> s.isNotBlank() } }
+            .groupingBy { it }
+            .eachCount()
+            .maxByOrNull { it.value }?.key ?: "SPBU Umum"
+    }
+
+    val dominantFuel = remember(transactions) {
+        transactions.mapNotNull { it.fuelType?.takeIf { f -> f.isNotBlank() } }
+            .groupingBy { it }
+            .eachCount()
+            .maxByOrNull { it.value }?.key ?: "BBM Campuran"
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Bento 1: Anggaran / Pagu BBM Bulan Ini
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(18.dp),
+            color = Color.White,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.05f))
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFFEFF6FF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountBalanceWallet,
+                            contentDescription = null,
+                            tint = MariPrimaryBlue,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFDCFCE7)
+                    ) {
+                        Text(
+                            text = "Terkontrol",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                color = Color(0xFF16A34A)
+                            ),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "Total Pengeluaran",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = MariMutedLight,
+                        fontSize = 11.sp
+                    )
+                )
+                Text(
+                    text = CurrencyFormatter.formatIdr(totalExpense),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MariTextLight,
+                        fontSize = 15.sp
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Progress Bar Visual
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Color(0xFFF1F5F9))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.68f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(MariPrimaryBlue, Color(0xFF38BDF8))
+                                )
+                            )
+                    )
+                }
+            }
+        }
+
+        // Bento 2: SPBU & BBM Dominan
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(18.dp),
+            color = Color.White,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.05f))
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFFFEF3C7)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalGasStation,
+                            contentDescription = null,
+                            tint = Color(0xFFD97706),
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFEFF6FF)
+                    ) {
+                        Text(
+                            text = "%.1f L".format(totalVolume),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                color = MariPrimaryBlue
+                            ),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "BBM & SPBU Utama",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = MariMutedLight,
+                        fontSize = 11.sp
+                    )
+                )
+                Text(
+                    text = dominantFuel,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MariTextLight,
+                        fontSize = 15.sp
+                    ),
+                    maxLines = 1
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = dominantStation,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = MariMutedLight,
+                        fontSize = 11.sp
+                    ),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Badge Plat Nomor Mini Khas Indonesia
+ */
+@Composable
+private fun IndonesianMiniPlateBadge(
+    licensePlate: String?,
+    modifier: Modifier = Modifier
+) {
+    if (licensePlate.isNullOrBlank()) return
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = Color(0xFF0F172A),
+        border = BorderStroke(0.8.dp, Color(0xFF475569)),
+        modifier = modifier
+    ) {
+        Text(
+            text = licensePlate.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.8.sp,
+                fontSize = 9.sp,
+                color = Color.White
+            ),
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+        )
+    }
+}
+
+/**
+ * Badge Bahan Bakar dengan Warna Realistis
+ */
+@Composable
+private fun RealisticFuelBadge(
+    fuelType: String?,
+    modifier: Modifier = Modifier
+) {
+    if (fuelType.isNullOrBlank()) return
+    val (bgColor, textColor) = when {
+        fuelType.contains("Pertamax", ignoreCase = true) || fuelType.contains("Turbo", ignoreCase = true) || fuelType.contains("V-Power", ignoreCase = true) ->
+            Color(0xFFEFF6FF) to Color(0xFF1D4ED8)
+        fuelType.contains("Pertalite", ignoreCase = true) ->
+            Color(0xFFF0FDF4) to Color(0xFF15803D)
+        fuelType.contains("Solar", ignoreCase = true) || fuelType.contains("Dex", ignoreCase = true) || fuelType.contains("Diesel", ignoreCase = true) ->
+            Color(0xFFFEFCE8) to Color(0xFFA16207)
+        else ->
+            Color(0xFFF1F5F9) to Color(0xFF475569)
+    }
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = bgColor,
+        modifier = modifier
+    ) {
+        Text(
+            text = fuelType,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp,
+                color = textColor
+            ),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
 }
@@ -787,7 +1096,7 @@ private fun TransactionRowItem(
 
         Spacer(modifier = Modifier.width(14.dp))
 
-        // 2. Info Detail (SPBU, Kendaraan & BBM, Tanggal)
+        // 2. Info Detail (SPBU, Plat & Kendaraan, BBM Badge, Tanggal)
         Column(
             modifier = Modifier.weight(1f)
         ) {
@@ -801,30 +1110,39 @@ private fun TransactionRowItem(
                 maxLines = 1
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
-            val fuelAndLiters = buildString {
-                append(vehicleName)
-                if (!transaction.fuelType.isNullOrBlank()) {
-                    append(" • ${transaction.fuelType}")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (!licensePlate.isNullOrBlank()) {
+                    IndonesianMiniPlateBadge(licensePlate = licensePlate)
+                } else {
+                    Text(
+                        text = vehicleName,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MariMutedLight,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
                 }
+
+                RealisticFuelBadge(fuelType = transaction.fuelType)
+
                 transaction.volumeLiters?.let { liters ->
-                    append(" (%.1f L)".format(liters))
-                }
-                if (transaction.odometerKm != null && transaction.odometerKm > 0) {
-                    append(" • ${transaction.odometerKm} km")
+                    Text(
+                        text = "%.1f L".format(liters),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MariMutedLight,
+                            fontSize = 11.5.sp
+                        )
+                    )
                 }
             }
-            Text(
-                text = fuelAndLiters,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = MariMutedLight,
-                    fontSize = 12.sp
-                ),
-                maxLines = 1
-            )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
             Text(
                 text = DateUtils.formatDateTime(transaction.transactionAt),

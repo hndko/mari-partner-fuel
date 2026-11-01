@@ -31,6 +31,9 @@ object AppConfig {
     val versionName: String
         get() = BuildConfig.VERSION_NAME
 
+    val versionCode: Int
+        get() = BuildConfig.VERSION_CODE
+
     /**
      * Redaksi key agar aman saat di-print di debug log.
      */

@@ -875,7 +875,7 @@ fun ProfileScreen(
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                 )
                                 Text(
-                                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build 14)",
+                                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build ${AppConfig.versionCode})",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -911,7 +911,7 @@ fun ProfileScreen(
 
                 // Footer Hak Cipta & Info Build
                 Text(
-                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build 13)\nAll Rights Reserved © 2026",
+                    text = "Mari Partner Fuel · v${AppConfig.versionName} (Build ${AppConfig.versionCode})\nAll Rights Reserved © 2026",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center,
