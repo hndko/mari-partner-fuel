@@ -6,9 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -42,6 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -83,90 +88,114 @@ fun AuthResponsiveLayout(
 
     Scaffold(
         snackbarHost = snackbarHost,
+        containerColor = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MariBgLight)
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = innerPadding.calculateBottomPadding() + 24.dp)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
-            // 1. Hero Gradient Header (Status Bar, Back Button, Brand Ribbon M Logo, & Security Pill)
+            val screenHeight = maxHeight
+            val density = LocalDensity.current
+            var headerHeightDp by remember { mutableStateOf(240.dp) }
+
+            // Latar belakang gradien di bagian atas untuk mencegah celah saat pull-down overscroll
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(320.dp)
                     .background(brush = gradientBrush)
-                    .statusBarsPadding()
-                    .padding(top = 10.dp, bottom = 32.dp),
-                contentAlignment = Alignment.Center
+            )
+
+            // Tinggi minimum kartu putih agar selalu menutupi layar penuh hingga dasar layar
+            val remainingCardMinHeight = (screenHeight - headerHeightDp + 36.dp).coerceAtLeast(320.dp)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             ) {
-                Column(
+                // 1. Hero Gradient Header (Status Bar, Back Button, Brand Ribbon M Logo, & Security Pill)
+                Box(
                     modifier = Modifier
-                        .widthIn(max = 520.dp)
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .onSizeChanged { size ->
+                            val measuredDp = with(density) { size.height.toDp() }
+                            if (measuredDp > 0.dp) {
+                                headerHeightDp = measuredDp
+                            }
+                        }
+                        .background(brush = gradientBrush)
+                        .statusBarsPadding()
+                        .padding(top = 10.dp, bottom = 32.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Top Bar: Tombol Kembali Glassmorphism & Pill Keamanan
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = 520.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (onNavigateBack != null) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.18f))
-                                    .border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = ripple(bounded = true, color = Color.White)
+                        // Top Bar: Tombol Kembali Glassmorphism & Pill Keamanan
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            if (onNavigateBack != null) {
+                                IconButton(
+                                    onClick = onNavigateBack,
+                                    modifier = Modifier.size(44.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.White.copy(alpha = 0.20f))
+                                            .border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        onNavigateBack()
-                                    },
-                                contentAlignment = Alignment.Center
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Kembali ke Halaman Masuk",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.size(44.dp))
+                            }
+
+                            // Pill Badge Keamanan (Klik untuk Buka Kebijakan Privasi)
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color.White.copy(alpha = 0.16f))
+                                    .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
+                                    .clickable { showPrivacyDialog = true }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Kembali",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
+                                    imageVector = Icons.Default.Shield,
+                                    contentDescription = null,
+                                    tint = Color(0xFF22C55E),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = "Keamanan & Privasi Terjamin ›",
+                                    color = Color.White,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
-                        } else {
-                            Spacer(modifier = Modifier.size(38.dp))
-                        }
 
-                        // Pill Badge Keamanan (Klik untuk Buka Kebijakan Privasi)
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(Color.White.copy(alpha = 0.16f))
-                                .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
-                                .clickable { showPrivacyDialog = true }
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Shield,
-                                contentDescription = null,
-                                tint = Color(0xFF22C55E),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = "Keamanan & Privasi Terjamin ›",
-                                color = Color.White,
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Spacer(modifier = Modifier.size(44.dp))
                         }
-
-                        Spacer(modifier = Modifier.size(38.dp))
-                    }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
@@ -249,20 +278,27 @@ fun AuthResponsiveLayout(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = (-18).dp),
+                    .offset(y = (-18).dp)
+                    .defaultMinSize(minHeight = remainingCardMinHeight),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 6.dp
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = remainingCardMinHeight),
                     contentAlignment = Alignment.TopCenter
                 ) {
                     Column(
                         modifier = Modifier
                             .widthIn(max = 520.dp)
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 22.dp),
+                            .padding(horizontal = 24.dp)
+                            .padding(
+                                top = 22.dp,
+                                bottom = innerPadding.calculateBottomPadding() + 24.dp
+                            ),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // Judul & Subtitle Halaman
@@ -330,6 +366,7 @@ fun AuthResponsiveLayout(
                 }
             }
         }
+    }
 
         // Modal Dialog Kebijakan Privasi
         PrivacyPolicyDialog(

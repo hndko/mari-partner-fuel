@@ -143,7 +143,12 @@ fun AppNavHost(
             composable(NavRoute.Register.route) {
                 RegisterScreen(
                     onNavigateBackToLogin = {
-                        navController.popBackStack()
+                        if (!navController.popBackStack()) {
+                            navController.navigate(NavRoute.Login.route) {
+                                popUpTo(NavRoute.Login.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
                     },
                     viewModel = authViewModel
                 )
@@ -152,7 +157,12 @@ fun AppNavHost(
             composable(NavRoute.ForgotPassword.route) {
                 ForgotPasswordScreen(
                     onNavigateBackToLogin = {
-                        navController.popBackStack()
+                        if (!navController.popBackStack()) {
+                            navController.navigate(NavRoute.Login.route) {
+                                popUpTo(NavRoute.Login.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
                     },
                     viewModel = authViewModel
                 )

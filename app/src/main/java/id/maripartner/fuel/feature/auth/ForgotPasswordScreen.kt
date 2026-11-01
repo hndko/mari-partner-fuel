@@ -1,5 +1,6 @@
 package id.maripartner.fuel.feature.auth
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +57,9 @@ fun ForgotPasswordScreen(
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = viewModel()
 ) {
+    // Tangani gesture back dan hardware back Android
+    BackHandler(onBack = onNavigateBackToLogin)
+
     val uiState by viewModel.uiState.collectAsState()
     var email by remember { mutableStateOf("") }
 

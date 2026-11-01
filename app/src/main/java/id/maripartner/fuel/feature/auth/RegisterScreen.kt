@@ -1,6 +1,7 @@
 package id.maripartner.fuel.feature.auth
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -54,6 +55,12 @@ fun RegisterScreen(
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = viewModel()
 ) {
+    // Tangani gesture back dan hardware back Android
+    BackHandler {
+        viewModel.onEvent(AuthUiEvent.ResetRegistrationState)
+        onNavigateBackToLogin()
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
