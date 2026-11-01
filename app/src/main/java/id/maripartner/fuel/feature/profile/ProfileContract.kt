@@ -47,6 +47,7 @@ sealed interface ProfileUiEvent {
     data class ToggleReminderNotification(val enabled: Boolean) : ProfileUiEvent
     data class ToggleBiometricLock(val enabled: Boolean) : ProfileUiEvent
     data class SetLockTimeout(val minutes: Int) : ProfileUiEvent
+    data object LockAppNow : ProfileUiEvent
     data class ToggleSpbuReminder(val enabled: Boolean) : ProfileUiEvent
     data class UpdateLocationPermission(val granted: Boolean) : ProfileUiEvent
     data class SetEditDialogVisible(val visible: Boolean) : ProfileUiEvent

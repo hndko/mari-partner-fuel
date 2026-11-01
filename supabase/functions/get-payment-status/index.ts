@@ -66,6 +66,43 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Direct Polling Fallback ke QRISpy jika transaksi masih pending di database
+    if (tx.status === "pending" && tx.provider === "qrispy" && tx.provider_payment_id) {
+      const qrispyApiToken = Deno.env.get("QRISPY_API_TOKEN") ?? Deno.env.get("QRISPY_API_KEY");
+      if (qrispyApiToken) {
+        try {
+          const statusRes = await fetch(`https://api.qrispy.id/api/payment/qris/${tx.provider_payment_id}/status`, {
+            method: "GET",
+            headers: {
+              "X-API-Token": qrispyApiToken,
+            },
+          });
+          const statusJson = await statusRes.json();
+          const qrisStatus = (statusJson?.data?.status || statusJson?.status || "").toLowerCase();
+          if (qrisStatus === "paid" || qrisStatus === "success") {
+            const isYearly = tx.billing_period === "yearly";
+            const planCode = tx.metadata?.plan_code || (isYearly ? "pro_yearly" : "pro_monthly");
+            const durationDays = isYearly ? 365 : 30;
+
+            await adminClient.rpc("activate_subscription_for_payment", {
+              p_user_id: tx.user_id,
+              p_payment_ref: tx.payment_reference,
+              p_provider: "qrispy",
+              p_provider_payment_id: tx.provider_payment_id,
+              p_plan_code: planCode,
+              p_duration_days: durationDays,
+              p_auto_renew: false,
+            });
+
+            tx.status = "paid";
+            tx.paid_at = statusJson?.data?.paid_at || new Date().toISOString();
+          }
+        } catch (_e) {
+          // Abaikan jika network error, lanjutkan dengan status database saat ini
+        }
+      }
+    }
+
     // Ambil entitlement user terbaru
     const { data: entitlement } = await adminClient.rpc(
       "get_user_effective_entitlement",

@@ -1,15 +1,39 @@
 // =============================================================================
 // MARI PARTNER FUEL — SUPABASE EDGE FUNCTION: payment-webhook
 // Server-to-Server Webhook Handler dengan Verifikasi Tanda Tangan & Idempotensi Mutlak
+// Mendukung QRISpy (X-Qrispy-Signature HMAC-SHA256), Midtrans, & Google Play RTDN
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-callback-signature, x-signature",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-callback-signature, x-signature, x-qrispy-signature",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+/**
+ * Verifikasi kriptografis HMAC-SHA256 sesuai standar keamanan QRISpy.
+ */
+async function verifyHmacSha256(secret: string, bodyText: string, receivedSignature: string): Promise<boolean> {
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const signatureBytes = await crypto.subtle.sign("HMAC", key, encoder.encode(bodyText));
+    const hexHash = Array.from(new Uint8Array(signatureBytes))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return hexHash.toLowerCase() === receivedSignature.trim().toLowerCase();
+  } catch (_e) {
+    return false;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,7 +45,16 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const rawPayload = await req.json();
+    const rawBody = await req.text();
+    let rawPayload: any = {};
+    try {
+      rawPayload = JSON.parse(rawBody);
+    } catch (_e) {
+      return new Response(
+        JSON.stringify({ status: "error", message: "Payload bukan JSON valid" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // 1. Tentukan Provider & Normalisasi Format Event
     let provider = "unknown";
@@ -30,21 +63,31 @@ Deno.serve(async (req) => {
     let isSuccessPaid = false;
     let providerPaymentId = "";
 
+    // Deteksi Format QRISpy Resmi (event: payment.received)
+    if (rawPayload.event === "payment.received" || rawPayload.event === "payment_received") {
+      provider = "qrispy";
+      paymentRef = rawPayload.data?.payment_reference || "";
+      providerPaymentId = rawPayload.data?.qris_id || "";
+      const uniqueId = rawPayload.data?.unique_id || Date.now();
+      eventId = `qrispy_${providerPaymentId || paymentRef}_${uniqueId}`;
+      isSuccessPaid = true;
+    }
+    // Deteksi Format QRISpy Legacy / Alternatif
+    else if (rawPayload.partner_reference_no || (rawPayload.data && rawPayload.data.qris_id) || rawPayload.qris_id) {
+      provider = "qrispy";
+      paymentRef = rawPayload.partner_reference_no || rawPayload.data?.payment_reference || rawPayload.payment_reference || "";
+      providerPaymentId = rawPayload.qris_id || rawPayload.data?.qris_id || rawPayload.transaction_id || "";
+      eventId = rawPayload.event_id || rawPayload.transaction_id || `qrispy_${paymentRef}_${Date.now()}`;
+      const status = (rawPayload.status || rawPayload.data?.status || "").toUpperCase();
+      isSuccessPaid = status === "PAID" || status === "SUCCESS" || rawPayload.event === "payment.received";
+    }
     // Deteksi Format Midtrans
-    if (rawPayload.order_id && rawPayload.transaction_status) {
+    else if (rawPayload.order_id && rawPayload.transaction_status) {
       provider = "midtrans";
       paymentRef = rawPayload.order_id;
       eventId = rawPayload.transaction_id || `midtrans_${paymentRef}_${rawPayload.transaction_status}`;
       providerPaymentId = rawPayload.transaction_id || "";
       isSuccessPaid = rawPayload.transaction_status === "settlement" || rawPayload.transaction_status === "capture";
-    }
-    // Deteksi Format QRISpy
-    else if (rawPayload.partner_reference_no || rawPayload.qris_id) {
-      provider = "qrispy";
-      paymentRef = rawPayload.partner_reference_no || "";
-      eventId = rawPayload.event_id || rawPayload.transaction_id || `qrispy_${paymentRef}_${Date.now()}`;
-      providerPaymentId = rawPayload.qris_id || rawPayload.transaction_id || "";
-      isSuccessPaid = rawPayload.status === "PAID" || rawPayload.status === "SUCCESS";
     }
     // Deteksi Format Google Play RTDN (Pub/Sub)
     else if (rawPayload.message?.data) {
@@ -73,10 +116,21 @@ Deno.serve(async (req) => {
     const midtransKey = Deno.env.get("MIDTRANS_SERVER_KEY");
 
     if (provider === "qrispy" && qrispySecret) {
-      const signatureHeader = req.headers.get("x-callback-signature") || req.headers.get("x-signature") || "";
+      const signatureHeader = req.headers.get("x-qrispy-signature") ||
+        req.headers.get("x-callback-signature") ||
+        req.headers.get("x-signature") || "";
+
       if (!signatureHeader) {
         return new Response(
-          JSON.stringify({ status: "error", message: "Tanda tangan webhook QRISpy tidak ditemukan" }),
+          JSON.stringify({ status: "error", message: "Header X-Qrispy-Signature tidak ditemukan" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const isValid = await verifyHmacSha256(qrispySecret, rawBody, signatureHeader);
+      if (!isValid) {
+        return new Response(
+          JSON.stringify({ status: "error", message: "Verifikasi tanda tangan X-Qrispy-Signature gagal" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -133,7 +187,7 @@ Deno.serve(async (req) => {
         p_user_id: tx.user_id,
         p_payment_ref: paymentRef,
         p_provider: provider,
-        p_provider_payment_id: providerPaymentId || tx.payment_reference,
+        p_provider_payment_id: providerPaymentId || tx.provider_payment_id || tx.payment_reference,
         p_plan_code: planCode,
         p_duration_days: durationDays,
         p_auto_renew: provider === "google_play",

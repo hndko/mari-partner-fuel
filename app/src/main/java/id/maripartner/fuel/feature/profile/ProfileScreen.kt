@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
@@ -745,7 +746,7 @@ fun ProfileScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                listOf(0 to "Langsung", 1 to "1 Menit", 5 to "5 Menit").forEach { (minutes, label) ->
+                                listOf(0 to "Langsung", 1 to "1 Menit", 5 to "5 Menit", 15 to "15 Menit").forEach { (minutes, label) ->
                                     val isSelected = uiState.lockTimeoutMinutes == minutes
                                     FilterChip(
                                         selected = isSelected,
@@ -758,6 +759,23 @@ fun ProfileScreen(
                                     )
                                 }
                             }
+                            if (uiState.lockTimeoutMinutes == 0) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "ℹ️ Mode Langsung: Aplikasi langsung terkunci seketika saat diminimalkan atau layar mati.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            FuelSecondaryButton(
+                                text = "Uji Kunci Aplikasi Sekarang",
+                                leadingIcon = Icons.Default.Lock,
+                                onClick = {
+                                    viewModel.onEvent(ProfileUiEvent.LockAppNow)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
 

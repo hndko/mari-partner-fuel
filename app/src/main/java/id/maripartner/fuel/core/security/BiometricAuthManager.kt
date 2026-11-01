@@ -10,6 +10,9 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 enum class BiometricHardwareStatus {
     AVAILABLE,
@@ -25,6 +28,9 @@ object BiometricAuthManager {
     private const val KEY_TIMEOUT_MINUTES = "lock_timeout_minutes"
     private const val KEY_LAST_PAUSED = "last_paused_timestamp"
     private const val KEY_IS_LOCKED = "is_app_locked"
+
+    private val _isLockedFlow = MutableStateFlow(false)
+    val isLockedFlow: StateFlow<Boolean> = _isLockedFlow.asStateFlow()
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -115,12 +121,30 @@ object BiometricAuthManager {
     }
 
     fun isAppLocked(context: Context): Boolean {
-        if (!isBiometricEnabled(context)) return false
-        return getPrefs(context).getBoolean(KEY_IS_LOCKED, false)
+        if (!isBiometricEnabled(context)) {
+            _isLockedFlow.value = false
+            return false
+        }
+        val locked = getPrefs(context).getBoolean(KEY_IS_LOCKED, false)
+        if (_isLockedFlow.value != locked) {
+            _isLockedFlow.value = locked
+        }
+        return locked
     }
 
     fun setAppLocked(context: Context, locked: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_IS_LOCKED, locked).apply()
+        _isLockedFlow.value = locked
+    }
+
+    /**
+     * Mengunci aplikasi seketika untuk uji coba keamanan atau proteksi instan.
+     */
+    fun lockNow(context: Context) {
+        if (!isBiometricEnabled(context)) {
+            setBiometricEnabled(context, true)
+        }
+        setAppLocked(context, true)
     }
 
     fun onAppPaused(context: Context) {
@@ -136,12 +160,19 @@ object BiometricAuthManager {
         }
 
         val lastPaused = getPrefs(context).getLong(KEY_LAST_PAUSED, 0L)
+        val timeoutMinutes = getTimeoutMinutes(context)
+
+        // Jika timeout = 0 (Langsung) dan aplikasi sempat di-pause, kunci seketika
+        if (timeoutMinutes == 0 && lastPaused > 0L) {
+            setAppLocked(context, true)
+            return
+        }
+
         if (lastPaused == 0L) {
             // First run or clean state
             return
         }
 
-        val timeoutMinutes = getTimeoutMinutes(context)
         val elapsedMillis = System.currentTimeMillis() - lastPaused
         val timeoutMillis = timeoutMinutes * 60 * 1000L
 

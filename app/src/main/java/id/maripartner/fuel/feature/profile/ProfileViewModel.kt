@@ -43,6 +43,7 @@ class ProfileViewModel(
             is ProfileUiEvent.ToggleReminderNotification -> toggleReminder(event.enabled)
             is ProfileUiEvent.ToggleBiometricLock -> toggleBiometric(event.enabled)
             is ProfileUiEvent.SetLockTimeout -> setLockTimeout(event.minutes)
+            is ProfileUiEvent.LockAppNow -> lockAppNow()
             is ProfileUiEvent.ToggleSpbuReminder -> toggleSpbuReminder(event.enabled)
             is ProfileUiEvent.UpdateLocationPermission -> _uiState.update { it.copy(hasLocationPermission = event.granted) }
             is ProfileUiEvent.SetEditDialogVisible -> _uiState.update { it.copy(showEditDialog = event.visible) }
@@ -232,6 +233,11 @@ class ProfileViewModel(
                 successMessage = "Waktu kunci otomatis diubah."
             )
         }
+    }
+
+    private fun lockAppNow() {
+        val appContext = MariPartnerFuelApp.instance
+        BiometricAuthManager.lockNow(appContext)
     }
 
     private fun toggleSpbuReminder(enabled: Boolean) {

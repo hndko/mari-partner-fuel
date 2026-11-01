@@ -117,30 +117,31 @@ Deno.serve(async (req) => {
 
     let checkoutUrl: string | null = null;
     let qrisImageUrl: string | null = null;
+    let providerPaymentId: string | null = null;
 
     // 4. Integrasi Provider Spesifik
     if (payload.provider === "qrispy") {
-      const qrispyApiKey = Deno.env.get("QRISPY_API_KEY");
-      if (qrispyApiKey) {
+      const qrispyApiToken = Deno.env.get("QRISPY_API_TOKEN") ?? Deno.env.get("QRISPY_API_KEY");
+      if (qrispyApiToken) {
         // Panggil endpoint resmi QRISpy: POST https://api.qrispy.id/api/payment/qris/generate
         try {
           const qrisResponse = await fetch("https://api.qrispy.id/api/payment/qris/generate", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-API-Token": qrispyApiKey,
+              "X-API-Token": qrispyApiToken,
             },
             body: JSON.stringify({
-              amount: plan.price_idr,
-              partner_reference_no: paymentReference,
-              customer_id: user.id,
-              validity_period: 900, // 15 menit
+              amount: finalPriceIdr,
+              payment_reference: paymentReference,
+              return_url: "https://mari-partner-fuel.app/payment-return",
             }),
           });
           const qrisData = await qrisResponse.json();
           if (qrisData?.data) {
-            checkoutUrl = qrisData.data.checkout_url ?? null;
-            qrisImageUrl = qrisData.data.qr_image_url ?? qrisData.data.qr_string ?? null;
+            providerPaymentId = qrisData.data.qris_id ?? null;
+            checkoutUrl = qrisData.data.return_url ?? null;
+            qrisImageUrl = qrisData.data.qris_image_url ?? qrisData.data.qris_image_base64 ?? null;
           }
         } catch (_e) {
           // Fallback ke simulasi sandbox jika offline/jaringan terkendala
@@ -157,6 +158,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await adminClient.from("payment_transactions").insert({
       user_id: user.id,
       provider: payload.provider,
+      provider_payment_id: providerPaymentId,
       payment_reference: paymentReference,
       amount_idr: finalPriceIdr,
       currency: "IDR",

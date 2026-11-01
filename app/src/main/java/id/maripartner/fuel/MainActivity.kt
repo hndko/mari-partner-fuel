@@ -7,10 +7,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import id.maripartner.fuel.core.designsystem.component.BiometricLockOverlay
 import id.maripartner.fuel.core.designsystem.theme.MariPartnerFuelTheme
 import id.maripartner.fuel.core.navigation.AppNavHost
 import id.maripartner.fuel.core.security.BiometricAuthManager
+import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
 
@@ -21,6 +25,17 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
 
         val startRoute = intent.getStringExtra("start_route") ?: id.maripartner.fuel.core.navigation.NavRoute.Splash.route
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                BiometricAuthManager.isLockedFlow.collect { locked ->
+                    isAppLockedState = locked
+                    if (locked) {
+                        requestBiometricUnlock()
+                    }
+                }
+            }
+        }
 
         setContent {
             MariPartnerFuelTheme {
