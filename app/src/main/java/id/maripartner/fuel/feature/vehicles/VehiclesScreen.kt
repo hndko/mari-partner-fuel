@@ -50,6 +50,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -193,36 +195,20 @@ fun VehiclesScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "GARASI",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                letterSpacing = 1.2.sp
-                                            ),
-                                            color = Color(0xFF67E8F9)
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = Color.White.copy(alpha = 0.22f)
-                                        ) {
-                                            Text(
-                                                text = "ARMADA",
-                                                color = Color.White,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
-                                            )
-                                        }
-                                    }
                                     Text(
                                         text = "Kendaraan Saya",
                                         style = MaterialTheme.typography.titleLarge.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                            color = Color.White,
+                                            fontSize = 22.sp
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Garasi armada & pantau konsumsi BBM",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = Color.White.copy(alpha = 0.82f),
+                                            fontSize = 12.sp
                                         )
                                     )
                                 }
@@ -369,30 +355,35 @@ fun VehiclesScreen(
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 6.dp
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .widthIn(max = 760.dp)
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 18.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            VehicleFilterSection(
-                                searchQuery = searchQuery,
-                                onSearchQueryChange = { searchQuery = it },
-                                activeTab = uiState.filterTab,
-                                onTabSelected = { viewModel.onEvent(VehicleUiEvent.SetFilterTab(it)) },
-                                activeCount = uiState.vehicles.count { !it.isArchived },
-                                archivedCount = uiState.vehicles.count { it.isArchived },
-                                totalCount = uiState.vehicles.size
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .widthIn(max = 760.dp)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 18.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                VehicleFilterSection(
+                                    searchQuery = searchQuery,
+                                    onSearchQueryChange = { searchQuery = it },
+                                    activeTab = uiState.filterTab,
+                                    onTabSelected = { viewModel.onEvent(VehicleUiEvent.SetFilterTab(it)) },
+                                    activeCount = uiState.vehicles.count { !it.isArchived },
+                                    archivedCount = uiState.vehicles.count { it.isArchived },
+                                    totalCount = uiState.vehicles.size
+                                )
 
-                            Spacer(modifier = Modifier.height(2.dp))
+                                Spacer(modifier = Modifier.height(2.dp))
 
-                            Text(
-                                text = "Daftar Armada (${displayedVehicles.size})",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                                Text(
+                                    text = "Daftar Armada (${displayedVehicles.size})",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                 }
@@ -602,25 +593,45 @@ private fun VehicleFilterSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Search bar
-        FuelTextField(
+        // Search bar (Soft Pill GoPay Style)
+        TextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            label = "PENCARIAN KENDARAAN",
-            placeholder = "Cari nama, plat nomor, atau merek...",
-            leadingIcon = Icons.Default.Search,
+            placeholder = {
+                Text(
+                    text = "Cari nama, plat nomor, atau merek...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF94A3B8)
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Cari",
+                    tint = Color(0xFF64748B)
+                )
+            },
             trailingIcon = if (searchQuery.isNotBlank()) {
                 {
                     IconButton(onClick = { onSearchQueryChange("") }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = "Hapus Pencarian",
-                            tint = MariMutedLight,
-                            modifier = Modifier.size(18.dp)
+                            tint = Color(0xFF64748B)
                         )
                     }
                 }
-            } else null
+            } else null,
+            shape = RoundedCornerShape(24.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFFF1F5F9),
+                unfocusedContainerColor = Color(0xFFF8FAFC),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent
+            ),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
 
         // Filter Pills Row
@@ -702,12 +713,18 @@ private fun VehicleCard(
         VehicleType.OTHER -> Icons.Default.DirectionsCar
     }
 
-    FuelCard(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 16.dp,
-        contentPadding = 18.dp
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.05f))
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp)
+        ) {
             // Header: Icon + Info Kendaraan + Status Chip
             Row(
                 modifier = Modifier.fillMaxWidth(),

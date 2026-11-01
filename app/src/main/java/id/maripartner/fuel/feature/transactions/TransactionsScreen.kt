@@ -56,7 +56,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,6 +66,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -185,16 +188,6 @@ fun TransactionsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToCreate,
-                containerColor = MariPrimaryBlue,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Catat BBM")
-            }
-        },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         Box(
@@ -238,36 +231,20 @@ fun TransactionsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "AKTIVITAS",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                letterSpacing = 1.2.sp
-                                            ),
-                                            color = Color(0xFF67E8F9)
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = Color.White.copy(alpha = 0.22f)
-                                        ) {
-                                            Text(
-                                                text = "BBM",
-                                                color = Color.White,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
-                                            )
-                                        }
-                                    }
                                     Text(
                                         text = "Riwayat Transaksi",
                                         style = MaterialTheme.typography.titleLarge.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                            color = Color.White,
+                                            fontSize = 22.sp
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Aktivitas pengeluaran & pengisian BBM",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = Color.White.copy(alpha = 0.82f),
+                                            fontSize = 12.sp
                                         )
                                     )
                                 }
@@ -473,128 +450,140 @@ fun TransactionsScreen(
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 6.dp
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .widthIn(max = 760.dp)
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 18.dp)
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            // Kolom Pencarian Cepat
-                            OutlinedTextField(
-                                value = uiState.filter.query,
-                                onValueChange = { viewModel.onEvent(TransactionUiEvent.QueryChanged(it)) },
-                                placeholder = {
-                                    Text(
-                                        text = "Cari SPBU, jenis BBM, nominal...",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MariMutedLight
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Search,
-                                        contentDescription = "Cari",
-                                        tint = MariMutedLight
-                                    )
-                                },
-                                trailingIcon = {
-                                    if (uiState.filter.query.isNotBlank()) {
-                                        IconButton(onClick = { viewModel.onEvent(TransactionUiEvent.QueryChanged("")) }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Clear,
-                                                contentDescription = "Hapus Pencarian",
-                                                tint = MariMutedLight
-                                            )
+                            Column(
+                                modifier = Modifier
+                                    .widthIn(max = 760.dp)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 18.dp)
+                            ) {
+                                // Kolom Pencarian Cepat (Soft Pill GoPay Style)
+                                TextField(
+                                    value = uiState.filter.query,
+                                    onValueChange = { viewModel.onEvent(TransactionUiEvent.QueryChanged(it)) },
+                                    placeholder = {
+                                        Text(
+                                            text = "Cari SPBU, jenis BBM, nominal...",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF94A3B8)
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Search,
+                                            contentDescription = "Cari",
+                                            tint = Color(0xFF64748B)
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        if (uiState.filter.query.isNotBlank()) {
+                                            IconButton(onClick = { viewModel.onEvent(TransactionUiEvent.QueryChanged("")) }) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Clear,
+                                                    contentDescription = "Hapus Pencarian",
+                                                    tint = Color(0xFF64748B)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color(0xFFF1F5F9),
+                                        unfocusedContainerColor = Color(0xFFF8FAFC),
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        disabledIndicatorColor = Color.Transparent
+                                    ),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                // Baris Filter Kendaraan (Soft Capsule Pills)
+                                if (uiState.availableVehicles.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        item {
+                                            val isAllSelected = uiState.filter.vehicleId == null
+                                            Surface(
+                                                shape = RoundedCornerShape(20.dp),
+                                                color = if (isAllSelected) MariPrimaryBlue.copy(alpha = 0.12f) else Color(0xFFF1F5F9),
+                                                border = if (isAllSelected) BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.4f)) else null,
+                                                modifier = Modifier.clickable { viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(null)) }
+                                            ) {
+                                                Text(
+                                                    text = "Semua Kendaraan",
+                                                    style = MaterialTheme.typography.labelMedium.copy(
+                                                        fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (isAllSelected) MariPrimaryBlue else Color(0xFF475569)
+                                                    ),
+                                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                                )
+                                            }
+                                        }
+                                        items(uiState.availableVehicles) { vehicle ->
+                                            val isSelected = uiState.filter.vehicleId == vehicle.id
+                                            Surface(
+                                                shape = RoundedCornerShape(20.dp),
+                                                color = if (isSelected) MariPrimaryBlue.copy(alpha = 0.12f) else Color(0xFFF1F5F9),
+                                                border = if (isSelected) BorderStroke(1.dp, MariPrimaryBlue.copy(alpha = 0.4f)) else null,
+                                                modifier = Modifier.clickable {
+                                                    val newId = if (isSelected) null else vehicle.id
+                                                    viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(newId))
+                                                }
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.DirectionsCar,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(15.dp),
+                                                        tint = if (isSelected) MariPrimaryBlue else Color(0xFF64748B)
+                                                    )
+                                                    Text(
+                                                        text = vehicle.name,
+                                                        style = MaterialTheme.typography.labelMedium.copy(
+                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                            color = if (isSelected) MariPrimaryBlue else Color(0xFF475569)
+                                                        )
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
-                                },
-                                shape = RoundedCornerShape(16.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MariPrimaryBlue,
-                                    unfocusedBorderColor = Color.Black.copy(alpha = 0.08f),
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                                ),
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            // Baris Filter Kendaraan
-                            if (uiState.availableVehicles.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(10.dp))
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    item {
-                                        FilterChip(
-                                            selected = uiState.filter.vehicleId == null,
-                                            onClick = { viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(null)) },
-                                            label = { Text("Semua Kendaraan") },
-                                            colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = MariPrimaryBlue.copy(alpha = 0.12f),
-                                                selectedLabelColor = MariPrimaryBlue
-                                            ),
-                                            border = FilterChipDefaults.filterChipBorder(
-                                                enabled = true,
-                                                selected = uiState.filter.vehicleId == null,
-                                                borderColor = if (uiState.filter.vehicleId == null) MariPrimaryBlue else Color.Black.copy(alpha = 0.08f)
-                                            )
-                                        )
-                                    }
-                                    items(uiState.availableVehicles) { vehicle ->
-                                        val isSelected = uiState.filter.vehicleId == vehicle.id
-                                        FilterChip(
-                                            selected = isSelected,
-                                            onClick = {
-                                                val newId = if (isSelected) null else vehicle.id
-                                                viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(newId))
-                                            },
-                                            label = { Text(vehicle.name) },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = Icons.Default.DirectionsCar,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = if (isSelected) MariPrimaryBlue else MariMutedLight
-                                                )
-                                            },
-                                            colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = MariPrimaryBlue.copy(alpha = 0.12f),
-                                                selectedLabelColor = MariPrimaryBlue
-                                            ),
-                                            border = FilterChipDefaults.filterChipBorder(
-                                                enabled = true,
-                                                selected = isSelected,
-                                                borderColor = if (isSelected) MariPrimaryBlue else Color.Black.copy(alpha = 0.08f)
-                                            )
-                                        )
-                                    }
                                 }
-                            }
 
-                            // Info Header Jumlah Transaksi
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Semua Catatan (${uiState.transactions.size})",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = uiState.filter.sortOrder.displayName,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                    color = MariPrimaryBlue
-                                )
+                                // Info Header Jumlah Transaksi
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Semua Catatan (${uiState.transactions.size})",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = uiState.filter.sortOrder.displayName,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                        color = MariPrimaryBlue
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                // 3. Status Konten: Loading, Empty, atau Daftar Transaksi
+                // 3. Status Konten: Loading, Empty, atau Grouped Activity List Card
                 when {
                     uiState.isLoading && uiState.transactions.isEmpty() -> {
                         item {
@@ -628,55 +617,73 @@ fun TransactionsScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .offset(y = (-18).dp)
+                                    .offset(y = (-18).dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                if (uiState.filter.isFilterActive) {
-                                    FuelEmptyState(
-                                        title = "Tidak Ada Hasil Pencarian",
-                                        subtitle = "Tidak ditemukan transaksi yang cocok dengan kata kunci atau filter yang dipilih.",
-                                        icon = Icons.Default.FilterList,
-                                        actionButtonText = "Reset Filter",
-                                        onActionClick = {
-                                            viewModel.onEvent(TransactionUiEvent.QueryChanged(""))
-                                            viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(null))
-                                            viewModel.onEvent(TransactionUiEvent.FuelTypeFilterChanged(null))
-                                        }
-                                    )
-                                } else {
-                                    FuelEmptyState(
-                                        title = "Belum Ada Catatan Transaksi",
-                                        subtitle = "Mulai pantau pengeluaran bahan bakar Anda dengan memindai struk SPBU atau mencatat secara manual.",
-                                        icon = Icons.AutoMirrored.Filled.ReceiptLong,
-                                        actionButtonText = "＋ Catat BBM Sekarang",
-                                        onActionClick = onNavigateToCreate
-                                    )
+                                Box(modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
+                                    if (uiState.filter.isFilterActive) {
+                                        FuelEmptyState(
+                                            title = "Tidak Ada Hasil Pencarian",
+                                            subtitle = "Tidak ditemukan transaksi yang cocok dengan kata kunci atau filter yang dipilih.",
+                                            icon = Icons.Default.FilterList,
+                                            actionButtonText = "Reset Filter",
+                                            onActionClick = {
+                                                viewModel.onEvent(TransactionUiEvent.QueryChanged(""))
+                                                viewModel.onEvent(TransactionUiEvent.VehicleFilterChanged(null))
+                                                viewModel.onEvent(TransactionUiEvent.FuelTypeFilterChanged(null))
+                                            }
+                                        )
+                                    } else {
+                                        FuelEmptyState(
+                                            title = "Belum Ada Catatan Transaksi",
+                                            subtitle = "Mulai pantau pengeluaran bahan bakar Anda dengan memindai struk SPBU atau mencatat secara manual.",
+                                            icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                                            actionButtonText = "＋ Catat BBM Sekarang",
+                                            onActionClick = onNavigateToCreate
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
 
                     else -> {
-                        items(
-                            items = uiState.transactions,
-                            key = { it.id }
-                        ) { transaction ->
-                            val vehicle = remember(transaction.vehicleId, uiState.availableVehicles) {
-                                uiState.availableVehicles.firstOrNull { it.id == transaction.vehicleId }
-                            }
+                        // Grouped Activity List Card ala GoPay
+                        item {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .offset(y = (-18).dp)
-                                    .padding(horizontal = 20.dp, vertical = 5.dp),
+                                    .padding(horizontal = 20.dp, vertical = 4.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Box(modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
-                                    TransactionItemCard(
-                                        transaction = transaction,
-                                        vehicleName = vehicle?.name ?: "Kendaraan",
-                                        licensePlate = vehicle?.licensePlate,
-                                        onClick = { onNavigateToDetail(transaction.id) }
-                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color.White,
+                                        shadowElevation = 2.dp,
+                                        border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.05f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            uiState.transactions.forEachIndexed { index, transaction ->
+                                                val vehicle = uiState.availableVehicles.firstOrNull { it.id == transaction.vehicleId }
+                                                TransactionRowItem(
+                                                    transaction = transaction,
+                                                    vehicleName = vehicle?.name ?: "Kendaraan",
+                                                    licensePlate = vehicle?.licensePlate,
+                                                    onClick = { onNavigateToDetail(transaction.id) }
+                                                )
+                                                if (index < uiState.transactions.lastIndex) {
+                                                    HorizontalDivider(
+                                                        color = Color.Black.copy(alpha = 0.05f),
+                                                        thickness = 0.8.dp,
+                                                        modifier = Modifier.padding(start = 76.dp, end = 16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -741,187 +748,135 @@ fun TransactionsScreen(
 }
 
 /**
- * Kartu Item Transaksi Modern Sesuai Design System Mari Partner
+ * Baris Item Transaksi Ramping Ala GoPay Activity List
  */
 @Composable
-private fun TransactionItemCard(
+private fun TransactionRowItem(
     transaction: FuelTransaction,
     vehicleName: String,
     licensePlate: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    FuelCard(
+    val isOcr = transaction.scanStatus == "ocr" || transaction.scanStatus == "ai" || transaction.scanStatus == "ocr_review"
+    val iconBgColor = if (isOcr) Color(0xFFEFF6FF) else Color(0xFFF1F5F9)
+    val iconTint = if (isOcr) MariPrimaryBlue else Color(0xFF475569)
+
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
+        // 1. Squircle Icon Container
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .size(46.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(iconBgColor),
+            contentAlignment = Alignment.Center
         ) {
-            // Baris Atas: Tanggal Transaksi & Sumber (AI OCR / Manual)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = DateUtils.formatDateTime(transaction.transactionAt),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MariMutedLight
+            Icon(
+                imageVector = Icons.Default.LocalGasStation,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        // 2. Info Detail (SPBU, Kendaraan & BBM, Tanggal)
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = transaction.stationName?.takeIf { it.isNotBlank() } ?: "SPBU Umum",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MariTextLight,
+                    fontSize = 15.sp
+                ),
+                maxLines = 1
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            val fuelAndLiters = buildString {
+                append(vehicleName)
+                if (!transaction.fuelType.isNullOrBlank()) {
+                    append(" • ${transaction.fuelType}")
+                }
+                transaction.volumeLiters?.let { liters ->
+                    append(" (%.1f L)".format(liters))
+                }
+                if (transaction.odometerKm != null && transaction.odometerKm > 0) {
+                    append(" • ${transaction.odometerKm} km")
+                }
+            }
+            Text(
+                text = fuelAndLiters,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = MariMutedLight,
+                    fontSize = 12.sp
+                ),
+                maxLines = 1
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = DateUtils.formatDateTime(transaction.transactionAt),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = Color(0xFF94A3B8),
+                    fontSize = 11.sp
                 )
+            )
+        }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (transaction.scanStatus == "ocr" || transaction.scanStatus == "ai" || transaction.scanStatus == "ocr_review") {
-                        FuelStatusChip(
-                            text = "AI OCR",
-                            type = FuelChipType.AiTag
-                        )
-                    } else {
-                        FuelStatusChip(
-                            text = "Manual",
-                            type = FuelChipType.Neutral
-                        )
-                    }
-                }
-            }
+        Spacer(modifier = Modifier.width(10.dp))
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Baris Tengah: Kendaraan & Nominal Pengeluaran
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Info Kendaraan
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MariPrimaryBlue.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DirectionsCar,
-                            contentDescription = null,
-                            tint = MariPrimaryBlue,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Column {
-                        Text(
-                            text = vehicleName,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                color = MariTextLight
-                            )
-                        )
-                        if (!licensePlate.isNullOrBlank()) {
-                            Text(
-                                text = licensePlate,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MariMutedLight
-                            )
-                        }
-                    }
-                }
-
-                // Nominal Total
-                Text(
-                    text = CurrencyFormatter.formatIdr(transaction.totalAmountIdr),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MariPrimaryBlue
-                    )
+        // 3. Nominal Pengeluaran & Status Tag Mini
+        Column(
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(
+                text = CurrencyFormatter.formatIdr(transaction.totalAmountIdr),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MariTextLight,
+                    fontSize = 15.sp
                 )
-            }
+            )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Baris Bawah: SPBU, Volume & BBM Chip
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Lokasi / SPBU
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isOcr) Color(0xFFEFF6FF) else Color(0xFFF1F5F9)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.LocalGasStation,
-                        contentDescription = null,
-                        tint = MariMutedLight,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = transaction.stationName?.takeIf { it.isNotBlank() } ?: "SPBU Umum",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MariMutedLight,
-                        maxLines = 1
+                        text = if (isOcr) "AI Scan" else "Manual",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 10.sp,
+                            color = if (isOcr) MariPrimaryBlue else Color(0xFF64748B)
+                        ),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
 
-                // Volume & Jenis BBM
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    transaction.volumeLiters?.let { liters ->
-                        Text(
-                            text = "%.1f L".format(liters),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = MariTextLight
-                        )
-                    }
-
-                    if (!transaction.fuelType.isNullOrBlank()) {
-                        FuelStatusChip(
-                            text = transaction.fuelType,
-                            type = FuelChipType.Info
-                        )
-                    }
-                }
-            }
-
-            // Odometer jika tersedia
-            if (transaction.odometerKm != null && transaction.odometerKm > 0) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Speed,
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                        tint = MariMutedLight
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Odometer: ${transaction.odometerKm} km",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MariMutedLight
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = Color(0xFFCBD5E1),
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }
