@@ -3,6 +3,7 @@ package id.maripartner.fuel.feature.owner
 import id.maripartner.fuel.domain.model.owner.AdminUserSummary
 import id.maripartner.fuel.domain.model.owner.OwnerPaymentTx
 import id.maripartner.fuel.domain.model.owner.OwnerPlanItem
+import id.maripartner.fuel.domain.model.FuelBrandPrice
 import id.maripartner.fuel.domain.model.owner.SaasAdminMetrics
 import id.maripartner.fuel.feature.owner.navigation.OwnerTab
 
@@ -34,7 +35,12 @@ data class OwnerConsoleUiState(
     val editPlanPromoPriceIdr: String = "",
     val editPlanPromoMaxPerUser: String = "",
     val editPlanPromoLabel: String = "PROMO SPESIAL",
-    val isSubmittingPlanEdit: Boolean = false
+    val isSubmittingPlanEdit: Boolean = false,
+    // State Manajemen Tarif BBM Nasional
+    val fuelPrices: List<FuelBrandPrice> = emptyList(),
+    val selectedFuelPriceForEdit: FuelBrandPrice? = null,
+    val editFuelPricePerLiterIdr: String = "",
+    val isSubmittingFuelPriceEdit: Boolean = false
 ) {
     val filteredUsers: List<AdminUserSummary>
         get() = if (searchQuery.isBlank()) {
@@ -75,6 +81,12 @@ sealed interface OwnerConsoleUiEvent {
     data class ChangeEditPlanPromoMaxPerUser(val max: String) : OwnerConsoleUiEvent
     data class ChangeEditPlanPromoLabel(val label: String) : OwnerConsoleUiEvent
     data object SubmitEditPlan : OwnerConsoleUiEvent
+
+    // Event Manajemen Tarif BBM Nasional
+    data class OpenEditFuelPriceDialog(val fuelPrice: FuelBrandPrice) : OwnerConsoleUiEvent
+    data object DismissEditFuelPriceDialog : OwnerConsoleUiEvent
+    data class ChangeEditFuelPrice(val price: String) : OwnerConsoleUiEvent
+    data object SubmitEditFuelPrice : OwnerConsoleUiEvent
 
     data object DismissMessages : OwnerConsoleUiEvent
 }

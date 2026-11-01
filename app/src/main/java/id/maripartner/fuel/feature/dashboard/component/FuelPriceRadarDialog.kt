@@ -53,6 +53,7 @@ import id.maripartner.fuel.domain.usecase.fuel.CalculateFuelSavingsArbitrageUseC
 
 @Composable
 fun FuelPriceRadarDialog(
+    fuelPrices: List<FuelBrandPrice> = IndonesianFuelMarketData.currentPrices,
     onDismiss: () -> Unit
 ) {
     val grades = listOf("RON 92", "RON 95", "RON 98", "RON 90", "Diesel")
@@ -68,8 +69,9 @@ fun FuelPriceRadarDialog(
 
     val arbitrageUseCase = remember { CalculateFuelSavingsArbitrageUseCase() }
 
-    val filteredPrices = remember(selectedGrade) {
-        IndonesianFuelMarketData.currentPrices.filter { it.gradeCategory == selectedGrade }
+    val filteredPrices = remember(selectedGrade, fuelPrices) {
+        val source = if (fuelPrices.isNotEmpty()) fuelPrices else IndonesianFuelMarketData.currentPrices
+        source.filter { it.gradeCategory == selectedGrade }
     }
 
     AlertDialog(

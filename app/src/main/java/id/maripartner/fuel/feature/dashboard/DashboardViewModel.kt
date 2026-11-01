@@ -23,6 +23,7 @@ import id.maripartner.fuel.domain.repository.VehicleRepository
 import id.maripartner.fuel.domain.usecase.analytics.DetectFuelConsumptionAnomalyUseCase
 import id.maripartner.fuel.domain.usecase.budget.CalculateFuelBudgetUseCase
 import id.maripartner.fuel.domain.usecase.dashboard.GetDashboardSummaryUseCase
+import id.maripartner.fuel.domain.usecase.fuel.GetFuelPricesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,7 +44,8 @@ class DashboardViewModel(
     private val authRepository: AuthRepository = AuthRepositoryImpl(),
     private val subscriptionRepository: SubscriptionRepository = SubscriptionRepositoryImpl(),
     private val detectFuelConsumptionAnomalyUseCase: DetectFuelConsumptionAnomalyUseCase = DetectFuelConsumptionAnomalyUseCase(),
-    private val calculateFuelBudgetUseCase: CalculateFuelBudgetUseCase = CalculateFuelBudgetUseCase()
+    private val calculateFuelBudgetUseCase: CalculateFuelBudgetUseCase = CalculateFuelBudgetUseCase(),
+    private val getFuelPricesUseCase: GetFuelPricesUseCase = GetFuelPricesUseCase()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -186,6 +188,12 @@ class DashboardViewModel(
                 null
             }
 
+            // 8. Ambil data harga BBM nasional dinamis
+            val fuelPrices = when (val fpRes = getFuelPricesUseCase()) {
+                is AppResult.Success -> fpRes.data
+                is AppResult.Error -> emptyList()
+            }
+
             _uiState.update {
                 it.copy(
                     summary = summary,
@@ -195,6 +203,7 @@ class DashboardViewModel(
                     fuelAnomalyResult = anomalyResult,
                     fuelBudgetReport = budgetReport,
                     nearestSpbuResult = nearestSpbu,
+                    fuelPrices = fuelPrices,
                     userName = displayName,
                     isProUser = isPro,
                     isExpiringSoon = isExpiringSoon,

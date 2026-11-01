@@ -1,5 +1,6 @@
 package id.maripartner.fuel.feature.transactions
 
+import id.maripartner.fuel.domain.model.FuelBrandPrice
 import id.maripartner.fuel.domain.model.FuelTransaction
 import id.maripartner.fuel.domain.model.SortOrder
 import id.maripartner.fuel.domain.model.TransactionFilter
@@ -50,6 +51,7 @@ data class TransactionFormState(
     val isSuccess: Boolean = false,
     val vehicleError: String? = null,
     val totalError: String? = null,
+    val activeFuelPrices: List<FuelBrandPrice> = emptyList(),
     val errorMessage: String? = null,
     val actionMessage: String? = null
 ) {

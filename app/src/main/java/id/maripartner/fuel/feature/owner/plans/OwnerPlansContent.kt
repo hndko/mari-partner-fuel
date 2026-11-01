@@ -2,6 +2,7 @@ package id.maripartner.fuel.feature.owner.plans
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,12 +51,16 @@ import id.maripartner.fuel.core.common.util.CurrencyFormatter
 import id.maripartner.fuel.core.designsystem.component.FuelChipType
 import id.maripartner.fuel.core.designsystem.component.FuelStatusChip
 import id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
+import id.maripartner.fuel.domain.model.FuelBrandPrice
 import id.maripartner.fuel.domain.model.owner.OwnerPlanItem
+import androidx.compose.material.icons.filled.LocalGasStation
 
 @Composable
 fun OwnerPlansContent(
     plans: List<OwnerPlanItem>,
+    fuelPrices: List<FuelBrandPrice> = emptyList(),
     onEditPlanClicked: (OwnerPlanItem) -> Unit,
+    onEditFuelPriceClicked: (FuelBrandPrice) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -89,6 +94,24 @@ fun OwnerPlansContent(
                     plan = plan,
                     onEditClicked = { onEditPlanClicked(plan) }
                 )
+            }
+        }
+
+        // 4. Tarif BBM Nasional Section
+        item {
+            FuelPricesSectionHeader(count = fuelPrices.size)
+        }
+
+        if (fuelPrices.isNotEmpty()) {
+            val groupedByBrand = fuelPrices.groupBy { it.brand }
+            groupedByBrand.forEach { (brand, prices) ->
+                item {
+                    FuelBrandCard(
+                        brand = brand,
+                        prices = prices,
+                        onEditFuelPriceClicked = onEditFuelPriceClicked
+                    )
+                }
             }
         }
 
@@ -731,6 +754,195 @@ private fun EmptyPlansCard() {
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun FuelPricesSectionHeader(count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocalGasStation,
+                contentDescription = null,
+                tint = MariPrimaryBlue,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = "Tarif BBM Nasional Terkini",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            )
+        }
+
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MariPrimaryBlue.copy(alpha = 0.12f)
+        ) {
+            Text(
+                text = "$count Varian",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MariPrimaryBlue
+                ),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FuelBrandCard(
+    brand: String,
+    prices: List<FuelBrandPrice>,
+    onEditFuelPriceClicked: (FuelBrandPrice) -> Unit
+) {
+    val brandColor = when (brand.lowercase()) {
+        "pertamina" -> Color(0xFF0284C7)
+        "shell" -> Color(0xFFD97706)
+        "bp" -> Color(0xFF059669)
+        "vivo" -> Color(0xFF6366F1)
+        else -> MariPrimaryBlue
+    }
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Header Brand
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(brandColor)
+                    )
+                    Text(
+                        text = "SPBU $brand",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
+                    )
+                }
+
+                Text(
+                    text = "${prices.size} Jenis BBM",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+            // Daftar Varian BBM
+            prices.forEach { fuel ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = fuel.fuelName,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                            if (fuel.isSubsidized) {
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0xFFFEF3C7)
+                                ) {
+                                    Text(
+                                        text = "SUBSIDI",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFB45309)
+                                        ),
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = fuel.gradeCategory,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "${CurrencyFormatter.formatIdr(fuel.pricePerLiterIdr)}/L",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MariPrimaryBlue
+                            )
+                        )
+
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onEditFuelPriceClicked(fuel) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Ubah Tarif",
+                                    tint = MariPrimaryBlue,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Text(
+                                    text = "Ubah",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MariPrimaryBlue,
+                                        fontSize = 11.sp
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

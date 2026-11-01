@@ -547,6 +547,39 @@ fun TransactionFormScreen(
                             )
                         }
 
+                        // Hint Tarif BBM Dinamis Terkini
+                        if (state.fuelType.isNotBlank() && state.activeFuelPrices.isNotEmpty()) {
+                            val matchedPrice = state.activeFuelPrices.firstOrNull { it.fuelName.equals(state.fuelType, ignoreCase = true) }
+                                ?: state.activeFuelPrices.firstOrNull { it.fuelName.contains(state.fuelType, ignoreCase = true) }
+                            if (matchedPrice != null) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MariPrimaryBlue.copy(alpha = 0.08f))
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Tarif ${matchedPrice.brand} ${matchedPrice.fuelName}: ${CurrencyFormatter.formatIdr(matchedPrice.pricePerLiterIdr)}/L",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
+                                        color = MariPrimaryBlue
+                                    )
+                                    if (state.pricePerLiterRaw != matchedPrice.pricePerLiterIdr.toString()) {
+                                        Text(
+                                            text = "Gunakan",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                                            color = MariPrimaryBlue,
+                                            modifier = Modifier.clickable {
+                                                viewModel.onEvent(TransactionFormEvent.PricePerLiterChanged(matchedPrice.pricePerLiterIdr.toString()))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         // E. Peringatan Diskrepansi (Jika ada selisih perhitungan)
                         state.discrepancyWarning?.let { warning ->
                             Row(

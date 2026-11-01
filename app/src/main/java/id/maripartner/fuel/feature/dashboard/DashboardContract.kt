@@ -4,6 +4,7 @@ import id.maripartner.fuel.core.location.NearestSpbuResult
 import id.maripartner.fuel.domain.model.DashboardSummary
 import id.maripartner.fuel.domain.model.FuelAnomalyResult
 import id.maripartner.fuel.domain.model.FuelBudgetReport
+import id.maripartner.fuel.domain.model.FuelBrandPrice
 import id.maripartner.fuel.domain.model.Vehicle
 
 /**
@@ -19,6 +20,7 @@ data class DashboardUiState(
     val nearestSpbuResult: NearestSpbuResult? = null,
     val showBudgetDialog: Boolean = false,
     val showFuelPriceRadarDialog: Boolean = false,
+    val fuelPrices: List<FuelBrandPrice> = emptyList(),
     val userName: String = "Pengemudi",
     val isProUser: Boolean = false,
     val isExpiringSoon: Boolean = false,

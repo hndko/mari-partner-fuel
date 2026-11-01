@@ -5,7 +5,9 @@ data class FuelBrandPrice(
     val fuelName: String,
     val gradeCategory: String, // RON 90, RON 92, RON 95, RON 98, Diesel
     val pricePerLiterIdr: Long,
-    val isSubsidized: Boolean = false
+    val isSubsidized: Boolean = false,
+    val id: String = "",
+    val updatedAt: String? = null
 )
 
 data class FuelSavingsArbitrageResult(

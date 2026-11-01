@@ -339,6 +339,7 @@ fun DashboardScreen(
 
     if (uiState.showFuelPriceRadarDialog) {
         FuelPriceRadarDialog(
+            fuelPrices = uiState.fuelPrices,
             onDismiss = { viewModel.onEvent(DashboardUiEvent.SetShowFuelPriceRadar(false)) }
         )
     }

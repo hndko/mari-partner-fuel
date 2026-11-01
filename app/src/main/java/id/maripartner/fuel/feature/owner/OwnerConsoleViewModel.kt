@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import id.maripartner.fuel.core.common.result.AppResult
 import id.maripartner.fuel.data.repository.SubscriptionRepositoryImpl
 import id.maripartner.fuel.data.repository.owner.OwnerRepositoryImpl
+import id.maripartner.fuel.core.common.util.CurrencyFormatter
+import id.maripartner.fuel.data.repository.FuelPriceRepositoryImpl
+import id.maripartner.fuel.domain.repository.FuelPriceRepository
 import id.maripartner.fuel.domain.repository.SubscriptionRepository
 import id.maripartner.fuel.domain.repository.owner.OwnerRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,10 +19,11 @@ import kotlinx.coroutines.launch
 
 class OwnerConsoleViewModel(
     private val repository: OwnerRepository,
-    private val subscriptionRepository: SubscriptionRepository = SubscriptionRepositoryImpl()
+    private val subscriptionRepository: SubscriptionRepository = SubscriptionRepositoryImpl(),
+    private val fuelPriceRepository: FuelPriceRepository = FuelPriceRepositoryImpl()
 ) : ViewModel() {
 
-    constructor() : this(OwnerRepositoryImpl(), SubscriptionRepositoryImpl())
+    constructor() : this(OwnerRepositoryImpl(), SubscriptionRepositoryImpl(), FuelPriceRepositoryImpl())
 
     private val _uiState = MutableStateFlow(OwnerConsoleUiState())
     val uiState: StateFlow<OwnerConsoleUiState> = _uiState.asStateFlow()
@@ -132,6 +136,29 @@ class OwnerConsoleViewModel(
             is OwnerConsoleUiEvent.SubmitEditPlan -> {
                 submitEditPlan()
             }
+            is OwnerConsoleUiEvent.OpenEditFuelPriceDialog -> {
+                _uiState.update {
+                    it.copy(
+                        selectedFuelPriceForEdit = event.fuelPrice,
+                        editFuelPricePerLiterIdr = event.fuelPrice.pricePerLiterIdr.toString(),
+                        errorMessage = null
+                    )
+                }
+            }
+            is OwnerConsoleUiEvent.DismissEditFuelPriceDialog -> {
+                _uiState.update {
+                    it.copy(
+                        selectedFuelPriceForEdit = null,
+                        isSubmittingFuelPriceEdit = false
+                    )
+                }
+            }
+            is OwnerConsoleUiEvent.ChangeEditFuelPrice -> {
+                _uiState.update { it.copy(editFuelPricePerLiterIdr = event.price) }
+            }
+            is OwnerConsoleUiEvent.SubmitEditFuelPrice -> {
+                submitEditFuelPrice()
+            }
             is OwnerConsoleUiEvent.DismissMessages -> {
                 _uiState.update { it.copy(errorMessage = null, successMessage = null) }
             }
@@ -142,6 +169,18 @@ class OwnerConsoleViewModel(
         loadMetrics(_uiState.value.selectedTimeframe, isRefresh)
         loadPlans()
         loadTransactions()
+        loadFuelPrices()
+    }
+
+    private fun loadFuelPrices() {
+        viewModelScope.launch {
+            when (val res = fuelPriceRepository.getFuelPrices()) {
+                is AppResult.Success -> {
+                    _uiState.update { it.copy(fuelPrices = res.data) }
+                }
+                is AppResult.Error -> { }
+            }
+        }
     }
 
     private fun loadMetrics(timeframe: String, isRefresh: Boolean) {
@@ -290,6 +329,39 @@ class OwnerConsoleViewModel(
                     _uiState.update {
                         it.copy(
                             isSubmittingPlanEdit = false,
+                            errorMessage = result.exception.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+    private fun submitEditFuelPrice() {
+        val fuel = _uiState.value.selectedFuelPriceForEdit ?: return
+        val newPrice = _uiState.value.editFuelPricePerLiterIdr.filter { it.isDigit() }.toLongOrNull()
+        if (newPrice == null || newPrice <= 0) {
+            _uiState.update { it.copy(errorMessage = "Nominal tarif BBM tidak valid.") }
+            return
+        }
+
+        _uiState.update { it.copy(isSubmittingFuelPriceEdit = true, errorMessage = null) }
+
+        viewModelScope.launch {
+            when (val result = fuelPriceRepository.updateFuelPrice(fuel.id, newPrice)) {
+                is AppResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isSubmittingFuelPriceEdit = false,
+                            selectedFuelPriceForEdit = null,
+                            successMessage = "Tarif ${fuel.brand} ${fuel.fuelName} berhasil diperbarui menjadi ${CurrencyFormatter.formatIdr(newPrice)}/L."
+                        )
+                    }
+                    loadFuelPrices()
+                }
+                is AppResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isSubmittingFuelPriceEdit = false,
                             errorMessage = result.exception.message
                         )
                     }

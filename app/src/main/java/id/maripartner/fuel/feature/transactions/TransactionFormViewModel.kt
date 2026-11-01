@@ -11,6 +11,7 @@ import id.maripartner.fuel.domain.model.FuelTransaction
 import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
 import id.maripartner.fuel.domain.usecase.analytics.GetFleetDriverReportUseCase
+import id.maripartner.fuel.domain.usecase.fuel.GetFuelPricesUseCase
 import id.maripartner.fuel.domain.usecase.ocr.ProcessReceiptOcrUseCase
 import id.maripartner.fuel.domain.usecase.transaction.DetectDuplicateTransactionUseCase
 import id.maripartner.fuel.domain.usecase.transaction.EstimateFuelCalculationUseCase
@@ -33,7 +34,8 @@ class TransactionFormViewModel(
     private val processReceiptOcrUseCase: ProcessReceiptOcrUseCase = ProcessReceiptOcrUseCase(),
     private val storageManager: ReceiptStorageManager = ReceiptStorageManager(),
     private val detectDuplicateTransactionUseCase: DetectDuplicateTransactionUseCase = DetectDuplicateTransactionUseCase(),
-    private val getFleetDriverReportUseCase: GetFleetDriverReportUseCase = GetFleetDriverReportUseCase()
+    private val getFleetDriverReportUseCase: GetFleetDriverReportUseCase = GetFleetDriverReportUseCase(),
+    private val getFuelPricesUseCase: GetFuelPricesUseCase = GetFuelPricesUseCase()
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(TransactionFormState())
@@ -41,6 +43,28 @@ class TransactionFormViewModel(
 
     init {
         loadActiveVehicles()
+        loadActiveFuelPrices()
+    }
+
+    private fun loadActiveFuelPrices() {
+        viewModelScope.launch {
+            when (val result = getFuelPricesUseCase()) {
+                is AppResult.Success -> {
+                    val prices = result.data
+                    _formState.update { current ->
+                        val autoPrice = if (current.pricePerLiterRaw.isBlank() && current.fuelType.isNotBlank()) {
+                            getFuelPricesUseCase.findPriceForFuel(current.fuelType, prices)?.toString()
+                        } else null
+                        current.copy(
+                            activeFuelPrices = prices,
+                            pricePerLiterRaw = autoPrice ?: current.pricePerLiterRaw
+                        )
+                    }
+                    verifyDiscrepancy()
+                }
+                is AppResult.Error -> {}
+            }
+        }
     }
 
     private fun loadActiveVehicles() {
@@ -113,14 +137,21 @@ class TransactionFormViewModel(
             is TransactionFormEvent.VehicleSelected -> {
                 val vehicle = _formState.value.availableVehicles.firstOrNull { it.id == event.vehicleId }
                 val defaultFuel = vehicle?.defaultFuelType.orEmpty()
+                val targetFuel = if (_formState.value.fuelType.isBlank()) defaultFuel else _formState.value.fuelType
+                val autoPrice = if (_formState.value.pricePerLiterRaw.isBlank() && targetFuel.isNotBlank()) {
+                    getFuelPricesUseCase.findPriceForFuel(targetFuel, _formState.value.activeFuelPrices)?.toString()
+                } else null
+
                 _formState.update {
                     it.copy(
                         vehicleId = event.vehicleId,
-                        fuelType = if (it.fuelType.isBlank()) defaultFuel else it.fuelType,
+                        fuelType = targetFuel,
+                        pricePerLiterRaw = autoPrice ?: it.pricePerLiterRaw,
                         latestRecordedOdometer = vehicle?.lastOdometerKm,
                         vehicleError = null
                     )
                 }
+                verifyDiscrepancy()
             }
             is TransactionFormEvent.TransactionAtChanged -> {
                 _formState.update { it.copy(transactionAt = event.instant) }
@@ -142,7 +173,18 @@ class TransactionFormViewModel(
                 _formState.update { it.copy(stationName = event.name) }
             }
             is TransactionFormEvent.FuelTypeChanged -> {
-                _formState.update { it.copy(fuelType = event.type) }
+                val autoPrice = getFuelPricesUseCase.findPriceForFuel(event.type, _formState.value.activeFuelPrices)
+                _formState.update {
+                    it.copy(
+                        fuelType = event.type,
+                        pricePerLiterRaw = if (autoPrice != null && (it.pricePerLiterRaw.isBlank() || it.pricePerLiterRaw.toLongOrNull() != null)) {
+                            autoPrice.toString()
+                        } else {
+                            it.pricePerLiterRaw
+                        }
+                    )
+                }
+                verifyDiscrepancy()
             }
             is TransactionFormEvent.OdometerChanged -> {
                 _formState.update { it.copy(odometerKmRaw = event.raw) }

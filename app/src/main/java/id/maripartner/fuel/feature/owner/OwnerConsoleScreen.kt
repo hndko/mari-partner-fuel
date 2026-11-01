@@ -4,7 +4,11 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -140,7 +144,9 @@ fun OwnerConsoleScreen(
                     OwnerTab.PLANS -> {
                         OwnerPlansContent(
                             plans = uiState.plans,
-                            onEditPlanClicked = { viewModel.onEvent(OwnerConsoleUiEvent.OpenEditPlanDialog(it)) }
+                            fuelPrices = uiState.fuelPrices,
+                            onEditPlanClicked = { viewModel.onEvent(OwnerConsoleUiEvent.OpenEditPlanDialog(it)) },
+                            onEditFuelPriceClicked = { viewModel.onEvent(OwnerConsoleUiEvent.OpenEditFuelPriceDialog(it)) }
                         )
                     }
                     OwnerTab.USERS -> {
@@ -207,4 +213,106 @@ fun OwnerConsoleScreen(
             onConfirm = { viewModel.onEvent(OwnerConsoleUiEvent.SubmitGrantPro) }
         )
     }
+
+    // Modal Dialog: Ubah Tarif BBM Nasional
+    val fuelToEdit = uiState.selectedFuelPriceForEdit
+    if (fuelToEdit != null) {
+        EditFuelPriceDialog(
+            fuel = fuelToEdit,
+            priceIdr = uiState.editFuelPricePerLiterIdr,
+            isSubmitting = uiState.isSubmittingFuelPriceEdit,
+            errorMessage = uiState.errorMessage,
+            onPriceChanged = { viewModel.onEvent(OwnerConsoleUiEvent.ChangeEditFuelPrice(it)) },
+            onDismiss = { viewModel.onEvent(OwnerConsoleUiEvent.DismissEditFuelPriceDialog) },
+            onConfirm = { viewModel.onEvent(OwnerConsoleUiEvent.SubmitEditFuelPrice) }
+        )
+    }
+}
+
+@Composable
+private fun EditFuelPriceDialog(
+    fuel: id.maripartner.fuel.domain.model.FuelBrandPrice,
+    priceIdr: String,
+    isSubmitting: Boolean,
+    errorMessage: String?,
+    onPriceChanged: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Ubah Tarif ${fuel.brand} ${fuel.fuelName}",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Perbarui tarif per liter resmi untuk SPBU ${fuel.brand} varian ${fuel.fuelName} (${fuel.gradeCategory}). Seluruh pengguna aplikasi akan mendapatkan tarif ini secara otomatis.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                androidx.compose.material3.OutlinedTextField(
+                    value = priceIdr,
+                    onValueChange = { input ->
+                        val digits = input.filter { it.isDigit() }
+                        onPriceChanged(digits)
+                    },
+                    label = { Text("Tarif per Liter (Rp)") },
+                    placeholder = { Text("Contoh: 12100") },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                priceIdr.toLongOrNull()?.let {
+                    Text(
+                        text = "Terbaca: ${id.maripartner.fuel.core.common.util.CurrencyFormatter.formatIdr(it)} / Liter",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = id.maripartner.fuel.core.designsystem.theme.MariPrimaryBlue
+                    )
+                }
+
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = id.maripartner.fuel.core.designsystem.theme.MariDanger
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.Button(
+                onClick = onConfirm,
+                enabled = !isSubmitting && priceIdr.isNotBlank()
+            ) {
+                if (isSubmitting) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Simpan Tarif")
+                }
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(
+                onClick = onDismiss,
+                enabled = !isSubmitting
+            ) {
+                Text("Batal")
+            }
+        }
+    )
 }
