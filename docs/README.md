@@ -18,7 +18,7 @@ Repositori ini menggunakan arsitektur **Monorepo** yang memisahkan aplikasi selu
 
 1. [🛠️ Langkah 1: Prasyarat Sistem & Alat](#️-langkah-1-prasyarat-sistem--alat)
 2. [🗄️ Langkah 2: Setup Backend Supabase (Gratis)](#️-langkah-2-setup-backend-supabase-gratis)
-3. [⚙️ Langkah 3: Konfigurasi Kunci di Proyek Android (.env / local.properties)](#️-langkah-3-konfigurasi-kunci-di-proyek-android-env--localproperties)
+3. [⚙️ Langkah 3: Konfigurasi Kunci di Proyek Android (.env / local.properties)](#️-langkah-3-konfigurasi-kunci-di-proyek-mobile--web-env)
    - [3.1 Cara Konfigurasi "Masuk dengan Google" (Google Sign-In OAuth)](#31-cara-konfigurasi-masuk-dengan-google-google-sign-in-oauth)
 4. [🚀 Langkah 4: Menjalankan Aplikasi (Paling Ringan & Praktis)](#-langkah-4-menjalankan-aplikasi-paling-ringan--praktis)
 5. [📱 Langkah 5: Uji Coba Fitur Aplikasi](#-langkah-5-uji-coba-fitur-aplikasi)
@@ -28,8 +28,14 @@ Repositori ini menggunakan arsitektur **Monorepo** yang memisahkan aplikasi selu
    - [6.3 QRISpy API Token](#3-qrispy_api_token-payment-gateway-qris-dinamis)
    - [6.4 Setup Webhook QRISpy & Verifikasi Tanda Tangan (HMAC-SHA256)](#4-qrispy_webhook_secret--konfigurasi-webhook-notifikasi-otomatis)
    - [6.5 Pembatalan Manual Transaksi QRIS](#5-pembatalan-manual-transaksi-qris-sebelum-masa-berlaku-15-menit)
-   - [6.6 Integrasi Saldo & Mutasi Gateway QRISpy di Owner Console](#6-integrasi-saldo--mutasi-gateway-qrispy-di-owner-console)
-7. [❓ Tanya Jawab & Kendala Umum (Troubleshooting)](#-tanya-jawab--kendala-umum-troubleshooting)
+   - [6.6 Integrasi Saldo & Mutasi Gateway QRISpy di Web Owner Console](#6-integrasi-saldo--mutasi-gateway-qrispy-di-web-owner-console)
+7. [🌐 Langkah 7: Panduan Deploy Platform Web & Owner Console ke Vercel](#-langkah-7-panduan-deploy-platform-web--owner-console-ke-vercel)
+   - [7.1 Pengaturan Project Name & Root Directory](#71-pengaturan-project-name--root-directory)
+   - [7.2 Konfigurasi Framework & Build Settings](#72-konfigurasi-framework--build-settings)
+   - [7.3 Pengisian Variabel Lingkungan (.env) Praktis](#73-pengisian-variabel-lingkungan-env-praktis)
+   - [7.4 Melewati Optional Integrations Supabase](#74-melewati-optional-integrations-supabase)
+   - [7.5 Peluncuran (Deploy) & Pengujian Live URL](#75-peluncuran-deploy--pengujian-live-url)
+8. [❓ Tanya Jawab & Kendala Umum (Troubleshooting)](#-tanya-jawab--kendala-umum-troubleshooting)
 
 ---
 
@@ -397,6 +403,110 @@ SaaS Owner Console kini hadir sebagai portal web terisolasi yang diakses via `cd
   - **Audit Transaksi Database (`/admin/transactions`)**: Audit transaksi pembayaran paket SaaS yang tersimpan di database Supabase lengkap dengan rincian user dan masa aktif.
   - **Ledger Mutasi Gateway QRISpy (`/admin/qrispy-ledger`)**: Ledger transaksi real-time langsung dari server gateway QRISpy (`GET /api/payment/transactions?limit=20`) dengan status *PAID, PENDING, EXPIRED,* dan *CANCELLED*.
 - **Keamanan Zero-Secret & Role Guard**: Seluruh komunikasi ke endpoint gateway QRISpy diproses oleh Edge Function `get-qrispy-merchant-data` dengan otentikasi role Owner/Admin. Tidak ada secret atau token API gateway yang tersimpan di klien browser maupun di dalam APK Android. Kunci `QRISPY_API_TOKEN` tetap 100% aman tersimpan di Supabase Edge Function Secrets.
+
+---
+
+## 🌐 Langkah 7: Panduan Deploy Platform Web & Owner Console ke Vercel
+
+Panduan ini memandu Anda melakukan deployment platform web **Mari Partner Fuel** (Landing Page publik kelas dunia & SaaS Owner Console) ke **Vercel** secara gratis, cepat, dan otomatis setiap kali ada commit baru di GitHub.
+
+---
+
+### 7.1 Pengaturan Project Name & Root Directory
+Saat mengimpor repositori GitHub `hndko/mari-partner-fuel` di dashboard Vercel (*New Project*):
+
+1. **Importing from GitHub**:
+   - Pastikan cabang (*branch*) yang dipilih adalah **`main`**.
+2. **Project Name**:
+   - Secara bawaan terisi `web`. Anda disarankan mengubahnya menjadi nama proyek yang representatif seperti **`mari-partner-fuel`** atau **`maripartner-fuel`**. Nama ini akan menjadi subdomain URL rilis Anda (contoh: `https://mari-partner-fuel.vercel.app`).
+3. **Root Directory**:
+   - Klik tombol **Edit** di samping isian Root Directory, lalu pilih folder **`web`** (seperti yang tampak pada formulir Vercel Anda).
+   - > [!IMPORTANT]
+     > Pemilihan Root Directory ke `web` adalah **wajib**, karena proyek ini berstruktur Monorepo (`mobile/` dan `web/`).
+
+---
+
+### 7.2 Konfigurasi Framework & Build Settings
+Pada bagian **Build and Output Settings**:
+
+1. **Framework Preset**:
+   - Vercel akan otomatis mendeteksi **`Vite`**. Biarkan opsi ini terpilih secara default.
+2. **Build Command**:
+   - Biarkan tombol toggle dalam posisi **OFF (default)**. Vercel akan otomatis menjalankan:
+     ```bash
+     npm run build
+     ```
+     *(Perintah ini mengeksekusi pemeriksaan tipe data TypeScript `vue-tsc --build` dan pembentukan bundel `vite build`)*.
+3. **Output Directory**:
+   - Biarkan tombol toggle dalam posisi **OFF (default)** (`dist`).
+4. **Install Command**:
+   - Biarkan tombol toggle dalam posisi **OFF (default)** (`npm install`).
+
+> [!NOTE]
+> **Pencegahan Error 404 pada Rute SPA**:
+> Repositori ini sudah menyertakan berkas `web/vercel.json` dengan konfigurasi rewrite:
+> ```json
+> {
+>   "rewrites": [
+>     { "source": "/(.*)", "destination": "/index.html" }
+>   ]
+> }
+> ```
+> Konfigurasi ini menjamin saat pengguna me-refresh halaman `/login` atau mengakses menu `/admin/*`, Vercel tidak akan menampilkan pesan error *404 NOT_FOUND*, melainkan merender aplikasi Single Page Application (SPA) secara sempurna.
+
+---
+
+### 7.3 Pengisian Variabel Lingkungan (.env) Praktis
+Pada bagian **Environment Variables**:
+
+> [!TIP]
+> **Cara Instan (Menggunakan Tombol Import .env)**:
+> Anda tidak perlu mengetik nama dan nilai variabel satu per satu secara manual!
+> 1. Klik tombol **[Import .env]** (tombol di bawah kotak input Key/Value).
+> 2. Salin (*copy*) teks konfigurasi berikut:
+> ```properties
+> SUPABASE_URL=https://zcezyhgrblksfuxmszyz.supabase.co
+> SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+> VITE_APP_VERSION=2.0.8
+> VITE_APP_APK_FILENAME=mari-partner-fuel-v2.0.8.apk
+> VITE_APP_APK_URL=/downloads/mari-partner-fuel-v2.0.8.apk
+> ```
+> *(Catatan: Ganti `SUPABASE_ANON_KEY` dengan kunci anon utuh milik proyek Supabase Anda dari Langkah 2.4)*.
+> 3. Tempelkan (*paste*) ke kotak dialog import Vercel, lalu konfirmasi.
+> 4. Vercel akan otomatis memasukkan ke-5 variabel tersebut ke lingkungan **Production**, **Preview**, dan **Development**.
+
+---
+
+### 7.4 Melewati Optional Integrations Supabase
+Pada bagian bawah formulir Vercel terdapat kartu bertuliskan **"Optional Integrations -> Supabase [Add]"**:
+
+> [!CAUTION]
+> **LEWATI (JANGAN KLIK ADD)!**
+> Anda **TIDAK PERLU** menekan tombol *[Add]* pada integrasi Supabase Vercel Marketplace.
+> 
+> **Alasan Teknis**: Database backend Supabase Mari Partner Fuel Anda sudah dibuat mandiri dan berjalan online di region Singapore (`ap-southeast-1`). Menekan tombol integrasi marketplace di Vercel justru akan memicu alur OAuth untuk membuat proyek database baru yang kosong atau merusak relasi skema SQL yang sudah ada. Kredensial `SUPABASE_URL` dan `SUPABASE_ANON_KEY` yang telah Anda masukkan di Langkah 7.3 sudah lebih dari cukup untuk menghubungkan web secara langsung ke backend Supabase Anda.
+
+---
+
+### 7.5 Peluncuran (Deploy) & Pengujian Live URL
+
+1. **Klik Tombol Deploy**:
+   - Tekan tombol biru besar **[Deploy]** (atau **[Create Project]**) di bagian bawah layar.
+   - Vercel akan menjalankan proses kloning, instalasi dependensi, kompilasi TypeScript, dan pembuatan bundel produksi (~30 detik).
+   - Setelah sukses, Anda akan melihat tampilan perayaan rilis lengkap dengan domain publik gratis (misal: `https://mari-partner-fuel.vercel.app`).
+
+2. **Pengujian Fungsional di Browser**:
+   - **Halaman Utama / Landing Page (`/`)**:
+     - Buka URL publik Vercel Anda.
+     - Periksa tampilan Hero Petrol Teal, Bento Grid fitur unggulan, dan tabel perbandingan paket Free vs Pro.
+     - Klik tombol **Download APK Android** ➡️ browser akan langsung mengunduh file installer APK versi terbaru (`/downloads/mari-partner-fuel-v2.0.8.apk`) yang tersaji secara statis dari Vercel CDN!
+   - **Login Khusus Pemilik SaaS (`/login`)**:
+     - Buka `https://<domain-anda>.vercel.app/login`.
+     - Lakukan pengujian refresh browser (tekan `F5`). Pastikan halaman tetap termuat rapi dan **tidak terjadi error 404**.
+     - Masuk dengan akun Owner Anda (`kyuoko13@gmail.com`).
+   - **Monitoring SaaS Owner Console (`/admin/dashboard`)**:
+     - Masuk ke dashboard eksekutif untuk melihat total omset, pengguna terdaftar, dan kartu saldo live QRISpy.
+     - Buka menu **Plans** (`/admin/plans`) untuk mengatur harga promo paket langganan secara real-time.
 
 ---
 

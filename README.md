@@ -367,6 +367,10 @@ npm run build
 npm run preview
 ```
 
+> [!TIP]
+> **Panduan Deploy ke Vercel**:
+> Untuk mempublikasikan Landing Page dan SaaS Owner Console ke internet via hosting gratis Vercel (termasuk penanganan SPA rewrite 404 via `web/vercel.json` dan import `.env`), silakan ikuti [Panduan Lengkap Deploy Vercel](docs/README.md#-langkah-7-panduan-deploy-platform-web--owner-console-ke-vercel).
+
 ### Menjalankan Fitur Tahap 7 (Integrasi Pembayaran & Aktivasi Pro)
 1. **Pilihan Paket & Checkout (`/pro_plans` -> `/checkout/{planId}`)**:
    - Dari menu Akun atau Banner Pro di Beranda, buka katalog paket Pro.
