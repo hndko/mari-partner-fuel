@@ -75,6 +75,7 @@ sealed interface TransactionUiEvent {
     data class FuelTypeFilterChanged(val fuelType: String?) : TransactionUiEvent
     data class DateRangeChanged(val startDate: LocalDate?, val endDate: LocalDate?) : TransactionUiEvent
     data class SortOrderChanged(val sortOrder: SortOrder) : TransactionUiEvent
+    data class DeleteTransaction(val transactionId: String) : TransactionUiEvent
     data object LoadNextPage : TransactionUiEvent
     data object Refresh : TransactionUiEvent
     data object DismissMessage : TransactionUiEvent

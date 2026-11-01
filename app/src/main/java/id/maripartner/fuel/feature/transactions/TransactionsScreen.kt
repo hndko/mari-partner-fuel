@@ -58,6 +58,10 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Edit
+import id.maripartner.fuel.core.designsystem.component.FuelSweetAlertDialog
+import id.maripartner.fuel.core.designsystem.component.SweetAlertType
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.CircularProgressIndicator
@@ -115,6 +119,7 @@ import kotlinx.coroutines.launch
 fun TransactionsScreen(
     onNavigateToCreate: () -> Unit,
     onNavigateToDetail: (String) -> Unit = {},
+    onNavigateToEdit: (String) -> Unit = {},
     onNavigateToProPlans: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TransactionsViewModel = viewModel()
@@ -127,6 +132,7 @@ fun TransactionsScreen(
     var pendingCsvContent by remember { mutableStateOf<String?>(null) }
     var showExportChoiceDialog by remember { mutableStateOf(false) }
     var showProUpgradeDialog by remember { mutableStateOf(false) }
+    var transactionToDelete by remember { mutableStateOf<FuelTransaction?>(null) }
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
@@ -164,6 +170,13 @@ fun TransactionsScreen(
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onEvent(TransactionUiEvent.DismissMessage)
+        }
+    }
+
+    LaunchedEffect(uiState.actionMessage) {
+        uiState.actionMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(TransactionUiEvent.DismissMessage)
         }
@@ -723,7 +736,9 @@ fun TransactionsScreen(
                                                             transaction = transaction,
                                                             vehicleName = vehicle?.name ?: "Kendaraan",
                                                             licensePlate = vehicle?.licensePlate,
-                                                            onClick = { onNavigateToDetail(transaction.id) }
+                                                            onClick = { onNavigateToDetail(transaction.id) },
+                                                            onEdit = { onNavigateToEdit(transaction.id) },
+                                                            onDelete = { transactionToDelete = transaction }
                                                         )
                                                         if (index < txList.lastIndex) {
                                                             HorizontalDivider(
@@ -791,6 +806,26 @@ fun TransactionsScreen(
             onUpgradeClick = {
                 showProUpgradeDialog = false
                 onNavigateToProPlans()
+            }
+        )
+    }
+
+    // Modal Dialog: Konfirmasi Hapus Transaksi BBM (SweetAlert style)
+    if (transactionToDelete != null) {
+        val tx = transactionToDelete!!
+        FuelSweetAlertDialog(
+            show = true,
+            type = SweetAlertType.ERROR,
+            title = "Hapus Transaksi BBM?",
+            message = "Data pengeluaran BBM di ${tx.stationName?.takeIf { it.isNotBlank() } ?: "SPBU"} sebesar ${CurrencyFormatter.formatIdr(tx.totalAmountIdr)} akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
+            confirmText = "Ya, Hapus Data",
+            dismissText = "Batal",
+            onConfirm = {
+                viewModel.onEvent(TransactionUiEvent.DeleteTransaction(tx.id))
+                transactionToDelete = null
+            },
+            onDismiss = {
+                transactionToDelete = null
             }
         )
     }
@@ -1065,6 +1100,8 @@ private fun TransactionRowItem(
     vehicleName: String,
     licensePlate: String?,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isOcr = transaction.scanStatus == "ocr" || transaction.scanStatus == "ai" || transaction.scanStatus == "ocr_review"
@@ -1195,6 +1232,48 @@ private fun TransactionRowItem(
                     tint = Color(0xFFCBD5E1),
                     modifier = Modifier.size(16.dp)
                 )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Tombol Aksi Cepat: Edit & Hapus
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Tombol Edit (Pensil Biru)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MariPrimaryBlue.copy(alpha = 0.10f))
+                        .clickable(onClick = onEdit),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Transaksi",
+                        tint = MariPrimaryBlue,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+
+                // Tombol Hapus (Tempat Sampah Merah)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.10f))
+                        .clickable(onClick = onDelete),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "Hapus Transaksi",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
         }
     }

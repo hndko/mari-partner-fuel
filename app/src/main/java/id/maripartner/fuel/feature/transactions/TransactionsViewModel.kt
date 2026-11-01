@@ -9,8 +9,11 @@ import id.maripartner.fuel.domain.model.TransactionFilter
 import id.maripartner.fuel.domain.repository.FuelTransactionRepository
 import id.maripartner.fuel.domain.repository.VehicleRepository
 import id.maripartner.fuel.domain.usecase.transaction.GetTransactionsUseCase
+import id.maripartner.fuel.domain.usecase.transaction.DeleteTransactionUseCase
 import id.maripartner.fuel.domain.usecase.vehicle.GetVehiclesUseCase
 import android.content.Context
+import id.maripartner.fuel.MariPartnerFuelApp
+import id.maripartner.fuel.core.widget.MariFuelAppWidgetProvider
 import id.maripartner.fuel.data.repository.SubscriptionRepositoryImpl
 import id.maripartner.fuel.domain.repository.SubscriptionRepository
 import id.maripartner.fuel.domain.usecase.export.ExportTransactionsCsvUseCase
@@ -34,6 +37,7 @@ class TransactionsViewModel(
     private val vehicleRepository: VehicleRepository = VehicleRepositoryImpl(),
     private val getMyEntitlementsUseCase: GetMyEntitlementsUseCase = GetMyEntitlementsUseCase(),
     private val getTransactionsUseCase: GetTransactionsUseCase = GetTransactionsUseCase(transactionRepository),
+    private val deleteTransactionUseCase: DeleteTransactionUseCase = DeleteTransactionUseCase(transactionRepository),
     private val getVehiclesUseCase: GetVehiclesUseCase = GetVehiclesUseCase(vehicleRepository),
     private val exportTransactionsCsvUseCase: ExportTransactionsCsvUseCase = ExportTransactionsCsvUseCase(),
     private val exportTransactionsPdfUseCase: ExportTransactionsPdfUseCase = ExportTransactionsPdfUseCase()
@@ -90,6 +94,9 @@ class TransactionsViewModel(
             is TransactionUiEvent.SortOrderChanged -> {
                 _uiState.update { it.copy(filter = it.filter.copy(sortOrder = event.sortOrder)) }
                 loadTransactions(reset = true)
+            }
+            is TransactionUiEvent.DeleteTransaction -> {
+                deleteTransaction(event.transactionId)
             }
             is TransactionUiEvent.LoadNextPage -> {
                 loadNextPage()
@@ -217,6 +224,35 @@ class TransactionsViewModel(
                 }
                 is AppResult.Error -> {
                     _uiState.update { it.copy(errorMessage = "Gagal mengekspor dokumen PDF: ${result.exception.message}") }
+                }
+            }
+        }
+    }
+
+    private fun deleteTransaction(id: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = deleteTransactionUseCase(id)) {
+                is AppResult.Success -> {
+                    val updatedList = _uiState.value.transactions.filter { it.id != id }
+                    _uiState.update {
+                        it.copy(
+                            transactions = updatedList,
+                            isLoading = false,
+                            actionMessage = "Transaksi pengisian BBM berhasil dihapus."
+                        )
+                    }
+                    try {
+                        MariFuelAppWidgetProvider.updateAllWidgets(MariPartnerFuelApp.appContext)
+                    } catch (_: Exception) {}
+                }
+                is AppResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = result.exception.message ?: "Gagal menghapus data transaksi."
+                        )
+                    }
                 }
             }
         }

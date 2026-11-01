@@ -215,6 +215,9 @@ fun AppNavHost(
                         onNavigateToDetail = { id ->
                             navController.navigate(NavRoute.TransactionDetail.createRoute(id))
                         },
+                        onNavigateToEdit = { id ->
+                            navController.navigate(NavRoute.TransactionForm.createRoute(id))
+                        },
                         onNavigateToProPlans = {
                             navController.navigate(NavRoute.ProPlans.route)
                         }
